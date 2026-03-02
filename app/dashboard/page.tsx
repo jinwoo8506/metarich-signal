@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const [intRate, setIntRate] = useState(5); 
   const [intYear, setIntYear] = useState(20);
 
-  // 📅 날짜 변수
+  // 📅 날짜 변수 (과거 데이터 비교용)
   const year = 2026; 
   const month = 3;
   const lastYear = month === 1 ? year - 1 : year;
@@ -97,9 +97,9 @@ export default function DashboardPage() {
     const { data } = await supabase.from("team_goals").select("*").eq("id", "current_team_goal").maybeSingle()
     if (data) {
         setTeamGoal({ 
-          count: Number(data.total_goal_count), 
-          amount: Number(data.total_goal_amount), 
-          recruit: Number(data.total_goal_recruit) 
+          count: Number(data.total_goal_count || 0), 
+          amount: Number(data.total_goal_amount || 0), 
+          recruit: Number(data.total_goal_recruit || 0) 
         })
         setGlobalNotice(data.global_notice || "")
     }
@@ -136,7 +136,7 @@ export default function DashboardPage() {
   }
 
   const getAlertStyle = (agent: any) => {
-    const p = agent.performances?.find((perf:any) => perf.year === year && perf.month === month) || {}
+    const p = (agent.performances || []).find((perf:any) => perf.year === year && perf.month === month) || {}
     const todayDate = new Date()
     const day = todayDate.getDate()
     const currentAmount = p.contract_amount || 0
@@ -150,14 +150,14 @@ export default function DashboardPage() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-3xl italic">SIGNAL LOADING...</div>
 
-  const totalDoneC = agents.reduce((sum, a) => sum + (a.performances?.find((p:any)=>p.year===year && p.month===month)?.contract_count || 0), 0)
-  const totalDoneA = agents.reduce((sum, a) => sum + (a.performances?.find((p:any)=>p.year===year && p.month===month)?.contract_amount || 0), 0)
-  const totalDoneR = agents.reduce((sum, a) => sum + (a.performances?.find((p:any)=>p.year===year && p.month===month)?.recruit_count || 0), 0)
+  const totalDoneC = agents.reduce((sum, a) => sum + ((a.performances || []).find((p:any)=>p.year===year && p.month===month)?.contract_count || 0), 0)
+  const totalDoneA = agents.reduce((sum, a) => sum + ((a.performances || []).find((p:any)=>p.year===year && p.month===month)?.contract_amount || 0), 0)
+  const totalDoneR = agents.reduce((sum, a) => sum + ((a.performances || []).find((p:any)=>p.year===year && p.month===month)?.recruit_count || 0), 0)
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex text-slate-900 font-sans text-base">
       
-      {/* 🗓️ 사이드바 */}
+      {/* 🗓️ 사이드바 (원본 보존) */}
       <aside className="w-80 bg-white border-r p-6 hidden lg:flex flex-col gap-6 overflow-y-auto shrink-0 shadow-2xl">
         <h2 className="font-black italic text-2xl border-b-4 border-black pb-3 tracking-tighter text-center uppercase">History Board</h2>
         <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} className="rounded-2xl border-0 shadow-sm" />
@@ -236,8 +236,8 @@ export default function DashboardPage() {
                 <h2 className="text-2xl font-black uppercase italic border-l-[12px] border-slate-300 pl-6">Agent Management</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
                     {agents.map(a => {
-                        const t = a.monthly_targets?.find((mt:any)=>mt.year===year && mt.month===month) || {};
-                        const p = a.performances?.find((pf:any)=>pf.year===year && pf.month===month) || {};
+                        const t = (a.monthly_targets || []).find((mt:any)=>mt.year===year && mt.month===month) || {};
+                        const p = (a.performances || []).find((pf:any)=>pf.year===year && pf.month===month) || {};
                         const alertClass = getAlertStyle(a);
                         return (
                             <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }}
@@ -290,7 +290,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* 팝업 모달들 (Notice, Tools, Coaching, Team Strategy) */}
+      {/* 모달: Notice */}
       {isNoticeOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-10 relative border-4 border-[#d4af37]">
@@ -302,15 +302,12 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 모달: Tools */}
       {isBizToolOpen && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[500] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
             <div className="bg-slate-900 p-8 flex justify-between items-center text-white">
-              <h2 className="text-2xl font-black italic tracking-tighter uppercase">
-                {activeTool === 'compare' && "Bank vs Insurance Compare"}
-                {activeTool === 'inflation' && "Money Value Calculator"}
-                {activeTool === 'interest' && "Simple vs Compound Interest"}
-              </h2>
+              <h2 className="text-2xl font-black italic tracking-tighter uppercase">Support Tool</h2>
               <button onClick={() => setIsBizToolOpen(false)} className="text-4xl font-black hover:text-rose-500 transition-colors">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-10 space-y-10 bg-white">
@@ -388,6 +385,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 모달: Coaching (시점 분리 적용) */}
       {selectedAgent && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[150] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-6xl rounded-[4rem] p-10 md:p-14 relative overflow-y-auto max-h-[90vh] border-[10px] border-black">
@@ -400,7 +398,7 @@ export default function DashboardPage() {
                     <span className="absolute -top-4 left-10 bg-blue-600 text-white px-6 py-2 rounded-full font-black text-xs uppercase">Current: {month}월 실적</span>
                     <div className="grid grid-cols-3 gap-3">
                       {(() => {
-                        const p = selectedAgent.performances?.find((pf:any)=>pf.year===year && pf.month===month) || {};
+                        const p = (selectedAgent.performances || []).find((pf:any)=>pf.year===year && pf.month===month) || {};
                         return <>
                           <ActivityStat label="📞 CALL" value={p.call_count} color="text-emerald-700" />
                           <ActivityStat label="🤝 MEET" value={p.meet_count} color="text-amber-700" />
@@ -420,7 +418,7 @@ export default function DashboardPage() {
                     <span className="absolute -top-4 left-10 bg-slate-400 text-white px-6 py-2 rounded-full font-black text-xs uppercase">History: {lastMonth}월 최종</span>
                     <div className="grid grid-cols-3 gap-3">
                       {(() => {
-                        const p = selectedAgent.performances?.find((pf:any)=>pf.year===lastYear && pf.month===lastMonth) || {};
+                        const p = (selectedAgent.performances || []).find((pf:any)=>pf.year===lastYear && pf.month===lastMonth) || {};
                         return <>
                           <ActivityStat label="📞 CALL" value={p.call_count} color="text-slate-500" />
                           <ActivityStat label="🤝 MEET" value={p.meet_count} color="text-slate-500" />
@@ -431,17 +429,17 @@ export default function DashboardPage() {
                   </div>
                   <div className="space-y-8">
                     <h4 className="font-black text-xl border-l-8 border-[#d4af37] pl-4 uppercase italic">Target Setting</h4>
-                    <InBox label="목표 건수" value={selectedAgent.monthly_targets?.find((mt:any)=>mt.year===year && mt.month===month)?.target_count || 0} onChange={(v:any)=>{
+                    <InBox label="목표 건수" value={(selectedAgent.monthly_targets || []).find((mt:any)=>mt.year===year && mt.month===month)?.target_count || 0} onChange={(v:any)=>{
                         const updated = [...agents];
                         const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
-                        const tIdx = updated[idx].monthly_targets.findIndex((mt:any)=>mt.year===year && mt.month===month);
+                        const tIdx = (updated[idx].monthly_targets || []).findIndex((mt:any)=>mt.year===year && mt.month===month);
                         if(tIdx > -1) updated[idx].monthly_targets[tIdx].target_count = v;
                         setAgents(updated);
                     }} unit="건" />
-                    <InBox label="목표 금액" value={selectedAgent.monthly_targets?.find((mt:any)=>mt.year===year && mt.month===month)?.target_amount || 0} onChange={(v:any)=>{
+                    <InBox label="목표 금액" value={(selectedAgent.monthly_targets || []).find((mt:any)=>mt.year===year && mt.month===month)?.target_amount || 0} onChange={(v:any)=>{
                         const updated = [...agents];
                         const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
-                        const tIdx = updated[idx].monthly_targets.findIndex((mt:any)=>mt.year===year && mt.month===month);
+                        const tIdx = (updated[idx].monthly_targets || []).findIndex((mt:any)=>mt.year===year && mt.month===month);
                         if(tIdx > -1) updated[idx].monthly_targets[tIdx].target_amount = v;
                         setAgents(updated);
                     }} unit="만원" />
@@ -450,7 +448,7 @@ export default function DashboardPage() {
               </div>
 
               <button onClick={async () => { 
-                const t = selectedAgent.monthly_targets?.find((mt:any)=>mt.year===year && mt.month===month) || {target_count:0, target_amount:0}; 
+                const t = (selectedAgent.monthly_targets || []).find((mt:any)=>mt.year===year && mt.month===month) || {target_count:0, target_amount:0}; 
                 await supabase.from("monthly_targets").upsert({ 
                   user_id: selectedAgent.id, year, month, 
                   target_count: Number(t.target_count), target_amount: Number(t.target_amount), 
@@ -464,6 +462,7 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 모달: Team Strategy */}
       {isTeamGoalModalOpen && (
         <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-xl rounded-[4rem] p-12 md:p-16 relative border-8 border-[#d4af37]">
@@ -503,7 +502,7 @@ export default function DashboardPage() {
   )
 }
 
-// ─── 하위 컴포넌트들 ──────────────────────────────────────────────────────────
+// ─── 하위 컴포넌트 ──────────────────────────────────────────────────────────
 
 function ProgressBar({ label, current, target, unit, color }: any) {
   const rate = target > 0 ? Math.min((current / target) * 100, 100) : 0
