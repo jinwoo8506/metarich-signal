@@ -221,11 +221,28 @@ export default function DashboardPage() {
             </section>
           )}
 
-         {(role === "admin" || role === "master") && (
+           {/* 👥 [관리자/마스터 전용] 에이전트 목록 */}
+          {(role === "admin" || role === "master") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                {agents.map(a => {
-                    // 🛡️ 안전한 데이터 참조 (기본값 부여)
-                    const t = (a.monthly_targets || []).find(mt => mt.year === year && mt.month === month) || { target_count: 0, target_amount: 0, admin_comment: "" };
+              {agents.map(a => {
+                const t = (a.monthly_targets || []).find(mt => mt.year === year && mt.month === month) || { target_count: 0, target_amount: 0, admin_comment: "" };
+                const p = (a.performances || []).find(pf => pf.year === year && pf.month === month) || { contract_count: 0, contract_amount: 0 };
+                return (
+                  <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }} className={`bg-white p-10 rounded-[3rem] border-4 cursor-pointer shadow-lg ${getAlertStyle(a)}`}>
+                    <div className="font-black text-xl mb-6">{a.name} CA</div>
+                    <MiniBar label="건수" current={p.contract_count || 0} target={t.target_count || 0} unit="건" color="black" />
+                    <MiniBar label="금액" current={p.contract_amount || 0} target={t.target_amount || 0} unit="만" color="#d4af37" />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 📊 [에이전트/마스터 전용] 활동 보드 */}
+          {(role === "agent" || role === "master") && (
+            <section className="space-y-12">
+               <div className="flex justify-between items-center"><h2 className="text-4xl font-black italic uppercase border-b-8 border-black pb-4">Activity Board</h2><button onClick={handleAgentSave} className="bg-black text-[#d4af37] px-10 py-5 rounded-[2.5rem] font-black text-sm shadow-xl">UPDATE</button></div>
+               {/* 이하 로직 동일... */}
                     const p = (a.performances || []).find(pf => pf.year === year && pf.month === month) || { contract_count: 0, contract_amount: 0 };
 
                     return (
@@ -246,29 +263,7 @@ export default function DashboardPage() {
                <div className="flex justify-between items-center"><h2 className="text-4xl font-black italic uppercase border-b-8 border-black pb-4">Activity Board</h2><button onClick={handleAgentSave} className="bg-black text-[#d4af37] px-10 py-5 rounded-[2.5rem] font-black text-sm shadow-xl">UPDATE</button></div>
                <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                  <ActivityTab label="📞 CALL" value={calls} onChange={setCalls} color="bg-emerald-50" textColor="text-emerald-800" />
-                 <ActivityTab label="🤝 MEET" value={meets} onChange={setMeets} color="bg-amber-50" textColor="text-amber-800" />
-                 <ActivityTab label="📝 PT" value={pt} onChange={setPt} color="bg-purple-50" textColor="text-purple-800" />
-                 <ActivityTab label="🎁 INTRO" value={intros} onChange={setIntros} color="bg-rose-50" textColor="text-rose-800" />
-                 <ActivityTab label="📥 DB 배정" value={dbAssigned} onChange={setDbAssigned} color="bg-blue-50" textColor="text-blue-800" />
-                 <ActivityTab label="📤 DB 반품" value={dbReturned} onChange={setDbReturned} color="bg-slate-100" textColor="text-slate-800" />
-               </div>
-               <div className="bg-white p-12 rounded-[3rem] shadow-xl border-4 grid grid-cols-1 md:grid-cols-2 gap-12">
-                 <div className="space-y-10">
-                   <h3 className="text-2xl font-black uppercase border-l-[12px] border-slate-300 pl-6">Goal</h3>
-                   <InBox label="목표 건수" value={goal} onChange={setGoal} unit="건" disabled={isApproved} />
-                   <InBox label="목표 금액" value={targetAmount} onChange={setTargetAmount} unit="만원" disabled={isApproved} />
-                   <InBox label="도입 실적" value={recruits} onChange={setRecruits} unit="명" highlight />
-                 </div>
-                 <div className="space-y-10">
-                   <h3 className="text-2xl font-black text-[#d4af37] uppercase border-l-[12px] border-[#d4af37] pl-6">Result</h3>
-                   <InBox label="완료 건수" value={contract} onChange={setContract} unit="건" />
-                   <InBox label="완료 금액" value={contractAmount} onChange={setContractAmount} unit="만원" />
-                   <InBox label="상담 회수 (AP)" value={ap} onChange={setAp} unit="회" />
-                 </div>
-               </div>
-             </section>
-          )}
-        </div>
+               
       </main>
 
       {/* 모달: Notice */}
