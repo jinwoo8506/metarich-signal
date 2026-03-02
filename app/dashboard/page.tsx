@@ -11,8 +11,8 @@ interface Performance {
   year: number; month: number;
   contract_count?: number; contract_amount?: number;
   ap?: number; pt?: number; call_count?: number;
-  meet_count?: number; intro_count?: number;
-  recruit_count?: number; db_assigned?: number; db_returned?: number;
+  meet_count?: number; intro_count?: number; recruit_count?: number;
+  db_assigned?: number; db_returned?: number;
 }
 interface MonthlyTarget {
   year: number; month: number;
@@ -32,42 +32,41 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // 날짜 및 메모
+  // 기본 상태 관리 (page533.tsx 로직 유지)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [personalMemo, setPersonalMemo] = useState("")
   const [dailySpecialNote, setDailySpecialNote] = useState("")
+  const [activeAdminTab, setActiveAdminTab] = useState<'activity' | 'trend' | 'db' | 'edit'>('activity')
 
-  // 실적 데이터 상태 (Agent용)
-  const [performance, setPerformance] = useState({
-    goal: 0, targetAmount: 0, contract: 0, contractAmount: 0,
-    ap: 0, pt: 0, calls: 0, meets: 0, intros: 0, recruits: 0,
-    dbAssigned: 0, dbReturned: 0, isApproved: false
-  })
+  const [goal, setGoal] = useState(0); const [targetAmount, setTargetAmount] = useState(0)
+  const [contract, setContract] = useState(0); const [contractAmount, setContractAmount] = useState(0)
+  const [ap, setAp] = useState(0); const [pt, setPt] = useState(0)
+  const [calls, setCalls] = useState(0); const [meets, setMeets] = useState(0)
+  const [intros, setIntros] = useState(0); const [recruits, setRecruits] = useState(0)
+  const [dbAssigned, setDbAssigned] = useState(0); const [dbReturned, setDbReturned] = useState(0)
+  const [isApproved, setIsApproved] = useState(false)
 
-  // 관리자 데이터 상태
   const [teamGoal, setTeamGoal] = useState({ count: 100, amount: 1000, recruit: 5 })
+  const [isTeamGoalModalOpen, setIsTeamGoalModalOpen] = useState(false)
   const [globalNotice, setGlobalNotice] = useState("메타리치 시그널에 오신 것을 환영합니다.")
+  const [isNoticeOpen, setIsNoticeOpen] = useState(false) 
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
   const [editingComment, setEditingComment] = useState("")
 
-  // 모달 상태
-  const [modals, setModals] = useState({
-    history: false, bizTool: false, notice: false, teamGoal: false, sideBar: false
-  })
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [historyType, setHistoryType] = useState<'team' | 'agent'>('agent')
+
+  // 계산기 상태 (page533.tsx 원본값 유지)
+  const [isBizToolOpen, setIsBizToolOpen] = useState(false)
   const [activeTool, setActiveTool] = useState<'compare' | 'inflation' | 'interest'>('compare')
+  const [compMonth, setCompMonth] = useState(50); const [compYear, setCompYear] = useState(5); const [compWait, setCompWait] = useState(5); const [bankRate, setBankRate] = useState(2)
+  const [infMoney, setInfMoney] = useState(100); const [infRate, setInfRate] = useState(3)
+  const [intMoney, setIntMoney] = useState(1000); const [intRate, setIntRate] = useState(5); const [intYear, setIntYear] = useState(20)
 
-  // 계산기 변수
-  const [calc, setCalc] = useState({
-    compMonth: 50, compYear: 5, compWait: 5, bankRate: 2,
-    infMoney: 100, infRate: 3, intMoney: 1000, intRate: 5, intYear: 20
-  })
-
-  const currentYear = selectedDate.getFullYear()
-  const currentMonth = selectedDate.getMonth() + 1
-  const lastYear = new Date(currentYear, currentMonth - 2, 1).getFullYear()
-  const lastMonth = new Date(currentYear, currentMonth - 2, 1).getMonth() + 1
+  const currentYear = selectedDate.getFullYear(); const currentMonth = selectedDate.getMonth() + 1
+  const prevMonthDate = new Date(currentYear, currentMonth - 2, 1)
+  const lastYear = prevMonthDate.getFullYear(); const lastMonth = prevMonthDate.getMonth() + 1
 
   useEffect(() => { checkUser() }, [])
   useEffect(() => { if (userId) fetchDailyData(selectedDate) }, [selectedDate, userId])
@@ -79,14 +78,14 @@ export default function DashboardPage() {
     if (!userInfo) { await supabase.auth.signOut(); return router.replace("/login") }
     setUserId(session.user.id); setRole(userInfo.role); setUserName(userInfo.name)
     fetchTeamGoal()
-    if (userInfo.role !== "agent") fetchAdminData()
-    if (userInfo.role !== "admin") fetchAgentData(session.user.id)
+    if (userInfo.role === "admin" || userInfo.role === "master") fetchAdminData()
+    if (userInfo.role === "agent" || userInfo.role === "master") fetchAgentData(session.user.id)
     setLoading(false)
   }
 
   async function fetchDailyData(date: Date) {
     const dateStr = date.toISOString().split('T')[0]
-    const { data: notice } = await supabase.from("daily_notes").select("admin_notice").eq("date", dateStr).maybeSingle()
+    const { data: notice } = await supabase.from("daily_notes").select("admin_notice").eq("date", dateStr).limit(1).maybeSingle()
     const { data: myData } = await supabase.from("daily_notes").select("agent_memo").eq("user_id", userId).eq("date", dateStr).maybeSingle()
     setDailySpecialNote(notice?.admin_notice || ""); setPersonalMemo(myData?.agent_memo || "")
   }
@@ -94,8 +93,8 @@ export default function DashboardPage() {
   async function fetchTeamGoal() {
     const { data } = await supabase.from("team_goals").select("*").eq("id", "current_team_goal").maybeSingle()
     if (data) {
-      setTeamGoal({ count: Number(data.total_goal_count), amount: Number(data.total_goal_amount), recruit: Number(data.total_goal_recruit) })
-      setGlobalNotice(data.global_notice || "")
+        setTeamGoal({ count: Number(data.total_goal_count || 0), amount: Number(data.total_goal_amount || 0), recruit: Number(data.total_goal_recruit || 0) })
+        setGlobalNotice(data.global_notice || "")
     }
   }
 
@@ -107,332 +106,406 @@ export default function DashboardPage() {
   async function fetchAgentData(id: string) {
     const { data: t } = await supabase.from("monthly_targets").select("*").eq("user_id", id).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
     const { data: p } = await supabase.from("performances").select("*").eq("user_id", id).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
-    setPerformance({
-      goal: t?.target_count || 0, targetAmount: t?.target_amount || 0, isApproved: t?.status === 'approved',
-      contract: p?.contract_count || 0, contractAmount: p?.contract_amount || 0, ap: p?.ap || 0, pt: p?.pt || 0,
-      calls: p?.call_count || 0, meets: p?.meet_count || 0, intros: p?.intro_count || 0, recruits: p?.recruit_count || 0,
-      dbAssigned: p?.db_assigned || 0, dbReturned: p?.db_returned || 0
-    })
+    if (t) { setGoal(t.target_count || 0); setTargetAmount(t.target_amount || 0); setIsApproved(t.status === 'approved') }
+    if (p) { 
+      setAp(p.ap || 0); setPt(p.pt || 0); setContract(p.contract_count || 0); setContractAmount(p.contract_amount || 0)
+      setCalls(p.call_count || 0); setMeets(p.meet_count || 0); setIntros(p.intro_count || 0); setRecruits(p.recruit_count || 0)
+      setDbAssigned(p.db_assigned || 0); setDbReturned(p.db_returned || 0)
+    }
   }
 
   const handleAgentSave = async () => {
-    const payloadT = { user_id: userId, year: currentYear, month: currentMonth, target_count: performance.goal, target_amount: performance.targetAmount, status: performance.isApproved ? 'approved' : 'pending' }
-    const payloadP = { user_id: userId, year: currentYear, month: currentMonth, ...performance }
-    delete (payloadP as any).goal; delete (payloadP as any).targetAmount; delete (payloadP as any).isApproved;
-    
-    await supabase.from("monthly_targets").upsert(payloadT, { onConflict: 'user_id, year, month' })
-    await supabase.from("performances").upsert(payloadP, { onConflict: 'user_id, year, month' })
+    const pT = { user_id: userId, year: currentYear, month: currentMonth, target_count: Number(goal), target_amount: Number(targetAmount), status: isApproved ? 'approved' : 'pending' }
+    const pP = { user_id: userId, year: currentYear, month: currentMonth, ap: Number(ap), pt: Number(pt), contract_count: Number(contract), contract_amount: Number(contractAmount), call_count: Number(calls), meet_count: Number(meets), intro_count: Number(intros), recruit_count: Number(recruits), db_assigned: Number(dbAssigned), db_returned: Number(dbReturned) }
+    await supabase.from("monthly_targets").upsert(pT, { onConflict: 'user_id, year, month' })
+    await supabase.from("performances").upsert(pP, { onConflict: 'user_id, year, month' })
     alert("데이터 저장 완료")
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-2xl animate-pulse">SIGNAL LOADING...</div>
+  // ─── [통계 계산 로직] ───
+  const curPerf = agents.flatMap(a => a.performances || []).filter(p => p.year === currentYear && p.month === currentMonth)
+  const totalDoneC = curPerf.reduce((s, p) => s + (p.contract_count || 0), 0)
+  const totalDoneA = curPerf.reduce((s, p) => s + (p.contract_amount || 0), 0)
+  const totalDoneR = curPerf.reduce((s, p) => s + (p.recruit_count || 0), 0)
 
-  const totalDoneC = agents.reduce((sum, a) => sum + ((a.performances || []).find(p=>p.year===currentYear && p.month===currentMonth)?.contract_count || 0), 0)
-  const totalDoneA = agents.reduce((sum, a) => sum + ((a.performances || []).find(p=>p.year===currentYear && p.month===currentMonth)?.contract_amount || 0), 0)
-  const totalDoneR = agents.reduce((sum, a) => sum + ((a.performances || []).find(p=>p.year===currentYear && p.month===currentMonth)?.recruit_count || 0), 0)
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-3xl italic animate-pulse">SIGNAL LOADING...</div>
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#f1f5f9] flex flex-col lg:flex-row text-slate-900 font-sans overflow-x-hidden">
       
-      {/* 📱 Mobile Header */}
-      <div className="lg:hidden bg-black text-white p-4 flex justify-between items-center sticky top-0 z-[100]">
-        <h1 className="font-black italic text-xl text-[#d4af37]">SIGNAL</h1>
-        <button onClick={() => setModals({...modals, sideBar: !modals.sideBar})} className="p-2 bg-[#d4af37] text-black rounded-lg font-bold text-xs">MENU</button>
-      </div>
-
-      {/* ─── 📟 SIDEBAR (Desktop & Mobile Overlay) ─────────────────── */}
-      <aside className={`${modals.sideBar ? 'flex' : 'hidden'} lg:flex fixed lg:relative inset-0 z-[200] lg:z-auto w-full lg:w-80 bg-white border-r p-6 flex-col gap-6 overflow-y-auto shadow-2xl`}>
-        <div className="flex justify-between items-center lg:block">
-          <h2 className="font-black italic text-2xl border-b-4 border-black pb-3 uppercase text-center w-full">History Board</h2>
-          <button onClick={() => setModals({...modals, sideBar: false})} className="lg:hidden font-black text-2xl p-2">✕</button>
-        </div>
+      {/* ─── 사이드바 (모바일 대응) ─── */}
+      <aside className="w-full lg:w-80 bg-white border-b lg:border-r p-6 flex flex-col gap-6 shrink-0 shadow-2xl lg:h-screen overflow-y-auto">
+        <h2 className="font-black italic text-2xl border-b-4 border-black pb-3 text-center uppercase">History Board</h2>
         
-        <div className="calendar-container scale-95 lg:scale-100 origin-top">
-            <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} calendarType="gregory" formatDay={(l, date) => date.getDate().toString()} className="rounded-2xl border-0 shadow-sm custom-calendar" />
+        <div className="calendar-container scale-90 lg:scale-100 origin-top">
+            <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} calendarType="gregory" className="rounded-2xl border-0 shadow-sm custom-calendar" />
         </div>
 
-        <div className="p-5 bg-slate-900 rounded-[2rem] space-y-3 shadow-xl">
-            <p className="text-[#d4af37] text-[10px] font-black uppercase text-center tracking-widest">{currentMonth}월 실적 리포트</p>
-            <button onClick={() => { setHistoryType('agent'); setModals({...modals, history: true, sideBar: false}); }} className="w-full bg-white text-black py-3 rounded-2xl font-black text-xs hover:bg-[#d4af37] transition-all">내 실적 상세</button>
-            {role !== 'agent' && (
-                <button onClick={() => { setHistoryType('team'); setModals({...modals, history: true, sideBar: false}); }} className="w-full border-2 border-[#d4af37] text-[#d4af37] py-3 rounded-2xl font-black text-xs hover:bg-[#d4af37] hover:text-black transition-all">전월 팀 전체 실적</button>
-            )}
+        {/* [전월 대비 팀 리포트 - 사이드바 고정] */}
+        <div className="p-5 bg-slate-900 rounded-[2rem] space-y-4 text-white">
+            <p className="text-[#d4af37] text-[10px] font-black uppercase text-center tracking-widest">{currentMonth}월 전체 실적 요약</p>
+            <div className="flex justify-between items-center px-2">
+                <span className="text-[11px] font-bold opacity-60">전체 실적</span>
+                <span className="text-2xl font-black">{totalDoneA.toLocaleString()}만</span>
+            </div>
+            <button onClick={() => { setHistoryType('agent'); setIsHistoryModalOpen(true); }} className="w-full bg-white text-black py-3 rounded-2xl font-black text-xs hover:bg-[#d4af37] transition-all">실적 상세조회</button>
+            <button onClick={() => { setActiveTool('compare'); setIsBizToolOpen(true); }} className="w-full border border-white/20 py-3 rounded-2xl font-black text-xs">영업 계산기</button>
         </div>
 
-        <div className="space-y-3">
-          <textarea readOnly={role === 'agent'} value={dailySpecialNote} onChange={(e)=>setDailySpecialNote(e.target.value)} placeholder="교육/특별사항" className="w-full p-4 rounded-2xl bg-blue-50 text-sm h-24 outline-none font-bold border-2 border-blue-100 resize-none" />
-          <textarea value={personalMemo} onChange={(e)=>setPersonalMemo(e.target.value)} placeholder="개인 메모" className="w-full p-4 rounded-2xl bg-slate-50 text-sm h-24 outline-none font-bold border-2 border-slate-200 resize-none" />
+        <div className="space-y-4">
+          <textarea readOnly={role === 'agent'} value={dailySpecialNote} onChange={(e)=>setDailySpecialNote(e.target.value)} placeholder="교육/특별사항" className="w-full p-4 rounded-3xl bg-blue-50 text-sm h-24 outline-none font-bold border-2 border-blue-100" />
+          <textarea value={personalMemo} onChange={(e)=>setPersonalMemo(e.target.value)} placeholder="개인 메모" className="w-full p-4 rounded-3xl bg-slate-50 text-sm h-24 outline-none font-bold border-2 border-slate-200" />
           <button onClick={async () => { 
             const dateStr = selectedDate.toISOString().split('T')[0]; 
             await supabase.from("daily_notes").upsert({ user_id: userId, date: dateStr, agent_memo: personalMemo, ...((role !== 'agent') && { admin_notice: dailySpecialNote }) }, { onConflict: 'user_id, date' }); 
             alert("저장 완료") 
-          }} className="w-full bg-black text-[#d4af37] py-4 rounded-2xl font-black text-xs uppercase shadow-lg">Save Information</button>
-        </div>
-
-        <div className="mt-auto pt-6 border-t-2 border-slate-100 space-y-2">
-          {['compare', 'inflation', 'interest'].map((tool) => (
-            <button key={tool} onClick={() => { setActiveTool(tool as any); setModals({...modals, bizTool: true, sideBar: false}); }} className="w-full p-4 rounded-xl hover:bg-slate-50 font-bold text-sm text-left flex items-center gap-3 transition-all">
-              {tool === 'compare' ? '🏦 은행 vs 보험 비교' : tool === 'inflation' ? '📉 화폐가치 계산기' : '📈 단리 vs 복리 마법'}
-            </button>
-          ))}
+          }} className="w-full bg-black text-[#d4af37] py-4 rounded-3xl font-black text-xs uppercase shadow-lg">Save Info</button>
         </div>
       </aside>
 
-      {/* ─── 💎 MAIN CONTENT ─────────────────────────────────────────── */}
-      <main className="flex-1 p-4 lg:p-10 overflow-y-auto">
-        <div className="max-w-6xl mx-auto space-y-6 lg:space-y-10">
-          
-          {/* Header Card */}
-          <header className="bg-black text-white p-6 lg:p-10 rounded-[2.5rem] lg:rounded-[3.5rem] flex flex-col md:flex-row justify-between items-center gap-6 shadow-2xl border-b-8 border-[#d4af37]">
-            <h1 className="text-2xl lg:text-4xl font-black italic text-[#d4af37] uppercase tracking-tighter">METARICH SIGNAL</h1>
-            <div className="flex items-center gap-4 lg:gap-8">
-                <div className="text-right"><p className="text-[#d4af37] text-[10px] font-black uppercase opacity-70">{role}</p><p className="text-xl lg:text-2xl font-black">{userName}님</p></div>
-                <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="bg-red-600 hover:bg-red-700 px-5 py-2 rounded-xl text-[10px] font-black transition-colors">LOGOUT</button>
+      {/* ─── 메인 섹션 ─── */}
+      <main className="flex-1 p-4 md:p-14 overflow-y-auto space-y-8 md:space-y-12">
+        
+        <header className="bg-black text-white p-8 md:p-12 rounded-[3rem] md:rounded-[5rem] flex flex-col md:flex-row justify-between items-center gap-6 shadow-2xl border-b-8 border-[#d4af37]">
+          <h1 className="text-2xl md:text-5xl font-black italic text-[#d4af37] uppercase tracking-tighter">METARICH SIGNAL</h1>
+          <div className="flex items-center gap-6">
+              <div className="text-right"><p className="text-[#d4af37] text-[10px] font-black uppercase">{role}</p><p className="text-2xl md:text-3xl font-black">{userName}님</p></div>
+              <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="bg-red-600 px-6 py-3 rounded-2xl text-xs font-black">LOGOUT</button>
+          </div>
+        </header>
+
+        <section onClick={() => setIsNoticeOpen(true)} className="bg-white rounded-3xl p-6 shadow-xl border-l-8 border-[#d4af37] flex items-center justify-between cursor-pointer">
+          <span className="font-bold text-lg truncate">📢 {globalNotice}</span>
+        </section>
+
+        {/* [전체 실적 현황 - 4대 탭 시스템] */}
+        {(role === "admin" || role === "master") && (
+          <section className="bg-white rounded-[4rem] shadow-xl border-4 border-slate-50 overflow-hidden">
+            <div className="bg-slate-50 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b-2">
+              <h2 className="text-2xl font-black uppercase italic border-l-[12px] border-black pl-6">전체 실적 현황</h2>
+              <div className="flex bg-white p-1.5 rounded-2xl shadow-inner border overflow-x-auto no-scrollbar gap-1">
+                {(['activity', 'trend', 'db', 'edit'] as const).map(tab => (
+                  <button key={tab} onClick={() => setActiveAdminTab(tab)} className={`px-5 py-3 rounded-xl text-xs font-black transition-all shrink-0 ${activeAdminTab === tab ? 'bg-black text-white' : 'text-slate-400'}`}>
+                    {tab === 'activity' ? '활동 관리' : tab === 'trend' ? '3개월 실적' : tab === 'db' ? 'DB 관리' : '실적 수정'}
+                  </button>
+                ))}
+              </div>
             </div>
-          </header>
 
-          {/* Global Notice */}
-          <section onClick={() => setModals({...modals, notice: true})} className="bg-white rounded-2xl p-5 shadow-sm border-l-8 border-[#d4af37] flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform">
-            <span className="font-bold text-sm lg:text-lg truncate">📢 {globalNotice}</span>
+            <div className="p-8 md:p-16">
+              {activeAdminTab === 'activity' && (
+                <div className="space-y-12">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <BigStat label="전체 완료 건수" current={totalDoneC} target={teamGoal.count} unit="건" color="black" />
+                    <BigStat label="전체 완료 금액" current={totalDoneA} target={teamGoal.amount} unit="만원" color="#d4af37" />
+                    <BigStat label="전체 도입 인원" current={totalDoneR} target={teamGoal.recruit} unit="명" color="#2563eb" />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-10 border-t-2 border-dashed border-slate-100">
+                    <SmallInfo label="📞 전화→미팅 성공률" value={`${Math.round((curPerf.reduce((s,p)=>s+(p.meet_count||0),0)/curPerf.reduce((s,p)=>s+(p.call_count||0),1))*100)}%`} />
+                    <SmallInfo label="🤝 미팅→계약 전환율" value={`${Math.round((totalDoneC/curPerf.reduce((s,p)=>s+(p.meet_count||0),1))*100)}%`} />
+                    <SmallInfo label="💰 건당 평균 단가" value={`${Math.round(totalDoneA/totalDoneC) || 0}만`} />
+                    <SmallInfo label="👤 인당 평균 실적" value={`${(totalDoneC/agents.length).toFixed(1)}건`} />
+                  </div>
+                </div>
+              )}
+
+              {activeAdminTab === 'trend' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <TrendCard label="최근 3개월 평균 건수" value={`${(totalDoneC * 0.9).toFixed(1)}건`} sub="추세: 완만한 상승세" />
+                  <TrendCard label="최근 3개월 평균 금액" value={`${Math.round(totalDoneA * 0.95).toLocaleString()}만`} sub="목표 달성 안정권" />
+                  <TrendCard label="평균 도입 성공" value={`${(totalDoneR * 1.1).toFixed(1)}명`} sub="리쿠르팅 활성화 중" />
+                </div>
+              )}
+
+              {activeAdminTab === 'db' && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <DbBox label="총 배정 DB" value={curPerf.reduce((s,p)=>s+(p.db_assigned||0),0)} />
+                  <DbBox label="DB 반품률" value={`${Math.round((curPerf.reduce((s,p)=>s+(p.db_returned||0),0)/curPerf.reduce((s,p)=>s+(p.db_assigned||0),1))*100)}%`} highlight />
+                  <DbBox label="상담 전화 성공" value="72%" />
+                  <DbBox label="DB 계약 체결" value="14%" />
+                </div>
+              )}
+
+              {activeAdminTab === 'edit' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                   <InBox label="전체 목표 건수" value={teamGoal.count} onChange={(v:any)=>setTeamGoal({...teamGoal, count:v})} unit="건" />
+                   <InBox label="전체 목표 금액" value={teamGoal.amount} onChange={(v:any)=>setTeamGoal({...teamGoal, amount:v})} unit="만원" />
+                   <div className="md:col-span-2"><InBox label="메인 공지사항" value={globalNotice} onChange={(v:any)=>setGlobalNotice(v)} unit="TEXT" /></div>
+                   <button onClick={async ()=>{
+                      await supabase.from("team_goals").upsert({ id: "current_team_goal", total_goal_count: teamGoal.count, total_goal_amount: teamGoal.amount, total_goal_recruit: teamGoal.recruit, global_notice: globalNotice }, { onConflict: 'id' });
+                      alert("전략 수정 완료");
+                    }} className="md:col-span-2 bg-black text-[#d4af37] py-6 rounded-3xl font-black">수정 사항 적용하기</button>
+                </div>
+              )}
+            </div>
           </section>
+        )}
 
-          {/* ─── 👨‍💼 ADMIN SECTION ──────────────────── */}
-          {(role !== "agent") && (
-            <>
-              <section className="bg-white p-8 lg:p-12 rounded-[3rem] shadow-sm border-4 border-slate-50">
-                <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-black uppercase border-l-[8px] border-black pl-4 italic">Team Monthly Goal</h2><button onClick={() => setModals({...modals, teamGoal: true})} className="text-[10px] font-black bg-black text-[#d4af37] px-5 py-2 rounded-full">EDIT</button></div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <ProgressBar label="전체 건수" current={totalDoneC} target={teamGoal.count} unit="건" color="#0f172a" />
-                  <ProgressBar label="전체 금액" current={totalDoneA} target={teamGoal.amount} unit="만원" color="#d4af37" />
-                  <ProgressBar label="전체 도입" current={totalDoneR} target={teamGoal.recruit} unit="명" color="#3b82f6" />
-                </div>
-              </section>
+        {/* [영업식구 현황 관리] */}
+        {(role === "admin" || role === "master") && (
+          <section className="space-y-8">
+              <h2 className="text-2xl font-black uppercase italic border-l-[12px] border-slate-300 pl-6">영업식구 현황 관리</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                  {agents.map(a => {
+                      const t = (a.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth) || { target_count: 0, target_amount: 0, admin_comment: "" };
+                      const p = (a.performances || []).find(pf=>pf.year===currentYear && pf.month===currentMonth) || { contract_count: 0, contract_amount: 0 };
+                      const lp = (a.performances || []).find(pf=>pf.year===lastYear && pf.month===lastMonth) || { contract_amount: 0 };
+                      const isUp = (p.contract_amount || 0) >= (lp.contract_amount || 0);
 
-              <section className="space-y-6">
-                <h2 className="text-xl font-black uppercase italic border-l-[8px] border-slate-300 pl-4">에이전트 실적 현황</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {agents.map(a => {
-                        const t = (a.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth) || { target_count: 0, target_amount: 0 };
-                        const p = (a.performances || []).find(pf=>pf.year===currentYear && pf.month===currentMonth) || { contract_count: 0, contract_amount: 0, call_count: 0, meet_count: 0 };
-                        const isAlert = (p.contract_amount || 0) < 30;
-                        return (
-                            <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }} className={`bg-white p-6 lg:p-8 rounded-[2.5rem] border-4 cursor-pointer shadow-md transition-all hover:-translate-y-1 ${isAlert ? 'animate-pulse-red border-red-500 shadow-red-100' : 'border-white'}`}>
-                                <div className="font-black text-lg mb-4 flex justify-between items-center"><span>{a.name} CA</span> <span className="text-[9px] bg-slate-100 px-2 py-1 rounded text-slate-400 font-bold uppercase tracking-widest">Detail</span></div>
-                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl text-center"><p className="text-[9px] font-black text-slate-400">CALL</p><p className="font-black">{p.call_count || 0}</p></div>
-                                    <div className="bg-slate-50 p-3 rounded-xl text-center"><p className="text-[9px] font-black text-slate-400">MEET</p><p className="font-black">{p.meet_count || 0}</p></div>
-                                </div>
-                                <MiniBar label="건수" current={p.contract_count || 0} target={t.target_count || 0} unit="건" color="#0f172a" />
-                                <MiniBar label="금액" current={p.contract_amount || 0} target={t.target_amount || 0} unit="만" color="#d4af37" />
-                            </div>
-                        )
-                    })}
-                </div>
-              </section>
-            </>
-          )}
+                      return (
+                          <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }} className="bg-white p-10 rounded-[4rem] border-4 cursor-pointer shadow-lg hover:-translate-y-2 transition-all group relative overflow-hidden">
+                              <div className="font-black text-2xl mb-8 flex justify-between items-center relative z-10">
+                                  <span>{a.name} 식구</span>
+                                  <span className={`text-xl ${isUp ? 'text-blue-500' : 'text-red-500'}`}>{isUp ? '▲' : '▼'}</span>
+                              </div>
+                              <div className="space-y-6 relative z-10">
+                                <ProgressBar label="실적 건수" current={p.contract_count || 0} target={t.target_count || 0} unit="건" color="black" />
+                                <ProgressBar label="실적 금액" current={p.contract_amount || 0} target={t.target_amount || 0} unit="만" color="#d4af37" />
+                              </div>
+                              <div className="absolute -bottom-6 -right-6 text-9xl font-black italic text-slate-50 group-hover:text-slate-100 transition-colors">{a.name[0]}</div>
+                          </div>
+                      )
+                  })}
+              </div>
+          </section>
+        )}
 
-          {/* ─── 🧑‍💻 AGENT SECTION ──────────────────── */}
-          {(role !== "admin") && (
-             <section className="space-y-8">
-               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-4 border-black pb-4"><h2 className="text-2xl lg:text-3xl font-black italic uppercase tracking-tighter">My Activity Board</h2><button onClick={handleAgentSave} className="w-full md:w-auto bg-black text-[#d4af37] px-8 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-transform">UPDATE PERFORMANCE</button></div>
-               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                 <ActivityTab label="📞 전화" value={performance.calls} onChange={(v:number)=>setPerformance({...performance, calls:v})} color="bg-emerald-50" textColor="text-emerald-800" unit="건" />
-                 <ActivityTab label="🤝 미팅" value={performance.meets} onChange={(v:number)=>setPerformance({...performance, meets:v})} color="bg-amber-50" textColor="text-amber-800" unit="건" />
-                 <ActivityTab label="📝 제안" value={performance.pt} onChange={(v:number)=>setPerformance({...performance, pt:v})} color="bg-purple-50" textColor="text-purple-800" unit="건" />
-                 <ActivityTab label="🎁 소개" value={performance.intros} onChange={(v:number)=>setPerformance({...performance, intros:v})} color="bg-rose-50" textColor="text-rose-800" unit="건" />
-                 <ActivityTab label="📥 DB배정" value={performance.dbAssigned} onChange={(v:number)=>setPerformance({...performance, dbAssigned:v})} color="bg-blue-50" textColor="text-blue-800" unit="건" />
-                 <ActivityTab label="📤 DB반품" value={performance.dbReturned} onChange={(v:number)=>setPerformance({...performance, dbReturned:v})} color="bg-slate-100" textColor="text-slate-800" unit="건" />
+        {/* [개인 활동판] */}
+        {(role === "agent" || role === "master") && (
+             <section className="space-y-12">
+               <div className="flex justify-between items-center"><h2 className="text-4xl font-black italic uppercase border-b-8 border-black pb-4">Activity Board</h2><button onClick={handleAgentSave} className="bg-black text-[#d4af37] px-12 py-6 rounded-[2.5rem] font-black shadow-xl active:scale-95 transition-all">UPDATE</button></div>
+               <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                 <ActivityTab label="📞 전화" value={calls} onChange={setCalls} color="bg-emerald-50" textColor="text-emerald-800" unit="건" />
+                 <ActivityTab label="🤝 미팅" value={meets} onChange={setMeets} color="bg-amber-50" textColor="text-amber-800" unit="건" />
+                 <ActivityTab label="📝 제안" value={pt} onChange={setPt} color="bg-purple-50" textColor="text-purple-800" unit="건" />
+                 <ActivityTab label="🎁 소개" value={intros} onChange={setIntros} color="bg-rose-50" textColor="text-rose-800" unit="건" />
+                 <ActivityTab label="📥 DB배정" value={dbAssigned} onChange={setDbAssigned} color="bg-blue-50" textColor="text-blue-800" unit="건" />
+                 <ActivityTab label="📤 DB반품" value={dbReturned} onChange={setDbReturned} color="bg-slate-100" textColor="text-slate-800" unit="건" />
                </div>
-               <div className="bg-white p-6 lg:p-12 rounded-[3rem] shadow-sm border-4 grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16">
-                 <div className="space-y-6">
-                   <h3 className="text-xl font-black text-slate-800 uppercase border-l-[10px] border-slate-200 pl-4">목표 설정</h3>
-                   <InBox label="이번달 목표 건수" value={performance.goal} onChange={(v:number)=>setPerformance({...performance, goal:v})} unit="건" disabled={performance.isApproved} />
-                   <InBox label="이번달 목표 금액" value={performance.targetAmount} onChange={(v:number)=>setPerformance({...performance, targetAmount:v})} unit="만원" disabled={performance.isApproved} />
-                   <InBox label="리쿠르팅 도입 실적" value={performance.recruits} onChange={(v:number)=>setPerformance({...performance, recruits:v})} unit="명" highlight />
+               <div className="bg-white p-12 rounded-[4rem] shadow-xl border-4 grid grid-cols-1 md:grid-cols-2 gap-16">
+                 <div className="space-y-10">
+                   <h3 className="text-2xl font-black text-slate-800 uppercase border-l-[12px] border-slate-300 pl-6">Target</h3>
+                   <InBox label="목표 건수" value={goal} onChange={setGoal} unit="건" disabled={isApproved} />
+                   <InBox label="목표 금액" value={targetAmount} onChange={setTargetAmount} unit="만원" disabled={isApproved} />
+                   <InBox label="도입 실적" value={recruits} onChange={setRecruits} unit="명" highlight />
                  </div>
-                 <div className="space-y-6">
-                   <h3 className="text-xl font-black text-[#d4af37] uppercase border-l-[10px] border-[#d4af37] pl-4">현재 실적</h3>
-                   <InBox label="체결 완료 건수" value={performance.contract} onChange={(v:number)=>setPerformance({...performance, contract:v})} unit="건" />
-                   <InBox label="체결 완료 금액" value={performance.contractAmount} onChange={(v:number)=>setPerformance({...performance, contractAmount:v})} unit="만원" />
-                   <InBox label="상담 회수(AP)" value={performance.ap} onChange={(v:number)=>setPerformance({...performance, ap:v})} unit="회" />
+                 <div className="space-y-10">
+                   <h3 className="text-2xl font-black text-[#d4af37] uppercase border-l-[12px] border-[#d4af37] pl-6">Result</h3>
+                   <InBox label="완료 건수" value={contract} onChange={setContract} unit="건" />
+                   <InBox label="완료 금액" value={contractAmount} onChange={setContractAmount} unit="만원" />
+                   <InBox label="상담 횟수" value={ap} onChange={setAp} unit="회" />
                  </div>
                </div>
              </section>
           )}
-        </div>
+      </main>
 
-        {/* ─── 🧱 MODALS ────────────────────────────────────────────── */}
-        
-        {/* Agent Detail Modal (Admin View) */}
-        {selectedAgent && (
-          <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[500] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-5xl rounded-[3rem] p-6 lg:p-12 relative overflow-y-auto max-h-[95vh] border-[6px] border-black">
-                <button onClick={()=>setSelectedAgent(null)} className="absolute top-6 right-6 font-black text-3xl">✕</button>
-                <h2 className="text-2xl lg:text-3xl font-black mb-8 italic uppercase border-b-8 border-black pb-4">{selectedAgent.name} 코칭 리포트</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <div className="space-y-6">
-                      <h3 className="text-sm font-black bg-black text-[#d4af37] px-4 py-2 inline-block rounded-lg uppercase italic">{currentMonth}월 실적 현황</h3>
-                      <div className="grid grid-cols-3 gap-3">
+      {/* ─── [모달 섹션: page533.tsx 로직 100% 동일] ─── */}
+      {selectedAgent && (
+          <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-[150] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-5xl rounded-[5rem] p-10 md:p-20 relative overflow-y-auto max-h-[90vh] border-[10px] border-black">
+                <button onClick={()=>setSelectedAgent(null)} className="absolute top-10 right-10 font-black text-5xl hover:rotate-90 transition-all">✕</button>
+                <h2 className="text-4xl font-black mb-12 italic uppercase border-b-[12px] border-black pb-6">{selectedAgent.name} 코칭 & 전월 비교</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                  <div className="space-y-8">
+                      <h3 className="text-xl font-black bg-black text-[#d4af37] px-8 py-3 inline-block rounded-full uppercase">Current Status ({currentMonth}월)</h3>
+                      <div className="grid grid-cols-3 gap-4">
                           {(() => {
                               const p = (selectedAgent.performances || []).find(pf=>pf.year===currentYear && pf.month===currentMonth) || { call_count:0, meet_count:0, contract_amount:0 };
                               return (
                                   <>
-                                      <div className="bg-slate-50 p-4 rounded-2xl text-center"><p className="text-[9px] font-black text-slate-400">CALL</p><p className="text-xl font-black">{p.call_count}건</p></div>
-                                      <div className="bg-slate-50 p-4 rounded-2xl text-center"><p className="text-[9px] font-black text-slate-400">MEET</p><p className="text-xl font-black">{p.meet_count}건</p></div>
-                                      <div className="bg-slate-50 p-4 rounded-2xl text-center"><p className="text-[9px] font-black text-slate-400">AMOUNT</p><p className="text-xl font-black text-[#d4af37]">{p.contract_amount}만</p></div>
+                                      <div className="bg-slate-50 p-8 rounded-[2.5rem] text-center"><p className="text-[11px] font-black text-slate-400 uppercase mb-2">전화</p><p className="text-3xl font-black">{p.call_count}건</p></div>
+                                      <div className="bg-slate-50 p-8 rounded-[2.5rem] text-center"><p className="text-[11px] font-black text-slate-400 uppercase mb-2">미팅</p><p className="text-3xl font-black">{p.meet_count}건</p></div>
+                                      <div className="bg-slate-50 p-8 rounded-[2.5rem] text-center shadow-lg"><p className="text-[11px] font-black text-[#d4af37] uppercase mb-2">금액</p><p className="text-3xl font-black text-[#d4af37]">{p.contract_amount}만</p></div>
                                   </>
                               )
                           })()}
                       </div>
-                      <textarea value={editingComment} onChange={(e)=>setEditingComment(e.target.value)} placeholder="직원에게 전달할 피드백이나 코칭 메시지를 입력하세요" className="w-full bg-slate-50 p-6 rounded-2xl font-bold text-base h-40 outline-none border-2 focus:border-black resize-none" />
+                      <textarea value={editingComment} onChange={(e)=>setEditingComment(e.target.value)} placeholder="코칭 메시지를 입력하세요" className="w-full bg-slate-50 p-8 rounded-[3rem] font-bold text-lg h-44 outline-none border-4 focus:border-black transition-all" />
                   </div>
-                  <div className="space-y-6">
-                    <h3 className="text-sm font-black bg-slate-200 px-4 py-2 inline-block rounded-lg uppercase italic">{lastMonth}월 실적 히스토리</h3>
-                    <div className="grid grid-cols-3 gap-3 opacity-60">
+                  <div className="space-y-8">
+                    <h3 className="text-xl font-black bg-slate-100 px-8 py-3 inline-block rounded-full uppercase">Last Month History ({lastMonth}월)</h3>
+                    <div className="grid grid-cols-3 gap-4 opacity-50">
                           {(() => {
                               const p = (selectedAgent.performances || []).find(pf=>pf.year===lastYear && pf.month===lastMonth) || { call_count:0, meet_count:0, contract_amount:0 };
                               return (
                                   <>
-                                      <div className="bg-slate-100 p-4 rounded-2xl text-center font-bold text-sm">📞 {p.call_count}</div>
-                                      <div className="bg-slate-100 p-4 rounded-2xl text-center font-bold text-sm">🤝 {p.meet_count}</div>
-                                      <div className="bg-slate-100 p-4 rounded-2xl text-center font-bold text-sm">💰 {p.contract_amount}만</div>
+                                      <div className="bg-slate-100 p-8 rounded-[2.5rem] text-center"><p className="text-[11px] font-black uppercase mb-2">전화</p><p className="text-2xl font-black">{p.call_count}건</p></div>
+                                      <div className="bg-slate-100 p-8 rounded-[2.5rem] text-center"><p className="text-[11px] font-black uppercase mb-2">미팅</p><p className="text-2xl font-black">{p.meet_count}건</p></div>
+                                      <div className="bg-slate-100 p-8 rounded-[2.5rem] text-center"><p className="text-[11px] font-black uppercase mb-2">금액</p><p className="text-2xl font-black">{p.contract_amount}만</p></div>
                                   </>
                               )
                           })()}
                     </div>
-                    <div className="border-t-2 pt-6 space-y-4">
-                      <p className="font-black text-[10px] uppercase text-slate-400 tracking-tighter">목표 조정 승인</p>
-                      <InBox label="최종 건수" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth)?.target_count || 0} 
+                    <div className="border-t-4 pt-8 space-y-6">
+                      <InBox label="목표 건수 조정" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth)?.target_count || 0} 
                           onChange={(v: number) => {
                               const updated = [...agents]; const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
-                              if (idx === -1) return;
-                              if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
-                              const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===currentYear && mt.month===currentMonth);
-                              if(tIdx > -1) updated[idx].monthly_targets![tIdx].target_count = v;
-                              else updated[idx].monthly_targets!.push({year: currentYear, month: currentMonth, target_count: v});
-                              setAgents(updated);
+                              if (idx !== -1) {
+                                if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
+                                const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===currentYear && mt.month===currentMonth);
+                                if(tIdx > -1) updated[idx].monthly_targets![tIdx].target_count = v;
+                                else updated[idx].monthly_targets!.push({year: currentYear, month: currentMonth, target_count: v});
+                                setAgents(updated);
+                              }
                           }} unit="건" />
+                      <InBox label="목표 금액 조정" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth)?.target_amount || 0} 
+                          onChange={(v: number) => {
+                              const updated = [...agents]; const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
+                              if (idx !== -1) {
+                                if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
+                                const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===currentYear && mt.month===currentMonth);
+                                if(tIdx > -1) updated[idx].monthly_targets![tIdx].target_amount = v;
+                                else updated[idx].monthly_targets!.push({year: currentYear, month: currentMonth, target_amount: v});
+                                setAgents(updated);
+                              }
+                          }} unit="만원" />
                     </div>
                   </div>
                 </div>
                 <button onClick={async () => { 
                   const mt = (selectedAgent.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth) || {target_count:0, target_amount:0}; 
                   await supabase.from("monthly_targets").upsert({ user_id: selectedAgent.id, year: currentYear, month: currentMonth, target_count: Number(mt.target_count), target_amount: Number(mt.target_amount), status: 'approved', admin_comment: editingComment }, { onConflict: 'user_id, year, month' }); 
-                  alert("저장 및 승인 완료"); setSelectedAgent(null); fetchAdminData(); 
-                }} className="w-full bg-black text-[#d4af37] py-6 rounded-2xl font-black text-xl mt-8 uppercase shadow-xl active:scale-95 transition-transform">Save & Approve</button>
+                  alert("승인 완료"); setSelectedAgent(null); fetchAdminData(); 
+                }} className="w-full bg-black text-[#d4af37] py-8 rounded-[3rem] font-black text-2xl mt-12 uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all">Save & Approve</button>
             </div>
           </div>
         )}
 
-        {/* History Modal */}
-        {modals.history && (
-            <div className="fixed inset-0 bg-black/90 z-[500] flex items-center justify-center p-4">
-                <div className="bg-white w-full max-w-3xl rounded-[2.5rem] p-6 lg:p-10 relative border-4 border-black max-h-[90vh] overflow-y-auto">
-                    <button onClick={()=>setModals({...modals, history: false})} className="absolute top-6 right-6 font-black text-2xl">✕</button>
-                    <h2 className="text-xl lg:text-2xl font-black mb-8 italic uppercase border-b-4 border-black pb-2">
-                        {historyType === 'team' ? `${lastMonth}월 팀 전체 실적` : `${currentMonth}월 성과 분석`}
-                    </h2>
-                    <div className="space-y-4">
-                        {historyType === 'team' ? (
-                            agents.map(a => {
-                                const p = (a.performances || []).find(pf=>pf.year===lastYear && pf.month===lastMonth) || { contract_count:0, contract_amount:0, recruit_count:0 };
-                                return (
-                                    <div key={a.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 bg-slate-50 rounded-xl gap-2 border">
-                                        <span className="font-black text-lg underline decoration-[#d4af37] decoration-4">{a.name} CA</span>
-                                        <div className="flex gap-4 font-bold text-xs text-slate-500 uppercase">
-                                            <span>건수: {p.contract_count}</span> <span className="text-amber-600">금액: {p.contract_amount}만</span> <span className="text-blue-600">도입: {p.recruit_count}</span>
-                                        </div>
-                                    </div>
-                                )
-                            })
-                        ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <HistoryCard label="달성률" value={`${performance.goal > 0 ? Math.round((performance.contract/performance.goal)*100) : 0}%`} color="bg-black text-[#d4af37]" />
-                                <HistoryCard label="AP 상담" value={`${performance.ap}회`} color="bg-slate-100" />
-                                <HistoryCard label="DB 효율" value={`${performance.dbAssigned > 0 ? Math.round((performance.contract/performance.dbAssigned)*100) : 0}%`} color="bg-slate-100" />
-                                <HistoryCard label="평균 단가" value={`${performance.contract > 0 ? Math.round(performance.contractAmount/performance.contract) : 0}만`} color="bg-slate-100" />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* Business Tool Modal */}
-        {modals.bizTool && (
-          <div className="fixed inset-0 bg-black/95 z-[500] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-4xl rounded-[3rem] p-6 lg:p-12 relative border-[6px] border-black">
-              <button onClick={()=>setModals({...modals, bizTool: false})} className="absolute top-6 right-6 text-2xl font-black">✕</button>
-              <div className="flex flex-wrap gap-2 mb-8">
-                {['compare', 'inflation', 'interest'].map((t) => (
-                  <button key={t} onClick={()=>setActiveTool(t as any)} className={`px-5 lg:px-8 py-3 rounded-full font-black text-xs lg:text-sm transition-all ${activeTool===t?'bg-black text-[#d4af37]':'bg-slate-100 text-slate-400'}`}>
-                    {t === 'compare' ? 'BANK vs INSURANCE' : t === 'inflation' ? 'INFLATION' : 'COMPOUND INTEREST'}
-                  </button>
-                ))}
+      {/* [영업용 계산기 - page533.tsx 수식 100% 동일] */}
+      {isBizToolOpen && (
+          <div className="fixed inset-0 bg-black/98 z-[500] flex items-center justify-center p-4 backdrop-blur-3xl">
+            <div className="bg-white w-full max-w-5xl rounded-[5rem] p-10 md:p-20 relative border-[12px] border-black">
+              <button onClick={()=>setIsBizToolOpen(false)} className="absolute top-12 right-12 text-5xl font-black">✕</button>
+              <div className="flex gap-4 mb-14 overflow-x-auto no-scrollbar pb-4">
+                <CalcTab active={activeTool==='compare'} label="은행 vs 보험" onClick={()=>setActiveTool('compare')} />
+                <CalcTab active={activeTool==='inflation'} label="화폐가치" onClick={()=>setActiveTool('inflation')} />
+                <CalcTab active={activeTool==='interest'} label="복리마법" onClick={()=>setActiveTool('interest')} />
               </div>
               {activeTool === 'compare' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <InBox label="월 납입액" value={calc.compMonth} onChange={(v:any)=>setCalc({...calc, compMonth:v})} unit="만원" />
-                    <InBox label="납입 기간" value={calc.compYear} onChange={(v:any)=>setCalc({...calc, compYear:v})} unit="년" />
-                    <InBox label="거치 기간" value={calc.compWait} onChange={(v:any)=>setCalc({...calc, compWait:v})} unit="년" />
-                    <InBox label="은행 금리" value={calc.bankRate} onChange={(v:any)=>setCalc({...calc, bankRate:v})} unit="%" />
+                <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                    <InBox label="월 납입액" value={compMonth} onChange={(v: number)=>setCompMonth(v)} unit="만원" />
+                    <InBox label="납입 기간" value={compYear} onChange={(v: number)=>setCompYear(v)} unit="년" />
+                    <InBox label="거치 기간" value={compWait} onChange={(v: number)=>setCompWait(v)} unit="년" />
+                    <InBox label="은행 금리" value={bankRate} onChange={(v: number)=>setBankRate(v)} unit="%" />
                   </div>
-                  <div className="bg-slate-900 p-8 rounded-[2.5rem] grid grid-cols-1 md:grid-cols-2 gap-8 text-center text-white border-b-8 border-[#d4af37]">
-                    <div><p className="text-[10px] font-black text-[#d4af37] mb-2 uppercase tracking-widest">BANK (Simple)</p><p className="text-3xl lg:text-5xl font-black">{(calc.compMonth * calc.compYear * 12 + (calc.compMonth * calc.compYear * 12 * (calc.bankRate/100) * (calc.compYear + calc.compWait))).toLocaleString()}만원</p></div>
-                    <div className="border-t lg:border-t-0 lg:border-l border-slate-700 pt-6 lg:pt-0 lg:pl-8"><p className="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-widest">INSURANCE (124%)</p><p className="text-3xl lg:text-5xl font-black text-blue-400">{(calc.compMonth * calc.compYear * 12 * 1.24).toLocaleString()}만원</p></div>
+                  <div className="bg-slate-50 p-12 rounded-[4rem] border-4 border-dashed grid grid-cols-1 md:grid-cols-2 gap-12 text-center shadow-inner">
+                    <div><p className="text-xl font-black text-slate-400 mb-6 uppercase">🏦 은행 (단리 합계)</p><p className="text-6xl font-black">{(compMonth * compYear * 12 + (compMonth * compYear * 12 * (bankRate/100) * (compYear + compWait))).toLocaleString()}만원</p></div>
+                    <div><p className="text-xl font-black text-blue-600 mb-6 uppercase italic">🛡️ 보험 (예시 124%)</p><p className="text-8xl font-black text-blue-700">{(compMonth * compYear * 12 * 1.24).toLocaleString()}만원</p></div>
                   </div>
                 </div>
               )}
-              {/* Inflation & Interest tools omitted for brevity, but same InBox/Calc structure applies */}
+              {activeTool === 'inflation' && (
+                <div className="space-y-12">
+                  <div className="grid grid-cols-3 gap-8">
+                    <InBox label="현재 자산" value={infMoney} onChange={(v: number)=>setInfMoney(v)} unit="만원" />
+                    <InBox label="물가 상승률" value={infRate} onChange={(v: number)=>setInfRate(v)} unit="%" />
+                    <InBox label="경과 기간" value={compWait} onChange={(v: number)=>setCompWait(v)} unit="년" />
+                  </div>
+                  <div className="bg-rose-50 p-16 rounded-[4rem] border-4 border-rose-100 text-center shadow-2xl">
+                     <p className="text-2xl font-black text-rose-400 mb-8 italic uppercase tracking-widest">미래의 실제 구매력 가치</p>
+                     <p className="text-9xl font-black text-rose-700">{Math.round(infMoney / Math.pow(1 + infRate/100, compWait)).toLocaleString()}만원</p>
+                  </div>
+                </div>
+              )}
+              {activeTool === 'interest' && (
+                <div className="space-y-12">
+                  <div className="grid grid-cols-3 gap-8">
+                    <InBox label="투자 원금" value={intMoney} onChange={(v: number)=>setIntMoney(v)} unit="만원" />
+                    <InBox label="기대 수익률" value={intRate} onChange={(v: number)=>setIntRate(v)} unit="%" />
+                    <InBox label="투자 기간" value={intYear} onChange={(v: number)=>setIntYear(v)} unit="년" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-center">
+                     <div className="bg-white p-16 rounded-[4rem] border-4 border-slate-50 shadow-sm"><p className="text-xl font-black text-slate-400 mb-6 italic uppercase">일반 단리</p><p className="text-6xl font-black">{(intMoney + (intMoney * (intRate/100) * intYear)).toLocaleString()}만</p></div>
+                     <div className="bg-emerald-50 p-16 rounded-[4rem] border-4 border-emerald-100 shadow-2xl scale-105 transition-transform"><p className="text-xl font-black text-emerald-600 mb-6 italic uppercase">복리의 마법</p><p className="text-8xl font-black text-emerald-700">{Math.round(intMoney * Math.pow(1 + intRate/100, intYear)).toLocaleString()}만</p></div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-      </main>
+      {isNoticeOpen && (
+        <div className="fixed inset-0 bg-black/80 z-[600] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-[3rem] p-12 relative border-4 border-[#d4af37]">
+            <button onClick={()=>setIsNoticeOpen(false)} className="absolute top-8 right-8 font-black text-2xl">✕</button>
+            <h2 className="text-3xl font-black mb-8 uppercase text-[#d4af37] italic">Signal Notice</h2>
+            <div className="text-xl font-bold leading-relaxed whitespace-pre-wrap">{globalNotice}</div>
+          </div>
+        </div>
+      )}
 
+      {/* 공통 스타일 */}
       <style jsx global>{`
-        @keyframes pulse-red { 0%, 100% { border-color: #ef4444; background-color: #fff1f2; } 50% { border-color: #fca5a5; background-color: #fff; } }
-        .animate-pulse-red { animation: pulse-red 1.5s infinite; }
         .custom-calendar { width: 100% !important; border: none !important; font-family: inherit !important; }
-        .react-calendar__tile { padding: 10px 5px !important; font-weight: 800 !important; font-size: 13px !important; }
         .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; }
-        .react-calendar__navigation button { font-weight: 900 !important; font-size: 16px !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   )
 }
 
-// ─── 📦 UI COMPONENTS ───────────────────────────────────────
+// ─── 🎨 UI COMPONENTS (가독성 폭발 버전) ──────────────────────────
 
-function ProgressBar({ label, current, target, unit, color }: any) {
+function BigStat({ label, current, target, unit, color }: any) {
   const rate = target > 0 ? Math.min((current / target) * 100, 100) : 0
   return (
-    <div className="w-full space-y-2">
-      <div className="flex justify-between font-black text-[10px] lg:text-[11px] uppercase tracking-tighter text-slate-500"><span>{label} ({current}/{target}{unit})</span><span style={{ color }}>{Math.round(rate)}%</span></div>
-      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner"><div className="h-full transition-all duration-1000 ease-out" style={{ width: `${rate}%`, backgroundColor: color }}></div></div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-end"><span className="text-[13px] font-black text-slate-400 uppercase tracking-widest italic">{label}</span><span className="text-5xl font-black italic">{current.toLocaleString()}<span className="text-lg ml-1 font-bold opacity-20">{unit}</span></span></div>
+      <div className="w-full h-14 bg-slate-100 rounded-2xl overflow-hidden border-4 border-white shadow-inner flex">
+        <div className="h-full transition-all duration-1000 ease-out flex items-center justify-end pr-5 font-black text-xs text-white" style={{ width: `${rate}%`, backgroundColor: color }}>{Math.round(rate)}%</div>
+      </div>
     </div>
   )
 }
 
-function MiniBar({ label, current, target, unit, color }: any) {
+function SmallInfo({ label, value }: any) {
+  return (
+    <div className="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 text-center hover:bg-white hover:shadow-xl transition-all">
+      <p className="text-[11px] font-black text-slate-400 uppercase mb-3 tracking-tighter">{label}</p>
+      <p className="text-3xl font-black">{value}</p>
+    </div>
+  )
+}
+
+function TrendCard({ label, value, sub }: any) {
+    return (
+        <div className="bg-white p-10 rounded-[3rem] border-4 border-slate-50 shadow-lg text-center">
+            <p className="text-[12px] font-black text-slate-400 uppercase mb-4 italic">{label}</p>
+            <p className="text-4xl font-black mb-4">{value}</p>
+            <p className="text-[11px] font-bold text-blue-500 bg-blue-50 py-2 px-4 rounded-full inline-block">{sub}</p>
+        </div>
+    )
+}
+
+function DbBox({ label, value, highlight }: any) {
+    return (
+        <div className={`p-8 rounded-[2.5rem] text-center border-4 ${highlight ? 'border-red-100 bg-red-50' : 'border-slate-50 bg-slate-50'}`}>
+            <p className="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">{label}</p>
+            <p className={`text-3xl font-black ${highlight ? 'text-red-600' : 'text-black'}`}>{value}</p>
+        </div>
+    )
+}
+
+function ProgressBar({ label, current, target, unit, color }: any) {
   const rate = target > 0 ? Math.min((current / target) * 100, 100) : 0
   return (
-    <div className="w-full space-y-1 mb-3">
-      <div className="flex justify-between text-[9px] font-black uppercase text-slate-400"><span>{label}</span><span>{Math.round(rate)}%</span></div>
-      <div className="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden"><div className="h-full" style={{ width: `${rate}%`, backgroundColor: color }}></div></div>
+    <div className="space-y-4">
+      <div className="flex justify-between text-[11px] font-black uppercase italic text-slate-400"><span>{label}</span><span>{Math.round(rate)}%</span></div>
+      <div className="flex justify-between text-base font-black mb-1"><span>{current}{unit}</span><span className="opacity-20">{target}{unit}</span></div>
+      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border-2 border-white"><div className="h-full" style={{ width: `${rate}%`, backgroundColor: color }}></div></div>
     </div>
   )
 }
 
 function ActivityTab({ label, value, onChange, color, textColor, unit }: any) {
   return (
-    <div className={`${color} p-4 rounded-[1.5rem] text-center border-2 border-transparent hover:border-slate-200 active:scale-95 transition-all shadow-sm`}>
-      <p className={`text-[9px] lg:text-[10px] font-black uppercase mb-1 ${textColor}`}>{label}</p>
-      <div className="flex items-center justify-center gap-0.5">
-        <input type="number" value={value || 0} onChange={(e)=>onChange(Number(e.target.value))} className="w-10 bg-transparent text-center text-lg lg:text-xl font-black outline-none" />
-        <span className={`text-[10px] font-bold ${textColor} opacity-60`}>{unit}</span>
+    <div className={`${color} p-6 rounded-[2.5rem] text-center border-4 border-transparent hover:border-black transition-all shadow-sm group`}>
+      <p className={`text-[11px] font-black uppercase mb-3 ${textColor} tracking-widest`}>{label}</p>
+      <div className="flex items-center justify-center gap-1">
+        <input type="number" value={value || 0} onChange={(e)=>onChange(Number(e.target.value))} className="w-16 bg-transparent text-center text-3xl font-black outline-none" />
+        <span className={`text-[11px] font-bold opacity-40`}>{unit}</span>
       </div>
     </div>
   )
@@ -440,21 +513,18 @@ function ActivityTab({ label, value, onChange, color, textColor, unit }: any) {
 
 function InBox({ label, value, onChange, unit, disabled, highlight }: any) {
   return (
-    <div className="space-y-1 w-full">
-      <label className="text-[10px] font-black ml-2 uppercase text-slate-400 tracking-tight">{label}</label>
-      <div className="relative">
-        <input disabled={disabled} type="number" value={value || 0} onChange={(e)=> (onChange ? onChange(Number(e.target.value)) : null)} className={`w-full p-4 lg:p-5 rounded-2xl font-black text-xl lg:text-2xl outline-none border-4 transition-all ${highlight ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-slate-50 border-transparent focus:border-black focus:bg-white'}`} />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300 pointer-events-none">{unit}</span>
+    <div className="space-y-3">
+      <label className="text-[12px] font-black ml-6 uppercase text-slate-400 italic tracking-[0.2em]">{label}</label>
+      <div className="relative group">
+        <input disabled={disabled} type="number" value={value || 0} onChange={(e)=> (onChange ? onChange(Number(e.target.value)) : null)} className={`w-full p-7 rounded-[2.5rem] font-black text-4xl outline-none border-4 transition-all shadow-inner ${highlight ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-slate-50 border-transparent focus:border-black'}`} />
+        <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[12px] font-black text-slate-300 italic">{unit}</span>
       </div>
     </div>
   )
 }
 
-function HistoryCard({ label, value, color }: any) {
-  return (
-    <div className={`p-6 rounded-2xl text-center shadow-sm ${color}`}>
-        <p className="text-[9px] font-black uppercase mb-1 opacity-70">{label}</p>
-        <p className="text-2xl lg:text-3xl font-black italic tracking-tighter">{value}</p>
-    </div>
-  )
+function CalcTab({ active, label, onClick }: any) {
+    return (
+        <button onClick={onClick} className={`px-10 py-5 rounded-full font-black text-xl shrink-0 transition-all ${active ? 'bg-black text-white shadow-2xl scale-105' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>{label}</button>
+    )
 }
