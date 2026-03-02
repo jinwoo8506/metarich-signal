@@ -224,15 +224,19 @@ export default function DashboardPage() {
           {(role === "admin" || role === "master") && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
                 {agents.map(a => {
-                    const t = (a.monthly_targets || []).find(mt=>mt.year===year && mt.month===month) || {};
-                    const p = (a.performances || []).find(pf=>pf.year===year && pf.month===month) || {};
-                    return (
-                        <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }} className={`bg-white p-10 rounded-[3rem] border-4 cursor-pointer shadow-lg ${getAlertStyle(a)}`}>
-                            <div className="font-black text-xl mb-6">{a.name} CA</div>
-                            <MiniBar label="건수" current={p.contract_count || 0} target={t.target_count || 0} unit="건" color="black" />
-                            <MiniBar label="금액" current={p.contract_amount || 0} target={t.target_amount || 0} unit="만" color="#d4af37" />
-                        </div>
-                    )
+                    {agents.map(a => {
+    // 🛡️ 찾지 못했을 때 빈 객체 {} 대신, 필요한 모든 속성이 0이나 빈 값으로 정의된 객체를 부여합니다.
+    const t = (a.monthly_targets || []).find(mt => mt.year === year && mt.month === month) || { target_count: 0, target_amount: 0, admin_comment: "" };
+    const p = (a.performances || []).find(pf => pf.year === year && pf.month === month) || { contract_count: 0, contract_amount: 0 };
+
+    return (
+        <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }} className={`bg-white p-10 rounded-[3rem] border-4 cursor-pointer shadow-lg ${getAlertStyle(a)}`}>
+            <div className="font-black text-xl mb-6">{a.name} CA</div>
+            <MiniBar label="건수" current={p.contract_count || 0} target={t.target_count || 0} unit="건" color="black" />
+            <MiniBar label="금액" current={p.contract_amount || 0} target={t.target_amount || 0} unit="만" color="#d4af37" />
+        </div>
+    )
+})}
                 })}
             </div>
           )}
