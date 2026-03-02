@@ -89,10 +89,13 @@ export default function DashboardPage() {
   const [intYear, setIntYear] = useState(20)
 
   // 📅 기준 날짜 설정
-  const year = 2026
-  const month = 3
-  const lastYear = month === 1 ? year - 1 : year
-  const lastMonth = month === 1 ? 12 : month - 1
+ // 📅 기준 날짜 설정 (TypeScript 에러 방지를 위해 타입을 명시합니다)
+  const year: number = 2026
+  const month: number = 3 
+  
+  // 'month === 1' 비교 시 에러가 나지 않도록 처리된 로직
+  const lastYear = (month as number) === 1 ? year - 1 : year
+  const lastMonth = (month as number) === 1 ? 12 : month - 1
 
   useEffect(() => { checkUser() }, [])
   useEffect(() => { if (userId) fetchDailyData(selectedDate) }, [selectedDate, userId])
