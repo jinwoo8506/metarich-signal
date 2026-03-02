@@ -54,15 +54,17 @@ export default function DashboardPage() {
   const [dbReturned, setDbReturned] = useState(0)
   const [isApproved, setIsApproved] = useState(false)
 
-  // 관리자 및 계산기 상태
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
+  // 계산기 상태
   const [isBizToolOpen, setIsBizToolOpen] = useState(false)
   const [activeTool, setActiveTool] = useState<'compare' | 'inflation' | 'interest'>('compare')
   const [calc, setCalc] = useState({
     compMonth: 50, compYear: 5, compWait: 5, bankRate: 2,
     infMoney: 100, infRate: 3, intMoney: 1000, intRate: 5, intYear: 20
   })
+
+  // 관리자 데이터
+  const [agents, setAgents] = useState<Agent[]>([])
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
 
   const currentYear = selectedDate.getFullYear()
   const currentMonth = selectedDate.getMonth() + 1
@@ -72,7 +74,7 @@ export default function DashboardPage() {
   useEffect(() => { checkUser() }, [])
   useEffect(() => { if (userId) fetchDailyData(selectedDate) }, [selectedDate, userId])
 
-  // 뒤로가기 종료 방지
+  // 뒤로가기 종료 방지 로직
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     const handlePopState = () => {
@@ -126,11 +128,9 @@ export default function DashboardPage() {
     const payloadT = { user_id: userId, year: currentYear, month: currentMonth, target_count: Number(goal), target_amount: Number(targetAmount), status: isApproved ? 'approved' : 'pending' }
     const payloadP = { user_id: userId, year: currentYear, month: currentMonth, ap: Number(ap), pt: Number(pt), contract_count: Number(contract), contract_amount: Number(contractAmount), call_count: Number(calls), meet_count: Number(meets), intro_count: Number(intros), recruit_count: Number(recruits), db_assigned: Number(dbAssigned), db_returned: Number(dbReturned) }
     
-    const { error: err1 } = await supabase.from("monthly_targets").upsert(payloadT, { onConflict: 'user_id, year, month' })
-    const { error: err2 } = await supabase.from("performances").upsert(payloadP, { onConflict: 'user_id, year, month' })
-    
-    if (err1 || err2) alert("저장 중 오류가 발생했습니다.")
-    else alert("성공적으로 업데이트되었습니다.")
+    await supabase.from("monthly_targets").upsert(payloadT, { onConflict: 'user_id, year, month' })
+    await supabase.from("performances").upsert(payloadP, { onConflict: 'user_id, year, month' })
+    alert("성공적으로 업데이트되었습니다.")
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-300 italic animate-pulse">SIGNAL LOADING...</div>
@@ -143,17 +143,18 @@ export default function DashboardPage() {
         <h1 className="text-xl font-black italic tracking-tighter">SIGNAL</h1>
         <div className="flex gap-2">
             <button onClick={() => setIsBizToolOpen(true)} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase">Biz Tool</button>
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="bg-black text-[#d4af37] px-3 py-2 rounded-xl text-[10px] font-black uppercase">Menu</button>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="bg-black text-[#d4af37] px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Menu</button>
         </div>
       </div>
 
-      {/* ─── 📟 사이드바 (달력 모바일 제거) ─────────────────── */}
+      {/* ─── 📟 사이드바 (모바일 달력 제거) ─────────────────── */}
       <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative inset-y-0 left-0 w-80 bg-white border-r z-[110] transition-transform duration-300 p-6 flex flex-col gap-6 overflow-y-auto shadow-2xl lg:shadow-none`}>
         <div className="flex justify-between items-center">
             <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase">History</h2>
             <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-2xl">✕</button>
         </div>
         
+        {/* 데스크탑 전용 달력 */}
         <div className="hidden lg:block border rounded-3xl overflow-hidden shadow-inner bg-slate-50 p-2 scale-90 origin-top">
             <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} calendarType="gregory" className="border-0 w-full bg-transparent" />
         </div>
@@ -161,14 +162,14 @@ export default function DashboardPage() {
         <div className="space-y-4">
             <MemoBox label="ADMIN NOTICE" value={dailySpecialNote} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>setDailySpecialNote(e.target.value)} readOnly={role === 'agent'} color="bg-blue-50" />
             <MemoBox label="PERSONAL MEMO" value={personalMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>setPersonalMemo(e.target.value)} color="bg-slate-50" />
-            <button onClick={handleAgentSave} className="w-full bg-black text-[#d4af37] py-5 rounded-[1.5rem] font-black text-sm uppercase shadow-xl active:scale-95 transition-all">Update Signal</button>
+            <button onClick={handleAgentSave} className="w-full bg-black text-[#d4af37] py-5 rounded-[1.5rem] font-black text-sm uppercase shadow-xl active:scale-95 transition-all tracking-widest">Update Signal</button>
         </div>
       </aside>
 
       {/* ─── 💎 메인 섹션 ─────────────────────────────────────────── */}
       <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-x-hidden">
         
-        {/* 상단 퀵 링크 버튼 */}
+        {/* 🔗 상단 퀵 링크 버튼 */}
         <section className="max-w-6xl mx-auto grid grid-cols-3 gap-2 lg:gap-4">
             <QuickLink label="메타온" href="https://metaon.metarich.co.kr" />
             <QuickLink label="보험사" href="#" onClick={() => alert('보험사 링크 준비 중')} />
@@ -178,13 +179,13 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto space-y-8">
           <header className="bg-white p-6 lg:p-10 rounded-[2.5rem] shadow-sm border flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{userName} CA Status</p>
-              <h1 className="text-2xl lg:text-3xl font-black">{currentMonth}월 실적 대시보드</h1>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{userName} CA Dashboard</p>
+              <h1 className="text-2xl lg:text-3xl font-black">{currentMonth}월 실적 현황</h1>
             </div>
             <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="px-5 py-2.5 border rounded-2xl text-[10px] font-black text-slate-400 hover:text-red-500 transition-all uppercase">Logout</button>
           </header>
 
-          {/* 직원용 활동 입력 보드 */}
+          {/* 직원 전용 화면 */}
           {(role === "agent" || role === "master") && (
             <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -197,29 +198,29 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <section className="bg-white p-8 lg:p-12 rounded-[3.5rem] border shadow-sm space-y-6">
-                  <h3 className="text-lg font-black italic border-l-8 border-black pl-4 uppercase">Target</h3>
+                <section className="bg-white p-8 lg:p-12 rounded-[3rem] border shadow-sm space-y-6">
+                  <h3 className="text-lg font-black italic border-l-8 border-black pl-4 uppercase">Target Settings</h3>
                   <InputCard label="목표 건수" val={goal} set={setGoal} unit="건" disabled={isApproved} />
                   <InputCard label="목표 금액" val={targetAmount} set={setTargetAmount} unit="만" disabled={isApproved} />
                   <InputCard label="도입 실적" val={recruits} set={setRecruits} unit="명" isSpecial />
                 </section>
-                <section className="bg-white p-8 lg:p-12 rounded-[3.5rem] border shadow-sm space-y-6">
-                  <h3 className="text-lg font-black italic border-l-8 border-[#d4af37] pl-4 uppercase">Result</h3>
-                  <InputCard label="체결 건수" val={contract} set={setContract} unit="건" isDark />
-                  <InputCard label="체결 금액" val={contractAmount} set={setContractAmount} unit="만" isDark />
-                  <InputCard label="상담 AP" val={ap} set={setAp} unit="회" isDark />
+                <section className="bg-white p-8 lg:p-12 rounded-[3rem] border shadow-sm space-y-6">
+                  <h3 className="text-lg font-black italic border-l-8 border-[#d4af37] pl-4 uppercase">Real Performance</h3>
+                  <InputCard label="완료 건수" val={contract} set={setContract} unit="건" isDark />
+                  <InputCard label="완료 금액" val={contractAmount} set={setContractAmount} unit="만" isDark />
+                  <InputCard label="상담 횟수" val={ap} set={setAp} unit="회" isDark />
                 </section>
               </div>
             </div>
           )}
 
-          {/* 관리자용 에이전트 모니터링 */}
+          {/* 관리자 전용 화면 */}
           {(role === "admin" || role === "master") && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {agents.map(a => {
                  const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
                  return (
-                   <div key={a.id} onClick={() => setSelectedAgent(a)} className="bg-white p-8 rounded-[2.5rem] border hover:border-black transition-all cursor-pointer shadow-sm">
+                   <div key={a.id} onClick={() => setSelectedAgent(a)} className="bg-white p-8 rounded-[2.5rem] border hover:border-black transition-all cursor-pointer shadow-sm group">
                      <p className="font-black text-xl mb-6 underline underline-offset-8 decoration-[#d4af37] decoration-4 uppercase">{a.name} CA</p>
                      <div className="space-y-4">
                         <MiniProgress label="체결" val={p?.contract_count || 0} max={20} color="bg-black" />
@@ -235,7 +236,7 @@ export default function DashboardPage() {
 
       {/* ─── 🧱 [MODALS] ────────────────────────── */}
 
-      {/* 1. 비즈니스 계산기 */}
+      {/* 1. 비즈니스 계산기 (타입 에러 해결된 부분) */}
       {isBizToolOpen && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[500] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-2xl rounded-[3rem] p-6 lg:p-10 relative overflow-y-auto max-h-[90vh]">
@@ -250,10 +251,10 @@ export default function DashboardPage() {
              {activeTool === 'compare' && (
                <div className="space-y-6">
                  <div className="grid grid-cols-2 gap-4">
-                    <CalcIn label="월 납입" val={calc.compMonth} set={(v)=>setCalc({...calc, compMonth:v})} unit="만" />
-                    <CalcIn label="납입년수" val={calc.compYear} set={(v)=>setCalc({...calc, compYear:v})} unit="년" />
-                    <CalcIn label="거치년수" val={calc.compWait} set={(v)=>setCalc({...calc, compWait:v})} unit="년" />
-                    <CalcIn label="은행금리" val={calc.bankRate} set={(v)=>setCalc({...calc, bankRate:v})} unit="%" />
+                    <CalcIn label="월 납입" val={calc.compMonth} set={(v: number)=>setCalc({...calc, compMonth:v})} unit="만" />
+                    <CalcIn label="납입년수" val={calc.compYear} set={(v: number)=>setCalc({...calc, compYear:v})} unit="년" />
+                    <CalcIn label="거치년수" val={calc.compWait} set={(v: number)=>setCalc({...calc, compWait:v})} unit="년" />
+                    <CalcIn label="은행금리" val={calc.bankRate} set={(v: number)=>setCalc({...calc, bankRate:v})} unit="%" />
                  </div>
                  <div className="bg-slate-900 p-8 rounded-[2.5rem] text-center space-y-6 border-b-8 border-[#d4af37]">
                     <div>
@@ -271,16 +272,16 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 2. 뒤로가기 종료 확인 모달 */}
+      {/* 2. 종료 확인 모달 */}
       {isExitModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">👋</div>
-            <h3 className="text-xl font-black italic uppercase mb-2">Exit Signal?</h3>
+            <h3 className="text-xl font-black italic uppercase mb-2">Exit?</h3>
             <p className="text-xs font-bold text-slate-400 mb-8">어플리케이션을 종료하시겠습니까?</p>
             <div className="flex gap-3">
-              <button onClick={() => setIsExitModalOpen(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-xs uppercase">취소</button>
-              <button onClick={() => { setIsExitModalOpen(false); router.push("/login"); }} className="flex-1 bg-black text-[#d4af37] py-4 rounded-2xl font-black text-xs uppercase shadow-lg">종료</button>
+              <button onClick={() => setIsExitModalOpen(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-xs uppercase transition-all active:scale-95">취소</button>
+              <button onClick={() => { setIsExitModalOpen(false); router.push("/login"); }} className="flex-1 bg-black text-[#d4af37] py-4 rounded-2xl font-black text-xs uppercase shadow-lg transition-all active:scale-95">종료</button>
             </div>
           </div>
         </div>
@@ -289,7 +290,7 @@ export default function DashboardPage() {
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .react-calendar { border: none !important; width: 100% !important; border-radius: 20px; font-family: inherit !important; }
-        .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 10px; font-weight: 900; }
+        .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; font-weight: 900; }
       `}</style>
     </div>
   )
@@ -300,13 +301,13 @@ export default function DashboardPage() {
 function QuickLink({ label, href, onClick }: { label: string; href: string; onClick?: () => void }) {
     return (
         <a href={href} target={href !== "#" ? "_blank" : undefined} onClick={onClick} 
-           className="bg-white border-2 border-slate-900 text-center py-4 rounded-2xl font-black text-[11px] lg:text-sm shadow-sm hover:bg-black hover:text-[#d4af37] transition-all uppercase">
+           className="bg-white border-2 border-slate-900 text-center py-4 rounded-2xl font-black text-[11px] lg:text-sm shadow-sm hover:bg-black hover:text-[#d4af37] transition-all uppercase tracking-tighter">
             {label}
         </a>
     )
 }
 
-function ActivityBtn({ label, val, set, bg, text }: any) {
+function ActivityBtn({ label, val, set, bg, text }: { label: string; val: number; set: (v: number) => void; bg: string; text: string }) {
   return (
     <div className={`${bg} ${text} p-4 lg:p-5 rounded-[1.8rem] text-center shadow-sm active:scale-90 transition-transform cursor-pointer border-2 border-transparent`}>
       <p className="text-[9px] font-black uppercase mb-1 opacity-60 tracking-tighter">{label}</p>
@@ -315,7 +316,7 @@ function ActivityBtn({ label, val, set, bg, text }: any) {
   )
 }
 
-function InputCard({ label, val, set, unit, disabled, isDark, isSpecial }: any) {
+function InputCard({ label, val, set, unit, disabled, isDark, isSpecial }: { label: string; val: number; set: (v: number) => void; unit: string; disabled?: boolean; isDark?: boolean; isSpecial?: boolean }) {
   return (
     <div className="w-full">
       <label className="text-[9px] font-black ml-4 uppercase text-slate-400 tracking-widest mb-1.5 block">{label}</label>
@@ -340,7 +341,7 @@ function MemoBox({ label, value, onChange, readOnly, color }: { label: string; v
   )
 }
 
-function CalcIn({ label, val, set, unit }: any) {
+function CalcIn({ label, val, set, unit }: { label: string; val: number; set: (v: number) => void; unit: string }) {
   return (
     <div className="bg-slate-50 p-3 rounded-2xl border">
       <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{label}</p>
