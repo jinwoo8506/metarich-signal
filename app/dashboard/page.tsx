@@ -321,7 +321,8 @@ export default function DashboardPage() {
 
                 <div className="space-y-8 border-l-0 lg:border-l-2 lg:pl-12">
                    <h3 className="text-2xl font-black uppercase italic text-slate-400 mb-6">Target Adjustment</h3>
-                   <InBox label="목표 건수" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===year && mt.month===month)?.target_count || 0} onChange={(v)=>{
+                   <InBox label="목표 건수" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===year && mt.month===month)?.target_count || 0} 
+                    onChange={(v: number) => { // ⬅️ : number 추가
                         const updated = [...agents]; const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
                         if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
                         const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===year && mt.month===month);
@@ -329,12 +330,15 @@ export default function DashboardPage() {
                         else updated[idx].monthly_targets!.push({year, month, target_count: v});
                         setAgents(updated);
                     }} unit="건" />
-                  <InBox label="목표 금액" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===year && mt.month===month)?.target_amount || 0} onChange={(v)=>{
+                  <InBox label="목표 금액" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===year && mt.month===month)?.target_amount || 0} 
+                    onChange={(v: number) => { // ⬅️ : number 추가
                         const updated = [...agents]; const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
                         if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
                         const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===year && mt.month===month);
                         if(tIdx > -1) updated[idx].monthly_targets![tIdx].target_amount = v;
                         else updated[idx].monthly_targets!.push({year, month, target_amount: v});
+                        setAgents(updated);
+                    }} unit="만원" />
                         setAgents(updated);
                     }} unit="만원" />
                   
