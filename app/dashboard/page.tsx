@@ -259,66 +259,115 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 🧮 영업 도구(계산기) 모달 */}
+      {/* 🧮 영업 지원 도구(계산기) 모달 - 마스터님 이 부분을 확인해주세요! */}
       {isBizToolOpen && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[300] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[500] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            {/* 상단 헤더 */}
             <div className="bg-slate-900 p-8 flex justify-between items-center text-white">
               <h2 className="text-2xl font-black italic tracking-tighter uppercase">
                 {activeTool === 'compare' && "Bank vs Insurance Compare"}
                 {activeTool === 'inflation' && "Money Value Calculator"}
                 {activeTool === 'interest' && "Simple vs Compound Interest"}
               </h2>
-              <button onClick={() => setIsBizToolOpen(false)} className="text-3xl font-black">✕</button>
+              <button onClick={() => setIsBizToolOpen(false)} className="text-4xl font-black hover:text-rose-500 transition-colors">✕</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-10 space-y-10">
+
+            {/* 계산 내용 영역 */}
+            <div className="flex-1 overflow-y-auto p-10 space-y-10 bg-white">
+              {/* 1. 은행 vs 보험 비교 */}
               {activeTool === 'compare' && (
-                <div className="space-y-10">
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <InBox label="월 납입액" value={compMonth} onChange={setCompMonth} unit="만원" />
                     <InBox label="납입 기간" value={compYear} onChange={setCompYear} unit="년" />
                     <InBox label="거치 기간" value={compWait} onChange={setCompWait} unit="년" />
                     <InBox label="은행 이율" value={bankRate} onChange={setBankRate} unit="%" />
                   </div>
-                  <div className="bg-slate-50 p-10 rounded-[3rem] border-2 border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-12">
+                  <div className="bg-slate-50 p-10 rounded-[3rem] border-2 border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-12 shadow-inner">
                     <div className="space-y-4">
-                      <p className="font-black text-slate-400 text-xs uppercase">🏦 Bank 세후 만기액</p>
-                      <p className="text-5xl font-black">{Math.round((compMonth * (compYear*12)) + (compMonth * (compYear*12*(compYear*12+1)/2) * (bankRate/100/12)) * 0.846).toLocaleString()}만원</p>
+                      <p className="font-black text-slate-400 text-xs uppercase tracking-widest">🏦 Bank (세후 만기액)</p>
+                      <p className="text-5xl font-black text-slate-800">
+                        {Math.round((compMonth * (compYear*12)) + (compMonth * (compYear*12*(compYear*12+1)/2) * (bankRate/100/12)) * 0.846).toLocaleString()}
+                        <span className="text-xl ml-1">만원</span>
+                      </p>
                     </div>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-end"><p className="font-black text-[#d4af37] text-xs uppercase">🛡️ Insurance 환급액</p><input type="number" value={insuRate} onChange={(e)=>setInsuRate(Number(e.target.value))} className="w-20 border-b-4 border-[#d4af37] text-right font-black outline-none bg-transparent" /></div>
-                      <p className="text-5xl font-black text-[#d4af37]">{Math.round(compMonth * (compYear * 12) * (insuRate / 100)).toLocaleString()}만원</p>
+                    <div className="space-y-4 border-l-0 md:border-l-2 md:pl-12 border-slate-200">
+                      <div className="flex justify-between items-end">
+                        <p className="font-black text-[#d4af37] text-xs uppercase tracking-widest">🛡️ Insurance (환급액)</p>
+                        <div className="flex items-center gap-2 border-b-2 border-[#d4af37] pb-1">
+                          <span className="text-[10px] font-black">환급률</span>
+                          <input type="number" value={insuRate} onChange={(e)=>setInsuRate(Number(e.target.value))} className="w-14 text-right font-black outline-none bg-transparent text-[#d4af37]" />
+                          <span className="text-[10px] font-black text-[#d4af37]">%</span>
+                        </div>
+                      </div>
+                      <p className="text-5xl font-black text-[#d4af37]">
+                        {Math.round(compMonth * (compYear * 12) * (insuRate / 100)).toLocaleString()}
+                        <span className="text-xl ml-1">만원</span>
+                      </p>
                     </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-black text-rose-600 animate-bounce">
+                      💰 은행보다 약 {Math.round((compMonth * (compYear * 12) * (insuRate / 100)) - ((compMonth * (compYear*12)) + (compMonth * (compYear*12*(compYear*12+1)/2) * (bankRate/100/12)) * 0.846)).toLocaleString()}만원 더 수령!
+                    </p>
                   </div>
                 </div>
               )}
+
+              {/* 2. 화폐가치 계산기 */}
               {activeTool === 'inflation' && (
-                <div className="space-y-12 text-center">
-                  <div className="max-w-xs mx-auto"><InBox label="현재 100만원의 가치" value={infMoney} onChange={setInfMoney} unit="만원" /><InBox label="물가상승률" value={infRate} onChange={setInfRate} unit="%" /></div>
+                <div className="space-y-12 text-center animate-in fade-in slide-in-from-bottom-4">
+                  <div className="max-w-md mx-auto grid grid-cols-2 gap-6 bg-rose-50 p-8 rounded-[2.5rem]">
+                    <InBox label="현재 금액" value={infMoney} onChange={setInfMoney} unit="만원" />
+                    <InBox label="물가상승률" value={infRate} onChange={setInfRate} unit="%" />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {[10, 20, 30].map(yr => (
-                      <div key={yr} className="bg-rose-50 p-10 rounded-[3rem] border-2 border-rose-100">
-                        <p className="font-black text-rose-600 text-xs mb-4 uppercase">{yr}년 뒤 실질 가치</p>
-                        <p className="text-4xl font-black text-slate-900">{Math.round(infMoney / Math.pow(1 + (infRate/100), yr)).toLocaleString()}만원</p>
+                      <div key={yr} className="bg-white p-10 rounded-[3rem] border-4 border-slate-100 shadow-xl relative overflow-hidden group hover:border-rose-500 transition-all">
+                        <div className="absolute top-0 right-0 bg-rose-500 text-white px-6 py-2 rounded-bl-2xl font-black text-[10px] uppercase">{yr} Years Later</div>
+                        <p className="font-black text-slate-400 text-xs mb-4 uppercase">실질 가치 하락</p>
+                        <p className="text-4xl font-black text-slate-900">{Math.round(infMoney / Math.pow(1 + (infRate/100), yr)).toLocaleString()}<span className="text-lg">만원</span></p>
+                        <div className="mt-4 h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-rose-500 transition-all duration-1000" style={{ width: `${(1 / Math.pow(1 + (infRate/100), yr)) * 100}%` }}></div>
+                        </div>
                       </div>
                     ))}
                   </div>
+                  <p className="text-slate-400 font-bold italic">"고객님, 가만히 저축만 하시면 돈의 가치가 이렇게 녹아내립니다."</p>
                 </div>
               )}
+
+              {/* 3. 단리 vs 복리 비교 */}
               {activeTool === 'interest' && (
-                <div className="space-y-10">
-                  <div className="grid grid-cols-3 gap-6"><InBox label="거치 원금" value={intMoney} onChange={setIntMoney} unit="만" /><InBox label="수익률" value={intRate} onChange={setIntRate} unit="%" /><InBox label="기간" value={intYear} onChange={setIntYear} unit="년" /></div>
-                  <div className="bg-blue-50 p-10 rounded-[3rem] border-2 border-blue-100 flex justify-between items-center">
-                    <div><p className="font-black text-blue-600 text-xs uppercase mb-2">복리의 차이</p><p className="text-5xl font-black">+{Math.round((intMoney * Math.pow(1+(intRate/100), intYear)) - (intMoney + (intMoney*(intRate/100)*intYear))).toLocaleString()}만원 이득</p></div>
-                    <div className="text-right text-xs font-bold text-blue-400">단리: {Math.round(intMoney + (intMoney*(intRate/100)*intYear))}만<br/>복리: {Math.round(intMoney * Math.pow(1+(intRate/100), intYear))}만</div>
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="grid grid-cols-3 gap-6">
+                    <InBox label="거치 원금" value={intMoney} onChange={setIntMoney} unit="만원" />
+                    <InBox label="수익률" value={intRate} onChange={setIntRate} unit="%" />
+                    <InBox label="기간(년)" value={intYear} onChange={setIntYear} unit="년" />
+                  </div>
+                  <div className="bg-emerald-50 p-10 rounded-[3rem] border-2 border-emerald-100 flex flex-col md:flex-row justify-between items-center gap-8 shadow-inner">
+                    <div className="flex-1">
+                      <p className="font-black text-emerald-600 text-xs uppercase mb-2 tracking-widest">복리의 마법 (수익 차이)</p>
+                      <p className="text-6xl font-black text-emerald-800">
+                        +{Math.round((intMoney * Math.pow(1+(intRate/100), intYear)) - (intMoney + (intMoney*(intRate/100)*intYear))).toLocaleString()}
+                        <span className="text-2xl">만원</span>
+                      </p>
+                    </div>
+                    <div className="bg-white p-6 rounded-3xl border-2 border-emerald-200 text-right space-y-2">
+                      <p className="text-sm font-bold text-slate-400">단리 합계: {Math.round(intMoney + (intMoney*(intRate/100)*intYear)).toLocaleString()}만</p>
+                      <p className="text-xl font-black text-emerald-600 text-blue-600">복리 합계: {Math.round(intMoney * Math.pow(1+(intRate/100), intYear)).toLocaleString()}만</p>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
+            
+            {/* 하단 탭 메뉴 */}
             <div className="p-8 bg-slate-50 border-t flex gap-4">
-              <button onClick={() => setActiveTool('compare')} className={`flex-1 py-5 rounded-2xl font-black ${activeTool === 'compare' ? 'bg-black text-white' : 'bg-white border-2'}`}>은행비교</button>
-              <button onClick={() => setActiveTool('inflation')} className={`flex-1 py-5 rounded-2xl font-black ${activeTool === 'inflation' ? 'bg-rose-600 text-white' : 'bg-white border-2'}`}>화폐가치</button>
-              <button onClick={() => setActiveTool('interest')} className={`flex-1 py-5 rounded-2xl font-black ${activeTool === 'interest' ? 'bg-blue-600 text-white' : 'bg-white border-2'}`}>단리/복리</button>
+              <button onClick={() => setActiveTool('compare')} className={`flex-1 py-6 rounded-3xl font-black text-sm transition-all ${activeTool === 'compare' ? 'bg-black text-[#d4af37] shadow-xl scale-105' : 'bg-white text-slate-400 border-2'}`}>1. 은행 vs 보험</button>
+              <button onClick={() => setActiveTool('inflation')} className={`flex-1 py-6 rounded-3xl font-black text-sm transition-all ${activeTool === 'inflation' ? 'bg-rose-600 text-white shadow-xl scale-105' : 'bg-white text-slate-400 border-2'}`}>2. 화폐가치</button>
+              <button onClick={() => setActiveTool('interest')} className={`flex-1 py-6 rounded-3xl font-black text-sm transition-all ${activeTool === 'interest' ? 'bg-emerald-600 text-white shadow-xl scale-105' : 'bg-white text-slate-400 border-2'}`}>3. 단리 vs 복리</button>
             </div>
           </div>
         </div>
