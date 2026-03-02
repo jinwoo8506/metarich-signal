@@ -321,27 +321,19 @@ export default function DashboardPage() {
 
                 <div className="space-y-8 border-l-0 lg:border-l-2 lg:pl-12">
                    <h3 className="text-2xl font-black uppercase italic text-slate-400 mb-6">Target Adjustment</h3>
-                   <InBox label="목표 건수" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===year && mt.month===month)?.target_count || 0} 
-                    onChange={(v: number) => { // ⬅️ : number 추가
-                        const updated = [...agents]; const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
-                        if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
-                        const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===year && mt.month===month);
-                        if(tIdx > -1) updated[idx].monthly_targets![tIdx].target_count = v;
-                        else updated[idx].monthly_targets!.push({year, month, target_count: v});
-                        setAgents(updated);
-                    }} unit="건" />
-                  <InBox label="목표 금액" value={(selectedAgent.monthly_targets || []).find(mt=>mt.year===year && mt.month===month)?.target_amount || 0} 
-                    onChange={(v: number) => { // ⬅️ : number 추가
-                        const updated = [...agents]; const idx = updated.findIndex(ag => ag.id === selectedAgent.id);
-                        if (!updated[idx].monthly_targets) updated[idx].monthly_targets = [];
-                        const tIdx = updated[idx].monthly_targets!.findIndex(mt=>mt.year===year && mt.month===month);
-                        if(tIdx > -1) updated[idx].monthly_targets![tIdx].target_amount = v;
-                        else updated[idx].monthly_targets!.push({year, month, target_amount: v});
-                        setAgents(updated);
-                    }} unit="만원" />
-                        setAgents(updated);
-                    }} unit="만원" />
-                  
+     > Build error occurred
+Error: Turbopack build failed with 3 errors:
+./app/dashboard/page.tsx:343:39
+Parsing ecmascript source code failed
+  341 |                     }} unit="만원" />
+  342 |                         setAgents(updated);
+> 343 |                     }} unit="만원" />
+      |                                       ^
+  344 |                   
+  345 |                   <div className="bg-slate-50 p-8 rounded-[3rem] border-2 relative opacity-70">
+  346 |                     <span className="absolute -top-4 left-10 bg-slate-400 text-white px-6 py-2 rounded-full font-black text-xs uppercase">Last Month History</span>
+Unexpected token. Did you mean `{'>'}` or `&gt;`?
+
                   <div className="bg-slate-50 p-8 rounded-[3rem] border-2 relative opacity-70">
                     <span className="absolute -top-4 left-10 bg-slate-400 text-white px-6 py-2 rounded-full font-black text-xs uppercase">Last Month History</span>
                     <div className="grid grid-cols-3 gap-3">
