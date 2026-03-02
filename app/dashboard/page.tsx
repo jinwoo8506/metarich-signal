@@ -234,8 +234,13 @@ export default function DashboardPage() {
             <section className="space-y-8">
                 <h2 className="text-2xl font-black uppercase italic border-l-[12px] border-slate-300 pl-6">에이전트 현황 관리</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+                    {(role === "admin" || role === "master") && (
+            <section className="space-y-8">
+                <h2 className="text-2xl font-black uppercase italic border-l-[12px] border-slate-300 pl-6">에이전트 현황 관리</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
                     {agents.map(a => {
-                        const t = (a.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth) || { target_count: 0, target_amount: 0 };
+                        // 🟢 여기 t 정의 부분에 admin_comment: "" 를 추가했습니다.
+                        const t = (a.monthly_targets || []).find(mt=>mt.year===currentYear && mt.month===currentMonth) || { target_count: 0, target_amount: 0, admin_comment: "" };
                         const p = (a.performances || []).find(pf=>pf.year===currentYear && pf.month===currentMonth) || { contract_count: 0, contract_amount: 0, call_count: 0, meet_count: 0 };
                         return (
                             <div key={a.id} onClick={() => { setSelectedAgent(a); setEditingComment(t.admin_comment || ""); }} className={`bg-white p-8 md:p-10 rounded-[3rem] border-4 cursor-pointer shadow-lg transition-all hover:-translate-y-2 ${getAlertStyle(a)}`}>
