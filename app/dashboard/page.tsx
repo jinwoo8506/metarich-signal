@@ -165,10 +165,14 @@ export default function DashboardPage() {
   }
 
   const getAlertStyle = (agent: Agent) => {
-    const p = (agent.performances || []).find(pf => pf.year === year && pf.month === month) || {}
-    const currentAmount = p.contract_amount || 0
-    if (currentAmount < 30) return "animate-pulse-red border-red-500 shadow-lg shadow-red-200"
-    return "border-white"
+    // 찾지 못했을 때 빈 객체 {} 대신, 타입이 정의된 기본값을 부여합니다.
+    const p = (agent.performances || []).find(pf => pf.year === year && pf.month === month) || { contract_amount: 0 };
+    
+    // 이제 p는 'contract_amount'를 가질 수 있는 상태가 됩니다.
+    const currentAmount = p.contract_amount || 0;
+    
+    if (currentAmount < 30) return "animate-pulse-red border-red-500 shadow-lg shadow-red-200";
+    return "border-white";
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-3xl italic">SIGNAL LOADING...</div>
