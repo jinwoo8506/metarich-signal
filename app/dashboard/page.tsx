@@ -9,20 +9,20 @@ import 'react-calendar/dist/Calendar.css'
 // ─── 🛡️ [TYPE DEFINITIONS] ──────────────────────────
 interface Performance {
   year: number; month: number;
-  contract_count: number; contract_amount: number;
-  ap: number; pt: number; call_count: number;
-  meet_count: number; intro_count: number;
-  recruit_count: number; db_assigned: number; db_returned: number;
+  contract_count?: number; contract_amount?: number;
+  ap?: number; pt?: number; call_count?: number;
+  meet_count?: number; intro_count?: number;
+  recruit_count?: number; db_assigned?: number; db_returned?: number;
 }
 interface MonthlyTarget {
   year: number; month: number;
-  target_count: number; target_amount: number; target_recruit: number;
-  status: string;
+  target_count?: number; target_amount?: number;
+  status?: string; admin_comment?: string;
 }
 interface Agent {
   id: string; name: string;
-  monthly_targets: MonthlyTarget[];
-  performances: Performance[];
+  monthly_targets?: MonthlyTarget[];
+  performances?: Performance[];
 }
 
 export default function DashboardPage() {
@@ -32,36 +32,75 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // 기본 상태
+  // 공통 상태 및 모달 제어
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [personalMemo, setPersonalMemo] = useState("")
+  const [dailySpecialNote, setDailySpecialNote] = useState("")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isExitModalOpen, setIsExitModalOpen] = useState(false)
-  
-  // 관리자 모드 탭 제어
-  const [adminSideTab, setAdminSideTab] = useState<'activity' | 'performance'>('activity')
-  const [adminMainTab, setAdminMainTab] = useState<'perf' | 'act' | 'edu' | 'setting'>('perf')
 
-  // 데이터 상태
+  // [page533 기반] 실적 데이터 상태 유지
+  const [goal, setGoal] = useState(0)
+  const [targetAmount, setTargetAmount] = useState(0)
+  const [contract, setContract] = useState(0)
+  const [contractAmount, setContractAmount] = useState(0)
+  const [ap, setAp] = useState(0)
+  const [pt, setPt] = useState(0)
+  const [calls, setCalls] = useState(0)
+  const [meets, setMeets] = useState(0)
+  const [intros, setIntros] = useState(0)
+  const [recruits, setRecruits] = useState(0)
+  const [dbAssigned, setDbAssigned] = useState(0)
+  const [dbReturned, setDbReturned] = useState(0)
+  const [isApproved, setIsApproved] = useState(false)
+
+  // 계산기 상태
+  const [isBizToolOpen, setIsBizToolOpen] = useState(false)
+  const [activeTool, setActiveTool] = useState<'compare' | 'inflation' | 'interest'>('compare')
+  const [calc, setCalc] = useState({
+    compMonth: 50, compYear: 5, compWait: 5, bankRate: 2,
+    infMoney: 100, infRate: 3, intMoney: 1000, intRate: 5, intYear: 20
+  })
+
+  // 관리자 데이터
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
-  const [teamGoal, setTeamGoal] = useState({ count: 100, amount: 5000, recruit: 10 })
 
   const currentYear = selectedDate.getFullYear()
   const currentMonth = selectedDate.getMonth() + 1
-  const todayDate = new Date().getDate()
 
-  // ─── 🔄 [LOGIC] ──────────────────────────
+  // ─── 🔄 [EFFECTS & LOGIC] ──────────────────────────
 
   useEffect(() => { checkUser() }, [])
+  useEffect(() => { if (userId) fetchDailyData(selectedDate) }, [selectedDate, userId])
+
+  // 뒤로가기 종료 방지 로직
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      setIsExitModalOpen(true);
+      window.history.pushState(null, "", window.location.href);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return router.replace("/login")
     const { data: userInfo } = await supabase.from("users").select("name, role").eq("id", session.user.id).maybeSingle()
-    if (!userInfo) return router.replace("/login")
+    if (!userInfo) { await supabase.auth.signOut(); return router.replace("/login") }
     setUserId(session.user.id); setRole(userInfo.role); setUserName(userInfo.name)
     if (userInfo.role === "admin" || userInfo.role === "master") fetchAdminData()
+    if (userInfo.role === "agent" || userInfo.role === "master") fetchAgentData(session.user.id)
     setLoading(false)
+  }
+
+  async function fetchDailyData(date: Date) {
+    const dateStr = date.toISOString().split('T')[0]
+    const { data: note } = await supabase.from("daily_notes").select("admin_notice").eq("date", dateStr).maybeSingle()
+    const { data: myMemo } = await supabase.from("daily_notes").select("agent_memo").eq("user_id", userId).eq("date", dateStr).maybeSingle()
+    setDailySpecialNote(note?.admin_notice || ""); setPersonalMemo(myMemo?.agent_memo || "")
   }
 
   async function fetchAdminData() {
@@ -69,282 +108,262 @@ export default function DashboardPage() {
     if (data) setAgents(data as Agent[])
   }
 
-  // 실적 부진/경고 판별 함수
-  const getAgentStatus = (agent: Agent) => {
-    const p = agent.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
-    const recent3Months = agent.performances?.slice(-3);
-    const avgAmount = recent3Months && recent3Months.length > 0 
-      ? recent3Months.reduce((sum, curr) => sum + (curr.contract_amount || 0), 0) / recent3Months.length 
-      : 0;
+  async function fetchAgentData(id: string) {
+    const { data: t } = await supabase.from("monthly_targets").select("*").eq("user_id", id).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
+    const { data: p } = await supabase.from("performances").select("*").eq("user_id", id).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
+    
+    if (t) { setGoal(t.target_count || 0); setTargetAmount(t.target_amount || 0); setIsApproved(t.status === 'approved') }
+    else { setGoal(0); setTargetAmount(0); setIsApproved(false) }
 
-    const isNoPerformanceAfter10th = todayDate >= 10 && (!p || (p.contract_count || 0) === 0);
-    const isLowAverage = avgAmount < 30;
-
-    return { isNoPerformanceAfter10th, isLowAverage, avgAmount };
+    if (p) { 
+      setAp(p.ap || 0); setPt(p.pt || 0); setContract(p.contract_count || 0); setContractAmount(p.contract_amount || 0)
+      setCalls(p.call_count || 0); setMeets(p.meet_count || 0); setIntros(p.intro_count || 0); setRecruits(p.recruit_count || 0)
+      setDbAssigned(p.db_assigned || 0); setDbReturned(p.db_returned || 0)
+    } else {
+      setAp(0); setPt(0); setContract(0); setContractAmount(0); setCalls(0); setMeets(0); setIntros(0); setRecruits(0); setDbAssigned(0); setDbReturned(0)
+    }
   }
 
-  const totalStats = agents.reduce((acc, agent) => {
-    const p = agent.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
-    if (p) {
-      acc.calls += (p.call_count || 0); acc.meets += (p.meet_count || 0);
-      acc.pts += (p.pt || 0); acc.intros += (p.intro_count || 0);
-      acc.dbIn += (p.db_assigned || 0); acc.dbOut += (p.db_returned || 0);
-      acc.contracts += (p.contract_count || 0); acc.amounts += (p.contract_amount || 0);
-    }
-    return acc;
-  }, { calls: 0, meets: 0, pts: 0, intros: 0, dbIn: 0, dbOut: 0, contracts: 0, amounts: 0 });
+  const handleAgentSave = async () => {
+    const payloadT = { user_id: userId, year: currentYear, month: currentMonth, target_count: Number(goal), target_amount: Number(targetAmount), status: isApproved ? 'approved' : 'pending' }
+    const payloadP = { user_id: userId, year: currentYear, month: currentMonth, ap: Number(ap), pt: Number(pt), contract_count: Number(contract), contract_amount: Number(contractAmount), call_count: Number(calls), meet_count: Number(meets), intro_count: Number(intros), recruit_count: Number(recruits), db_assigned: Number(dbAssigned), db_returned: Number(dbReturned) }
+    
+    await supabase.from("monthly_targets").upsert(payloadT, { onConflict: 'user_id, year, month' })
+    await supabase.from("performances").upsert(payloadP, { onConflict: 'user_id, year, month' })
+    alert("성공적으로 업데이트되었습니다.")
+  }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-black italic animate-pulse">SIGNAL LOADING...</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-300 italic animate-pulse">SIGNAL LOADING...</div>
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900">
       
       {/* 📱 모바일 헤더 */}
-      <div className="lg:hidden bg-white border-b px-5 py-4 flex justify-between items-center sticky top-0 z-[100]">
-        <h1 className="text-xl font-black italic tracking-tighter uppercase">Signal Admin</h1>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="bg-black text-[#d4af37] px-4 py-2 rounded-xl text-[10px] font-black uppercase">Admin Panel</button>
+      <div className="lg:hidden bg-white border-b px-5 py-4 flex justify-between items-center sticky top-0 z-[100] shadow-sm">
+        <h1 className="text-xl font-black italic tracking-tighter">SIGNAL</h1>
+        <div className="flex gap-2">
+            <button onClick={() => setIsBizToolOpen(true)} className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase">Biz Tool</button>
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="bg-black text-[#d4af37] px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Menu</button>
+        </div>
       </div>
 
-      {/* ─── 📟 사이드바 (관리 전용) ─────────────────── */}
-      <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative inset-y-0 left-0 w-85 bg-white border-r z-[110] transition-transform duration-300 p-6 flex flex-col gap-6 shadow-2xl lg:shadow-none`}>
+      {/* ─── 📟 사이드바 (모바일 달력 제거) ─────────────────── */}
+      <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative inset-y-0 left-0 w-80 bg-white border-r z-[110] transition-transform duration-300 p-6 flex flex-col gap-6 overflow-y-auto shadow-2xl lg:shadow-none`}>
         <div className="flex justify-between items-center">
-            <h2 className="font-black text-2xl italic tracking-tighter">COACHING BOX</h2>
-            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden">✕</button>
+            <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase">History</h2>
+            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-2xl">✕</button>
         </div>
         
-        <div className="hidden lg:block border rounded-3xl bg-slate-50 p-2 scale-90 origin-top shadow-inner">
+        {/* 데스크탑 전용 달력 */}
+        <div className="hidden lg:block border rounded-3xl overflow-hidden shadow-inner bg-slate-50 p-2 scale-90 origin-top">
             <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} calendarType="gregory" className="border-0 w-full bg-transparent" />
         </div>
 
-        <div className="flex bg-slate-100 p-1 rounded-2xl">
-            <button onClick={() => setAdminSideTab('activity')} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all ${adminSideTab==='activity'?'bg-white shadow-sm':'text-slate-400'}`}>활동관리</button>
-            <button onClick={() => setAdminSideTab('performance')} className={`flex-1 py-3 rounded-xl text-[10px] font-black transition-all ${adminSideTab==='performance'?'bg-white shadow-sm':'text-slate-400'}`}>실적관리</button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-4">
-            {adminSideTab === 'activity' ? (
-                <div className="space-y-3">
-                    <StatRow label="전체 전화" val={totalStats.calls} unit="건" />
-                    <StatRow label="전체 만남" val={totalStats.meets} unit="건" />
-                    <StatRow label="전체 제안" val={totalStats.pts} unit="건" />
-                    <StatRow label="전체 소개" val={totalStats.intros} unit="건" />
-                    <div className="h-px bg-slate-100 my-4" />
-                    <StatRow label="DB 배정" val={totalStats.dbIn} unit="건" color="text-blue-600" />
-                    <StatRow label="DB 반품" val={totalStats.dbOut} unit="건" color="text-red-500" />
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    <div className="bg-black p-5 rounded-3xl text-center">
-                        <p className="text-[10px] text-[#d4af37] font-black mb-1">팀 전체 달성액</p>
-                        <p className="text-2xl font-black text-white">{totalStats.amounts.toLocaleString()}만원</p>
-                    </div>
-                </div>
-            )}
+        <div className="space-y-4">
+            <MemoBox label="ADMIN NOTICE" value={dailySpecialNote} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>setDailySpecialNote(e.target.value)} readOnly={role === 'agent'} color="bg-blue-50" />
+            <MemoBox label="PERSONAL MEMO" value={personalMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>setPersonalMemo(e.target.value)} color="bg-slate-50" />
+            <button onClick={handleAgentSave} className="w-full bg-black text-[#d4af37] py-5 rounded-[1.5rem] font-black text-sm uppercase shadow-xl active:scale-95 transition-all tracking-widest">Update Signal</button>
         </div>
       </aside>
 
-      {/* ─── 💎 메인 섹션 (4개 탭) ─────────────────────────────────────────── */}
-      <main className="flex-1 p-4 lg:p-8 space-y-6">
+      {/* ─── 💎 메인 섹션 ─────────────────────────────────────────── */}
+      <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-x-hidden">
         
-        <section className="max-w-6xl mx-auto">
-            <div className="bg-white p-2 rounded-[2rem] shadow-sm border flex gap-1 mb-8">
-                <MainTabBtn active={adminMainTab==='perf'} onClick={()=>setAdminMainTab('perf')} label="실적관리" sub="목표/도입" />
-                <MainTabBtn active={adminMainTab==='act'} onClick={()=>setAdminMainTab('act')} label="활동관리" sub="전환율/상세" />
-                <MainTabBtn active={adminMainTab==='edu'} onClick={()=>setAdminMainTab('edu')} label="교육관리" sub="인지도체크" />
-                <MainTabBtn active={adminMainTab==='setting'} onClick={()=>setAdminMainTab('setting')} label="목표설정" sub="팀관리" />
-            </div>
-
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                {adminMainTab === 'perf' && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <GoalCard label="팀 목표 금액" val={totalStats.amounts} max={teamGoal.amount} unit="만원" />
-                        <GoalCard label="팀 목표 건수" val={totalStats.contracts} max={teamGoal.count} unit="건" />
-                        <GoalCard label="팀 도입 목표" val={0} max={teamGoal.recruit} unit="명" />
-                    </div>
-                )}
-
-                {adminMainTab === 'act' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white p-8 rounded-[3rem] border">
-                            <h3 className="text-sm font-black mb-6 uppercase tracking-widest">활동 전환율 통계</h3>
-                            <div className="space-y-6">
-                                <ProgressLine label="전화 대비 만남 (목표 30%)" val={totalStats.calls ? (totalStats.meets/totalStats.calls)*100 : 0} color="bg-blue-500" />
-                                <ProgressLine label="만남 대비 제안 (목표 50%)" val={totalStats.meets ? (totalStats.pts/totalStats.meets)*100 : 0} color="bg-purple-500" />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {adminMainTab === 'setting' && (
-                    <div className="bg-white p-8 rounded-[3rem] border max-w-2xl">
-                        <h3 className="text-sm font-black mb-6 uppercase tracking-widest">팀 목표치 수정</h3>
-                        <div className="space-y-4">
-                            {/* v: number 타입을 명시하여 빌드 에러 해결 */}
-                            <InputBox label="팀 전체 목표 금액" val={teamGoal.amount} onChange={(v: number)=>setTeamGoal({...teamGoal, amount:v})} unit="만원" />
-                            <InputBox label="팀 전체 목표 건수" val={teamGoal.count} onChange={(v: number)=>setTeamGoal({...teamGoal, count:v})} unit="건" />
-                            <button className="w-full bg-black text-[#d4af37] py-5 rounded-2xl font-black text-xs mt-4 uppercase">Save Changes</button>
-                        </div>
-                    </div>
-                )}
-            </div>
+        {/* 🔗 상단 퀵 링크 버튼 */}
+        <section className="max-w-6xl mx-auto grid grid-cols-3 gap-2 lg:gap-4">
+            <QuickLink label="메타온" href="https://metaon.metarich.co.kr" />
+            <QuickLink label="보험사" href="#" onClick={() => alert('보험사 링크 준비 중')} />
+            <QuickLink label="자료실" href="#" onClick={() => alert('자료실 링크 준비 중')} />
         </section>
 
-        {/* ─── 직원 모니터링 (경고 깜빡임 효과 포함) ─── */}
-        <section className="max-w-6xl mx-auto mt-12">
-            <h2 className="text-2xl font-black italic mb-6 border-l-8 border-black pl-4 uppercase">Agent Monitoring</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {agents.map(agent => {
-                    const p = agent.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
-                    const { isNoPerformanceAfter10th, isLowAverage } = getAgentStatus(agent);
-                    const isWarning = isNoPerformanceAfter10th || isLowAverage;
-
-                    return (
-                        <div key={agent.id} onClick={() => setSelectedAgent(agent)} 
-                            className={`bg-white p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer group shadow-sm 
-                            ${isWarning ? 'border-rose-500 animate-pulse bg-rose-50 shadow-rose-100' : 'hover:border-black'}`}>
-                            
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <p className="font-black text-xl group-hover:underline uppercase">{agent.name} CA</p>
-                                    {isWarning && (
-                                        <p className="text-[9px] font-black text-rose-600 uppercase mt-1">
-                                            {isNoPerformanceAfter10th ? "⚠️ 10일 이후 무실적" : "⚠️ 3개월 평균 30만 미만"}
-                                        </p>
-                                    )}
-                                </div>
-                                <span className="bg-white text-[9px] font-black px-3 py-1.5 rounded-full border">COACHING</span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-white/60 p-3 rounded-2xl text-center border">
-                                    <p className="text-[9px] font-black text-slate-400 mb-1">CALL</p>
-                                    <p className="text-lg font-black">{p?.call_count || 0}</p>
-                                </div>
-                                <div className="bg-white/60 p-3 rounded-2xl text-center border">
-                                    <p className="text-[9px] font-black text-slate-400 mb-1">MEET</p>
-                                    <p className="text-lg font-black">{p?.meet_count || 0}</p>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+        <div className="max-w-6xl mx-auto space-y-8">
+          <header className="bg-white p-6 lg:p-10 rounded-[2.5rem] shadow-sm border flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{userName} CA Dashboard</p>
+              <h1 className="text-2xl lg:text-3xl font-black">{currentMonth}월 실적 현황</h1>
             </div>
-        </section>
+            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="px-5 py-2.5 border rounded-2xl text-[10px] font-black text-slate-400 hover:text-red-500 transition-all uppercase">Logout</button>
+          </header>
+
+          {/* 직원 전용 화면 */}
+          {(role === "agent" || role === "master") && (
+            <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <ActivityBtn label="📞 CALL" val={calls} set={setCalls} bg="bg-emerald-50" text="text-emerald-700" />
+                <ActivityBtn label="🤝 MEET" val={meets} set={setMeets} bg="bg-amber-50" text="text-amber-700" />
+                <ActivityBtn label="📝 PT" val={pt} set={setPt} bg="bg-indigo-50" text="text-indigo-700" />
+                <ActivityBtn label="🎁 INTRO" val={intros} set={setIntros} bg="bg-rose-50" text="text-rose-700" />
+                <ActivityBtn label="📥 DB IN" val={dbAssigned} set={setDbAssigned} bg="bg-sky-50" text="text-sky-700" />
+                <ActivityBtn label="📤 DB OUT" val={dbReturned} set={setDbReturned} bg="bg-slate-200" text="text-slate-700" />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section className="bg-white p-8 lg:p-12 rounded-[3rem] border shadow-sm space-y-6">
+                  <h3 className="text-lg font-black italic border-l-8 border-black pl-4 uppercase">Target Settings</h3>
+                  <InputCard label="목표 건수" val={goal} set={setGoal} unit="건" disabled={isApproved} />
+                  <InputCard label="목표 금액" val={targetAmount} set={setTargetAmount} unit="만" disabled={isApproved} />
+                  <InputCard label="도입 실적" val={recruits} set={setRecruits} unit="명" isSpecial />
+                </section>
+                <section className="bg-white p-8 lg:p-12 rounded-[3rem] border shadow-sm space-y-6">
+                  <h3 className="text-lg font-black italic border-l-8 border-[#d4af37] pl-4 uppercase">Real Performance</h3>
+                  <InputCard label="완료 건수" val={contract} set={setContract} unit="건" isDark />
+                  <InputCard label="완료 금액" val={contractAmount} set={setContractAmount} unit="만" isDark />
+                  <InputCard label="상담 횟수" val={ap} set={setAp} unit="회" isDark />
+                </section>
+              </div>
+            </div>
+          )}
+
+          {/* 관리자 전용 화면 */}
+          {(role === "admin" || role === "master") && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {agents.map(a => {
+                 const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
+                 return (
+                   <div key={a.id} onClick={() => setSelectedAgent(a)} className="bg-white p-8 rounded-[2.5rem] border hover:border-black transition-all cursor-pointer shadow-sm group">
+                     <p className="font-black text-xl mb-6 underline underline-offset-8 decoration-[#d4af37] decoration-4 uppercase">{a.name} CA</p>
+                     <div className="space-y-4">
+                        <MiniProgress label="체결" val={p?.contract_count || 0} max={20} color="bg-black" />
+                        <MiniProgress label="금액" val={p?.contract_amount || 0} max={500} color="bg-[#d4af37]" />
+                     </div>
+                   </div>
+                 )
+              })}
+            </div>
+          )}
+        </div>
       </main>
 
-      {/* ─── 직원 코칭 상세 리포트 ─── */}
-      {selectedAgent && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex justify-end">
-            <div className="bg-white w-full max-w-2xl h-full p-8 lg:p-12 overflow-y-auto animate-in slide-in-from-right duration-300">
-                <button onClick={() => setSelectedAgent(null)} className="mb-8 font-black text-xs uppercase underline tracking-widest">← Back to Dashboard</button>
-                
-                <header className="mb-10">
-                    <h2 className="text-4xl font-black italic border-b-8 border-black inline-block mb-2 uppercase">{selectedAgent.name} CA</h2>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Detail Performance & Coaching Guide</p>
-                </header>
+      {/* ─── 🧱 [MODALS] ────────────────────────── */}
 
-                <div className="space-y-8">
-                    {/* 실적 분석 섹션 */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <CompareCard label="당월 체결액" current={selectedAgent.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth)?.contract_amount || 0} prev={300} unit="만" />
-                        <CompareCard label="상담 AP 건수" current={selectedAgent.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth)?.ap || 0} prev={10} unit="회" />
+      {/* 1. 비즈니스 계산기 (타입 에러 해결된 부분) */}
+      {isBizToolOpen && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] p-6 lg:p-10 relative overflow-y-auto max-h-[90vh]">
+             <button onClick={() => setIsBizToolOpen(false)} className="absolute top-6 right-6 text-2xl font-black">✕</button>
+             <div className="flex gap-2 mb-8 overflow-x-auto pb-2 no-scrollbar">
+                {['compare', 'inflation', 'interest'].map((t) => (
+                  <button key={t} onClick={()=>setActiveTool(t as any)} className={`whitespace-nowrap px-6 py-2.5 rounded-full font-black text-xs transition-all ${activeTool===t?'bg-black text-[#d4af37]':'bg-slate-100 text-slate-400'}`}>
+                    {t === 'compare' ? '은행 vs 보험' : t === 'inflation' ? '화폐가치' : '복리마법'}
+                  </button>
+                ))}
+             </div>
+             {activeTool === 'compare' && (
+               <div className="space-y-6">
+                 <div className="grid grid-cols-2 gap-4">
+                    <CalcIn label="월 납입" val={calc.compMonth} set={(v: number)=>setCalc({...calc, compMonth:v})} unit="만" />
+                    <CalcIn label="납입년수" val={calc.compYear} set={(v: number)=>setCalc({...calc, compYear:v})} unit="년" />
+                    <CalcIn label="거치년수" val={calc.compWait} set={(v: number)=>setCalc({...calc, compWait:v})} unit="년" />
+                    <CalcIn label="은행금리" val={calc.bankRate} set={(v: number)=>setCalc({...calc, bankRate:v})} unit="%" />
+                 </div>
+                 <div className="bg-slate-900 p-8 rounded-[2.5rem] text-center space-y-6 border-b-8 border-[#d4af37]">
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">은행 총 수령액 (단리)</p>
+                        <p className="text-3xl font-black text-white">{(calc.compMonth * calc.compYear * 12 + (calc.compMonth * calc.compYear * 12 * (calc.bankRate/100) * (calc.compYear + calc.compWait))).toLocaleString()}만원</p>
                     </div>
-
-                    {/* 자동 생성 코칭 카드 */}
-                    <div className="bg-slate-900 text-white p-8 rounded-[3rem] border-b-8 border-[#d4af37]">
-                        <p className="text-[#d4af37] text-xs font-black mb-6 uppercase italic">Analysis Report</p>
-                        <div className="space-y-6">
-                            <div>
-                                <p className="text-[10px] font-black text-emerald-400 mb-2 uppercase">Good Point</p>
-                                <p className="text-sm font-medium leading-relaxed">상담 대비 체결 전환율이 팀 평균보다 15% 높습니다. 제안 내용의 질이 매우 우수합니다.</p>
-                            </div>
-                            <div className="h-px bg-slate-800" />
-                            <div>
-                                <p className="text-[10px] font-black text-rose-400 mb-2 uppercase">Weak Point</p>
-                                <p className="text-sm font-medium leading-relaxed">활동 초기(Call) 단계가 저조합니다. 활동량 부족이 향후 실적 절벽으로 이어질 수 있으니 즉시 CALL 보강이 필요합니다.</p>
-                            </div>
-                        </div>
+                    <div className="pt-6 border-t border-slate-700">
+                        <p className="text-[10px] font-black text-[#d4af37] uppercase mb-1">보험 예상액 (124% 가정)</p>
+                        <p className="text-3xl font-black text-[#d4af37]">{(calc.compMonth * calc.compYear * 12 * 1.24).toLocaleString()}만원</p>
                     </div>
-
-                    <button onClick={() => setSelectedAgent(null)} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase">Close Report</button>
-                </div>
-            </div>
+                 </div>
+               </div>
+             )}
+          </div>
         </div>
       )}
+
+      {/* 2. 종료 확인 모달 */}
+      {isExitModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[1000] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">👋</div>
+            <h3 className="text-xl font-black italic uppercase mb-2">Exit?</h3>
+            <p className="text-xs font-bold text-slate-400 mb-8">어플리케이션을 종료하시겠습니까?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setIsExitModalOpen(false)} className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-xs uppercase transition-all active:scale-95">취소</button>
+              <button onClick={() => { setIsExitModalOpen(false); router.push("/login"); }} className="flex-1 bg-black text-[#d4af37] py-4 rounded-2xl font-black text-xs uppercase shadow-lg transition-all active:scale-95">종료</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .react-calendar { border: none !important; width: 100% !important; border-radius: 20px; font-family: inherit !important; }
+        .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; font-weight: 900; }
+      `}</style>
     </div>
   )
 }
 
-// ─── 📦 [UI COMPONENTS] ──────────────────────────
+// ─── 📦 [REUSABLE COMPONENTS] ──────────────────────────
 
-function StatRow({ label, val, unit, color = "text-slate-900" }: any) {
+function QuickLink({ label, href, onClick }: { label: string; href: string; onClick?: () => void }) {
     return (
-        <div className="flex justify-between items-center py-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">{label}</span>
-            <span className={`text-sm font-black ${color}`}>{val.toLocaleString()}{unit}</span>
-        </div>
+        <a href={href} target={href !== "#" ? "_blank" : undefined} onClick={onClick} 
+           className="bg-white border-2 border-slate-900 text-center py-4 rounded-2xl font-black text-[11px] lg:text-sm shadow-sm hover:bg-black hover:text-[#d4af37] transition-all uppercase tracking-tighter">
+            {label}
+        </a>
     )
 }
 
-function MainTabBtn({ active, onClick, label, sub }: any) {
-    return (
-        <button onClick={onClick} className={`flex-1 py-4 rounded-2xl transition-all ${active?'bg-black text-white shadow-xl':'text-slate-400 hover:bg-slate-50'}`}>
-            <p className="text-[11px] font-black uppercase">{label}</p>
-            <p className="text-[8px] font-bold uppercase opacity-50">{sub}</p>
-        </button>
-    )
+function ActivityBtn({ label, val, set, bg, text }: { label: string; val: number; set: (v: number) => void; bg: string; text: string }) {
+  return (
+    <div className={`${bg} ${text} p-4 lg:p-5 rounded-[1.8rem] text-center shadow-sm active:scale-90 transition-transform cursor-pointer border-2 border-transparent`}>
+      <p className="text-[9px] font-black uppercase mb-1 opacity-60 tracking-tighter">{label}</p>
+      <input type="number" value={val} onChange={(e: React.ChangeEvent<HTMLInputElement>)=>set(Number(e.target.value))} className="w-full bg-transparent text-center text-2xl font-black outline-none leading-none" />
+    </div>
+  )
 }
 
-function GoalCard({ label, val, max, unit }: any) {
-    const rate = Math.min((val / (max || 1)) * 100, 100);
-    return (
-        <div className="bg-white p-8 rounded-[3rem] border shadow-sm">
-            <p className="text-[10px] font-black text-slate-400 uppercase mb-2">{label}</p>
-            <p className="text-2xl font-black mb-4">{val.toLocaleString()}<span className="text-xs text-slate-300 ml-1">/ {max.toLocaleString()}{unit}</span></p>
-            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-black transition-all duration-1000" style={{ width: `${rate}%` }} />
-            </div>
-        </div>
-    )
+function InputCard({ label, val, set, unit, disabled, isDark, isSpecial }: { label: string; val: number; set: (v: number) => void; unit: string; disabled?: boolean; isDark?: boolean; isSpecial?: boolean }) {
+  return (
+    <div className="w-full">
+      <label className="text-[9px] font-black ml-4 uppercase text-slate-400 tracking-widest mb-1.5 block">{label}</label>
+      <div className="relative">
+        <input disabled={disabled} type="number" value={val} onChange={(e: React.ChangeEvent<HTMLInputElement>)=>set(Number(e.target.value))} 
+          className={`w-full p-4 lg:p-6 rounded-[2rem] font-black text-2xl outline-none border-2 transition-all 
+            ${disabled ? 'bg-slate-50 text-slate-300 border-transparent' : 
+              isDark ? 'bg-slate-900 text-[#d4af37] border-slate-900' : 
+              isSpecial ? 'bg-blue-50 border-blue-100 text-blue-800' : 'bg-white border-slate-100 focus:border-black'}`} />
+        <span className={`absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-300'}`}>{unit}</span>
+      </div>
+    </div>
+  )
 }
 
-function ProgressLine({ label, val, color }: any) {
-    return (
-        <div className="space-y-1.5">
-            <div className="flex justify-between text-[10px] font-black uppercase">
-                <span>{label}</span>
-                <span>{val.toFixed(1)}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className={`h-full ${color}`} style={{ width: `${val}%` }} />
-            </div>
-        </div>
-    )
+function MemoBox({ label, value, onChange, readOnly, color }: { label: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; readOnly?: boolean; color: string }) {
+  return (
+    <div className={`${color} p-5 rounded-2xl border`}>
+        <p className="text-[9px] font-black text-slate-400 mb-2 uppercase italic tracking-widest">{label}</p>
+        <textarea readOnly={readOnly} value={value} onChange={onChange} className="w-full bg-transparent text-xs font-bold outline-none resize-none h-24 text-slate-700 leading-relaxed" placeholder="..." />
+    </div>
+  )
 }
 
-function InputBox({ label, val, onChange, unit }: { label: string; val: number; onChange: (v: number) => void; unit: string }) {
-    return (
-        <div className="space-y-1.5">
-            <label className="text-[10px] font-black ml-4 text-slate-400 uppercase tracking-widest">{label}</label>
-            <div className="relative">
-                <input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} className="w-full bg-slate-50 border-2 border-slate-100 focus:border-black p-4 rounded-2xl font-black outline-none" />
-                <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">{unit}</span>
-            </div>
-        </div>
-    )
+function CalcIn({ label, val, set, unit }: { label: string; val: number; set: (v: number) => void; unit: string }) {
+  return (
+    <div className="bg-slate-50 p-3 rounded-2xl border">
+      <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{label}</p>
+      <div className="flex items-center gap-1">
+        <input type="number" value={val} onChange={(e: React.ChangeEvent<HTMLInputElement>)=>set(Number(e.target.value))} className="w-full bg-transparent text-lg font-black outline-none" />
+        <span className="text-[9px] font-bold text-slate-300">{unit}</span>
+      </div>
+    </div>
+  )
 }
 
-function CompareCard({ label, current, prev, unit }: any) {
-    const diff = current - prev;
-    return (
-        <div className="bg-slate-50 p-5 rounded-2xl border">
-            <p className="text-[9px] font-black text-slate-400 uppercase mb-2">{label}</p>
-            <div className="flex justify-between items-end">
-                <p className="text-xl font-black">{current.toLocaleString()}{unit}</p>
-                <p className={`text-[10px] font-black ${diff >= 0 ? 'text-emerald-500':'text-rose-500'}`}>
-                    {diff >= 0 ? '▲':'▼'} {Math.abs(diff).toLocaleString()}
-                </p>
-            </div>
-        </div>
-    )
+function MiniProgress({ label, val, max, color }: { label: string; val: number; max: number; color: string }) {
+  const rate = Math.min((val / (max || 1)) * 100, 100);
+  return (
+    <div className="w-full">
+      <div className="flex justify-between text-[9px] font-black mb-1.5 uppercase tracking-tighter">
+        <span className="text-slate-400">{label}</span>
+        <span>{val} / {max}</span>
+      </div>
+      <div className="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden shadow-inner">
+        <div className={`h-full ${color} transition-all duration-1000 ease-out`} style={{ width: `${rate}%` }} />
+      </div>
+    </div>
+  )
 }
