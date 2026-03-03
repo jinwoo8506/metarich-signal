@@ -35,15 +35,18 @@ export default function DashboardPage() {
   const [activeTool, setActiveTool] = useState<'comparison' | 'inflation' | 'compound'>('comparison')
 
   // 활동 데이터
-  const [goalCount, setGoalCount] = useState(0); const [targetAmt, setTargetAmt] = useState(0)
-  const [contract, setContract] = useState(0); const [calls, setCalls] = useState(0)
-  const [meets, setMeets] = useState(0); const [pts, setPts] = useState(0)
+  const [goalCount, setGoalCount] = useState(0); 
+  const [targetAmt, setTargetAmt] = useState(0);
+  const [contract, setContract] = useState(0); 
+  const [calls, setCalls] = useState(0);
+  const [meets, setMeets] = useState(0); 
+  const [pts, setPts] = useState(0);
 
-  // 계산기 입력값
+  // 계산기 입력값 (엑셀 연동형)
   const [calc, setCalc] = useState({
-    principal: 50,    // 월납입액 또는 기준금액
+    principal: 50,    // 월납입액(만원) 또는 일시납
     payYears: 5,      // 납입기간
-    totalYears: 10,   // 총기간 (거치 포함)
+    totalYears: 10,   // 총기간
     bankRate: 3.5,    // 은행이율
     insReturnRate: 125, // 보험 환급률 (%)
     inflationRate: 3.0  // 물가상승률
@@ -54,7 +57,7 @@ export default function DashboardPage() {
   const currentYear = selectedDate.getFullYear()
   const currentMonth = selectedDate.getMonth() + 1
 
-  // ─── 🔄 [DATA FETCH] ───────────────────────────────
+  // ─── 🔄 [DATA FETCH & AUTH] ──────────────────────────
   useEffect(() => { checkUser() }, [])
   useEffect(() => { if (userId) fetchData() }, [userId, selectedDate])
 
@@ -78,24 +81,24 @@ export default function DashboardPage() {
     }
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.replace("/login")
+  }
+
   // 🧮 [상담용 계산기 로직]
   const runCalculation = () => {
     if (activeTool === 'comparison') {
-      // 1. 은행 (납입기간 동안 적금 + 나머지 기간 예금 거치)
       const monthlyPrincipal = calc.principal * 10000;
       const payMonths = calc.payYears * 12;
       const r = (calc.bankRate / 100) / 12;
-      
       const totalPay = monthlyPrincipal * payMonths;
       const savingInt = monthlyPrincipal * (payMonths * (payMonths + 1) / 2) * r;
       const afterTaxSaving = totalPay + (savingInt * 0.846);
-      
       const restYears = calc.totalYears - calc.payYears;
       const finalBank = restYears > 0 
         ? afterTaxSaving + (afterTaxSaving * (calc.bankRate/100) * restYears * 0.846) 
         : afterTaxSaving;
-
-      // 2. 보험 (입력한 환급률 적용)
       const finalIns = totalPay * (calc.insReturnRate / 100);
 
       setCalcResult({
@@ -106,7 +109,6 @@ export default function DashboardPage() {
         bankRatio: ((finalBank / totalPay) * 100).toFixed(1) + "%"
       });
     } else if (activeTool === 'inflation') {
-      // 물가 계산기: 현재 금액의 미래 가치 하락
       const futureVal = (calc.principal * 10000) / Math.pow(1 + (calc.inflationRate/100), calc.totalYears);
       setCalcResult({
         title: `${calc.totalYears}년 후 자산 가치`,
@@ -115,7 +117,6 @@ export default function DashboardPage() {
         loss: `가치 하락분: ${Math.round((calc.principal * 10000 - futureVal)/10000).toLocaleString()}만원`
       });
     } else if (activeTool === 'compound') {
-      // 복리 계산기: 목돈 일시납 거치
       const finalCompound = (calc.principal * 10000) * Math.pow(1 + (calc.bankRate/100), calc.totalYears);
       setCalcResult({
         title: `${calc.principal}만원 일시납 ${calc.totalYears}년 거치`,
@@ -126,10 +127,12 @@ export default function DashboardPage() {
     }
   }
 
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black">LOADING...</div>
+
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900">
       
-      {/* ─── 📟 사이드바 (날짜 숫자만 표시 스타일 적용) ───────────────── */}
+      {/* ─── 📟 사이드바 (날짜 숫자만 표시) ───────────────── */}
       <aside className="hidden lg:flex w-80 bg-white border-r p-6 flex-col gap-6">
         <h2 className="text-2xl font-black italic border-b-4 border-black pb-1 uppercase">SIGNAL</h2>
         <div className="calendar-container border rounded-3xl overflow-hidden bg-slate-50 p-2 shadow-inner">
@@ -137,29 +140,39 @@ export default function DashboardPage() {
                 onChange={(d: any) => setSelectedDate(d)} 
                 value={selectedDate} 
                 calendarType="gregory"
-                formatDay={(locale, date) => date.getDate().toString()} // '일' 제거
+                formatDay={(locale, date) => date.getDate().toString()} 
             />
         </div>
+        <MemoBox label="ADMIN NOTICE" value={dailySpecialNote} readOnly color="bg-blue-50" />
         <button onClick={() => setIsBizToolOpen(true)} className="w-full bg-[#d4af37] text-black py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition-all uppercase italic">Sales Tool</button>
+        <button onClick={handleLogout} className="mt-auto text-slate-400 font-black text-xs hover:text-rose-500 transition-all uppercase underline">Logout</button>
       </aside>
 
       {/* ─── 💎 메인 섹션 ─────────────────── */}
       <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-x-hidden">
-        <header className="flex lg:hidden justify-between items-center bg-white p-6 rounded-[2rem] shadow-sm border mb-4">
-            <h1 className="font-black italic text-xl">SIGNAL</h1>
-            <button onClick={() => setIsBizToolOpen(true)} className="bg-black text-[#d4af37] px-4 py-2 rounded-xl text-xs font-black uppercase">Tools</button>
+        
+        {/* 상단 네비게이션 탭 (복구) */}
+        <header className="flex justify-between items-center bg-white p-4 lg:p-6 rounded-[2rem] shadow-sm border mb-4">
+            <div className="flex gap-4 items-center">
+              <h1 className="font-black italic text-xl lg:hidden">SIGNAL</h1>
+              <nav className="hidden md:flex gap-6 ml-4">
+                  <button className="text-sm font-black border-b-2 border-black pb-1">DASHBOARD</button>
+                  <button className="text-sm font-black text-slate-300 hover:text-black">CUSTOMERS</button>
+                  <button className="text-sm font-black text-slate-300 hover:text-black">CONTRACTS</button>
+              </nav>
+            </div>
+            <div className="flex items-center gap-4">
+              <button onClick={() => setIsBizToolOpen(true)} className="bg-black text-[#d4af37] px-4 py-2 rounded-xl text-xs font-black uppercase">Tools</button>
+              <button onClick={handleLogout} className="md:hidden text-[10px] font-black text-rose-500 underline">EXIT</button>
+            </div>
         </header>
 
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="bg-white p-8 rounded-[3rem] shadow-sm border hidden lg:block">
-              <h1 className="text-3xl font-black italic uppercase">{currentMonth}월 실적 및 활동 관리</h1>
-          </div>
-
           {/* 활동 입력 섹션 */}
           <section className="bg-white p-6 lg:p-10 rounded-[3rem] border shadow-sm space-y-8">
             <div className="flex justify-between items-center border-b pb-4">
-                <h2 className="text-xl font-black italic underline decoration-[#d4af37] decoration-4 uppercase">Daily Activity</h2>
-                <button onClick={() => alert('저장되었습니다')} className="bg-black text-[#d4af37] px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl transition-all active:scale-95">Save</button>
+                <h2 className="text-xl font-black italic underline decoration-[#d4af37] decoration-4 uppercase">Activity: {currentMonth}월</h2>
+                <button className="bg-black text-[#d4af37] px-8 py-3 rounded-2xl font-black text-xs uppercase shadow-xl">Save</button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <ActivityMini label="전화" val={calls} color="bg-blue-50" />
@@ -171,11 +184,11 @@ export default function DashboardPage() {
 
           {/* 하단 공지/교육 확인 */}
           <section className="bg-slate-900 text-white p-8 rounded-[3rem] border-b-8 border-[#d4af37] shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
-              <div>
-                  <h3 className="text-[#d4af37] font-black text-xs uppercase tracking-widest mb-2 italic">Notice</h3>
+              <div className="text-center md:text-left">
+                  <h3 className="text-[#d4af37] font-black text-xs uppercase tracking-widest mb-2 italic">Admin Notice</h3>
                   <p className="text-slate-300 font-bold">{dailySpecialNote || "등록된 공지사항이 없습니다."}</p>
               </div>
-              <button className="bg-white/10 hover:bg-white/20 px-6 py-4 rounded-2xl font-black text-sm uppercase italic border border-white/5 transition-all">I Checked Education</button>
+              <button className="bg-white/10 hover:bg-white/20 px-6 py-4 rounded-2xl font-black text-sm uppercase italic border border-white/5 transition-all">Check Education</button>
           </section>
         </div>
       </main>
@@ -232,7 +245,7 @@ export default function DashboardPage() {
 
                             {calcResult && (
                                 <div className="mt-8 p-8 bg-slate-900 text-white rounded-[2.5rem] border-b-8 border-[#d4af37] shadow-2xl animate-in zoom-in duration-300">
-                                    <p className="text-[10px] font-black text-[#d4af37] mb-4 uppercase tracking-widest">{calcResult.title}</p>
+                                    <p className="text-[10px] font-black text-[#d4af37] mb-4 uppercase tracking-widest text-center">{calcResult.title}</p>
                                     {activeTool === 'comparison' ? (
                                       <div className="space-y-4">
                                         <div className="flex justify-between items-center border-b border-white/10 pb-2">
@@ -262,10 +275,8 @@ export default function DashboardPage() {
       )}
 
       <style jsx global>{`
-        /* 달력 날짜 숫자만 표시 */
         .react-calendar__month-view__days__day { font-weight: 800 !important; color: #1e293b; }
         .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; }
-        .react-calendar__navigation button { font-weight: 900 !important; text-transform: uppercase; }
         .react-calendar { border: none !important; width: 100% !important; font-family: inherit !important; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
       `}</style>
@@ -286,7 +297,7 @@ function ActivityMini({ label, val, color }: any) {
 
 function CalcInput({ label, unit, value, onChange }: any) {
     return (
-        <div className="space-y-1 w-full">
+        <div className="space-y-1 w-full text-left">
             <label className="text-[10px] font-black ml-4 uppercase text-slate-400">{label}</label>
             <div className="relative">
                 <input type="number" value={value} onChange={(e)=>onChange(Number(e.target.value))} className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl font-black text-xl outline-none focus:border-black transition-all" />
