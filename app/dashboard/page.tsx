@@ -201,6 +201,7 @@ export default function DashboardPage() {
             <QuickLink label="메타온" href="https://metaon.metarich.co.kr" />
             <QuickLink label="보험사" href="#" onClick={() => alert('시스템 연동 중')} />
             <QuickLink label="자료실" href="#" onClick={() => alert('자료실 이동')} />
+            <QuickLink label="보험금청구" href="#" onClick={() => alert('자료실 이동')} />  
         </section>
 
         <div className="max-w-6xl mx-auto space-y-6">
