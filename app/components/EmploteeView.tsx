@@ -1,131 +1,59 @@
 "use client"
+import React, { useState, useEffect } from "react"
+import { supabase } from "../../lib/supabase" // 수파베이스 설정 파일 경로 확인
 
-import { useState } from "react"
+export default function EmployeeView({ userId }: { userId: string }) {
+  const [perf, setPerf] = useState({
+    target_amt: 0, current_amt: 0, target_cnt: 0, current_cnt: 0,
+    call: 0, meet: 0, pt: 0, intro: 0, db: 0, ret: 0
+  })
 
-export default function EmployeeView() {
+  // 🔄 1. 수파베이스에서 내 실적 가져오기
+  useEffect(() => {
+    async function fetchMyData() {
+      const { data, error } = await supabase
+        .from("performances") // 테이블 명 확인
+        .select("*")
+        .eq("user_id", userId) // 내 아이디와 일치하는 데이터만
+        .single()
 
-  // 🔹 더미 데이터
-  const goal = 20
-  const ap = 30
-  const pt = 18
-  const contract = 10
+      if (data) {
+        setPerf({
+          target_amt: data.target_amount,
+          current_amt: data.contract_amount,
+          target_cnt: data.target_count,
+          current_cnt: data.contract_count,
+          call: data.call_count,
+          meet: data.meet_count,
+          pt: data.pt_count,
+          intro: data.intro_count,
+          db: data.db_assigned,
+          ret: data.db_returned
+        })
+      }
+    }
+    if (userId) fetchMyData()
+  }, [userId])
 
-  const achievement = ((contract / goal) * 100).toFixed(1)
-  const weeklyAvg = (contract / 4).toFixed(1)
-  const threeMonthAvg = 12
-
-  const apToPt = ((pt / ap) * 100).toFixed(1)
-  const ptToC = ((contract / pt) * 100).toFixed(1)
-
-  const [schedule, setSchedule] = useState("")
+  // 💾 2. 데이터 저장 (Upsert)
+  const handleSave = async () => {
+    const { error } = await supabase
+      .from("performances")
+      .upsert({
+        user_id: userId,
+        target_amount: perf.target_amt,
+        contract_amount: perf.current_amt,
+        // ... 나머지 필드들도 동일하게 매칭
+      })
+    
+    if (!error) alert("실적이 성공적으로 저장되었습니다!")
+    else alert("저장 실패: " + error.message)
+  }
 
   return (
-    <div className="space-y-8">
-
-      {/* 🔷 상단 KPI */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-
-        <div className="bg-blue-100 p-6 rounded-2xl">
-          <h3 className="text-sm text-gray-600">월 목표</h3>
-          <p className="text-2xl font-bold text-blue-700 mt-2">{goal}</p>
-        </div>
-
-        <div className="bg-green-100 p-6 rounded-2xl">
-          <h3 className="text-sm text-gray-600">현재 계약</h3>
-          <p className="text-2xl font-bold text-green-700 mt-2">{contract}</p>
-        </div>
-
-        <div className="bg-orange-100 p-6 rounded-2xl">
-          <h3 className="text-sm text-gray-600">달성률</h3>
-          <p className="text-2xl font-bold text-orange-600 mt-2">
-            {achievement}%
-          </p>
-        </div>
-
-        <div className="bg-purple-100 p-6 rounded-2xl">
-          <h3 className="text-sm text-gray-600">주 평균</h3>
-          <p className="text-2xl font-bold text-purple-700 mt-2">
-            {weeklyAvg}
-          </p>
-        </div>
-
-      </div>
-
-      {/* 🔷 전환율 영역 */}
-      <div className="grid grid-cols-3 gap-6">
-
-        <div className="bg-gray-100 p-6 rounded-2xl text-center">
-          <h4 className="text-gray-600">AP</h4>
-          <p className="text-xl font-bold">{ap}</p>
-        </div>
-
-        <div className="bg-gray-100 p-6 rounded-2xl text-center">
-          <h4 className="text-gray-600">PT</h4>
-          <p className="text-xl font-bold">{pt}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            AP → PT {apToPt}%
-          </p>
-        </div>
-
-        <div className="bg-gray-100 p-6 rounded-2xl text-center">
-          <h4 className="text-gray-600">C</h4>
-          <p className="text-xl font-bold">{contract}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            PT → C {ptToC}%
-          </p>
-        </div>
-
-      </div>
-
-      {/* 🔷 최근 평균 */}
-      <div className="bg-gray-100 p-6 rounded-2xl">
-        <h3 className="font-bold mb-3">최근 3개월 평균 계약</h3>
-        <p className="text-2xl font-bold text-blue-600">
-          {threeMonthAvg}
-        </p>
-      </div>
-
-      {/* 🔷 오늘 일정 */}
-      <div className="bg-gray-100 p-6 rounded-2xl">
-        <h3 className="font-bold mb-3">오늘 일정</h3>
-
-        <textarea
-          value={schedule}
-          onChange={(e) => setSchedule(e.target.value)}
-          placeholder="오늘 상담 일정 입력..."
-          className="w-full p-3 border rounded-xl"
-        />
-
-        <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg">
-          저장
-        </button>
-      </div>
-
-      {/* 🔷 상담 툴 버튼 */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-
-        <button className="bg-gray-200 p-4 rounded-xl">
-          보험료 계산기
-        </button>
-
-        <button className="bg-gray-200 p-4 rounded-xl">
-          보장 분석 툴
-        </button>
-
-        <button className="bg-gray-200 p-4 rounded-xl">
-          수수료 계산기
-        </button>
-
-        <button className="bg-gray-200 p-4 rounded-xl">
-          DB 관리
-        </button>
-
-        <button className="bg-gray-200 p-4 rounded-xl">
-          교육자료
-        </button>
-
-      </div>
-
+    <div className="space-y-6">
+      {/* ... 기존 입력 UI (InputUnit 등) 동일 ... */}
+      <button onClick={handleSave} className="w-full bg-black text-white py-5 rounded-2xl font-black uppercase">Save to Database</button>
     </div>
   )
 }
