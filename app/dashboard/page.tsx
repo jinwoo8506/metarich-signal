@@ -8,8 +8,22 @@ import 'react-calendar/dist/Calendar.css'
 
 // ─── 🛡️ [TYPE DEFINITIONS] ──────────────────────────
 interface Agent {
-  id: string; name: string;
+  id: string;
+  name: string;
   performances?: any[];
+}
+
+interface PerfInputState {
+  target_amt: number;
+  current_amt: number;
+  target_cnt: number;
+  current_cnt: number;
+  call: number;
+  meet: number;
+  pt: number;
+  intro: number;
+  db: number;
+  ret: number;
 }
 
 export default function IntegratedDashboard() {
@@ -28,7 +42,7 @@ export default function IntegratedDashboard() {
   const [isBizToolOpen, setIsBizToolOpen] = useState(false)
   const [agents, setAgents] = useState<Agent[]>([])
 
-  const [perfInput, setPerfInput] = useState({
+  const [perfInput, setPerfInput] = useState<PerfInputState>({
     target_amt: 0, current_amt: 0, target_cnt: 0, current_cnt: 0,
     call: 0, meet: 0, pt: 0, intro: 0, db: 0, ret: 0
   })
@@ -44,7 +58,7 @@ export default function IntegratedDashboard() {
     setRole(userInfo.role); setUserName(userInfo.name)
     if (userInfo.role === "admin" || userInfo.role === "master") {
       const { data } = await supabase.from("users").select(`id, name, performances(*)`).eq("role", "agent")
-      if (data) setAgents(data)
+      if (data) setAgents(data as Agent[])
     }
     setLoading(false)
   }
@@ -59,7 +73,13 @@ export default function IntegratedDashboard() {
         <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter">History</h2>
         
         <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white p-2 shadow-sm">
-          <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} calendarType="gregory" className="border-0 w-full" formatDay={(locale, date) => date.getDate().toString()} />
+          <Calendar 
+            onChange={(d: any) => setSelectedDate(d)} 
+            value={selectedDate} 
+            calendarType="gregory" 
+            className="border-0 w-full" 
+            formatDay={(_, date) => date.getDate().toString()} 
+          />
         </div>
 
         <button onClick={() => setIsBizToolOpen(true)} className="w-full bg-black text-[#d4af37] py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:scale-[1.02] transition-all">
@@ -69,7 +89,7 @@ export default function IntegratedDashboard() {
         <MemoBox 
             label="Admin Comment" 
             value={adminNotice} 
-            onChange={(e: any) => setAdminNotice(e.target.value)} 
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAdminNotice(e.target.value)} 
             readOnly={role === 'agent'} 
             color="bg-blue-50/50" 
             placeholder={role === 'agent' ? "관리자 코멘트가 없습니다." : "직원들에게 전달할 메시지를 입력하세요."}
@@ -78,7 +98,7 @@ export default function IntegratedDashboard() {
         <MemoBox 
             label="Personal Memo" 
             value={personalMemo} 
-            onChange={(e: any) => setPersonalMemo(e.target.value)} 
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPersonalMemo(e.target.value)} 
             color="bg-slate-50" 
             placeholder="나만의 메모를 남기세요."
         />
@@ -95,11 +115,11 @@ export default function IntegratedDashboard() {
           <QuickLink label="자료실" href="#" />
         </div>
 
-        {/* ✅ 수정된 공지사항 섹션 (Marquee 에러 해결) */}
+        {/* 공지사항 섹션 */}
         <section className="bg-slate-900 text-white p-5 rounded-[2rem] shadow-lg flex items-center gap-6 overflow-hidden relative">
-            <div className="bg-[#d4af37] text-black px-4 py-1.5 rounded-full text-[10px] font-black uppercase italic z-10 shadow-lg">Notice</div>
-            <div className="flex-1 overflow-hidden">
-                <div className="whitespace-nowrap animate-marquee font-bold text-sm tracking-tight inline-block">
+            <div className="bg-[#d4af37] text-black px-4 py-1.5 rounded-full text-[10px] font-black uppercase italic z-10 shadow-lg shrink-0">Notice</div>
+            <div className="flex-1 overflow-hidden relative h-6">
+                <div className="whitespace-nowrap animate-marquee font-bold text-sm tracking-tight absolute">
                     {adminNotice || "공지사항이 없습니다. 이번 달 주요 전달 사항을 확인해 주세요."}
                 </div>
             </div>
@@ -148,20 +168,28 @@ export default function IntegratedDashboard() {
         {role === "agent" && (
           <div className="space-y-8 animate-in fade-in duration-700">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <AgentProgressBox label="Amount" unit="만" cur={perfInput.current_amt} tar={perfInput.target_amt} 
-                onCur={(v)=>setPerfInput({...perfInput, current_amt:v})} onTar={(v)=>setPerfInput({...perfInput, target_amt:v})} color="text-indigo-600" />
-              <AgentProgressBox label="Count" unit="건" cur={perfInput.current_cnt} tar={perfInput.target_cnt} 
-                onCur={(v)=>setPerfInput({...perfInput, current_cnt:v})} onTar={(v)=>setPerfInput({...perfInput, target_cnt:v})} color="text-emerald-500" />
+              <AgentProgressBox 
+                label="Amount" unit="만" cur={perfInput.current_amt} tar={perfInput.target_amt} 
+                onCur={(v: number)=>setPerfInput({...perfInput, current_amt: v})} 
+                onTar={(v: number)=>setPerfInput({...perfInput, target_amt: v})} 
+                color="text-indigo-600" 
+              />
+              <AgentProgressBox 
+                label="Count" unit="건" cur={perfInput.current_cnt} tar={perfInput.target_cnt} 
+                onCur={(v: number)=>setPerfInput({...perfInput, current_cnt: v})} 
+                onTar={(v: number)=>setPerfInput({...perfInput, target_cnt: v})} 
+                color="text-emerald-500" 
+              />
             </div>
             <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
               <h3 className="text-[11px] font-black text-slate-400 uppercase mb-8 tracking-widest italic">Activity Metrics</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                <AgentInput label="전화" val={perfInput.call} onChange={(v)=>setPerfInput({...perfInput, call:v})} />
-                <AgentInput label="미팅" val={perfInput.meet} onChange={(v)=>setPerfInput({...perfInput, meet:v})} />
-                <AgentInput label="제안" val={perfInput.pt} onChange={(v)=>setPerfInput({...perfInput, pt:v})} />
-                <AgentInput label="도입" val={perfInput.intro} onChange={(v)=>setPerfInput({...perfInput, intro:v})} />
-                <AgentInput label="DB배정" val={perfInput.db} onChange={(v)=>setPerfInput({...perfInput, db:v})} color="text-blue-600" />
-                <AgentInput label="반품" val={perfInput.ret} onChange={(v)=>setPerfInput({...perfInput, ret:v})} color="text-rose-500" />
+                <AgentInput label="전화" val={perfInput.call} onChange={(v: number)=>setPerfInput({...perfInput, call:v})} />
+                <AgentInput label="미팅" val={perfInput.meet} onChange={(v: number)=>setPerfInput({...perfInput, meet:v})} />
+                <AgentInput label="제안" val={perfInput.pt} onChange={(v: number)=>setPerfInput({...perfInput, pt:v})} />
+                <AgentInput label="도입" val={perfInput.intro} onChange={(v: number)=>setPerfInput({...perfInput, intro:v})} />
+                <AgentInput label="DB배정" val={perfInput.db} onChange={(v: number)=>setPerfInput({...perfInput, db:v})} color="text-blue-600" />
+                <AgentInput label="반품" val={perfInput.ret} onChange={(v: number)=>setPerfInput({...perfInput, ret:v})} color="text-rose-500" />
               </div>
               <button className="w-full mt-10 bg-black text-white py-6 rounded-2xl font-black uppercase tracking-[0.3em] shadow-2xl">Save Data</button>
             </div>
@@ -169,15 +197,13 @@ export default function IntegratedDashboard() {
         )}
       </main>
 
-      {/* ✅ CSS 애니메이션 정의 (Marquee 대체) */}
       <style jsx global>{`
         @keyframes marquee {
-          0% { transform: translateX(100%); }
-          100% { transform: translateX(-100%); }
+          0% { left: 100%; }
+          100% { left: -100%; }
         }
         .animate-marquee {
-          animation: marquee 20s linear infinite;
-          padding-left: 100%;
+          animation: marquee 25s linear infinite;
         }
         .react-calendar { border: none !important; width: 100% !important; border-radius: 20px; font-family: inherit !important; }
         .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 10px; font-weight: 900; }
@@ -187,23 +213,30 @@ export default function IntegratedDashboard() {
   )
 }
 
-// ─── 📦 [COMPONENTS - REUSED FROM PREVIOUS] ──────────────────────────
-function QuickLink({ label, href }: any) {
+// ─── 📦 [COMPONENTS] ──────────────────────────
+
+function QuickLink({ label, href }: { label: string; href: string }) {
   return (
     <a href={href} className="bg-white border-2 border-black text-center py-4 rounded-2xl font-black text-[11px] shadow-sm hover:bg-black hover:text-[#d4af37] transition-all uppercase">{label}</a>
   )
 }
+
 function MemoBox({ label, value, onChange, readOnly, color, placeholder }: any) {
   return (
     <div className={`${color} p-5 rounded-3xl border shadow-sm`}>
-        <div className="flex justify-between items-center mb-2">
-            <p className="text-[9px] font-black text-slate-400 uppercase italic tracking-widest">{label}</p>
-        </div>
-        <textarea readOnly={readOnly} value={value} onChange={onChange} className="w-full bg-transparent text-xs font-bold outline-none resize-none h-20 text-slate-700 leading-relaxed" placeholder={placeholder} />
+        <p className="text-[9px] font-black text-slate-400 uppercase italic tracking-widest mb-2">{label}</p>
+        <textarea 
+          readOnly={readOnly} 
+          value={value} 
+          onChange={onChange} 
+          className="w-full bg-transparent text-xs font-bold outline-none resize-none h-20 text-slate-700 leading-relaxed" 
+          placeholder={placeholder} 
+        />
     </div>
   )
 }
-function SummaryCard({ label, val, color }: any) {
+
+function SummaryCard({ label, val, color }: { label: string; val: string; color: string }) {
   return (
     <div className="bg-white p-6 rounded-[2rem] border text-center shadow-sm">
       <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{label}</p>
@@ -211,12 +244,14 @@ function SummaryCard({ label, val, color }: any) {
     </div>
   )
 }
-function MainTabBtn({ label, onClick }: any) {
+
+function MainTabBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button onClick={onClick} className="bg-white border-2 border-black py-4 rounded-2xl text-[11px] font-black uppercase hover:bg-black hover:text-[#d4af37] transition-all">{label}</button>
   )
 }
-function MiniProgress({ label, val, max, color }: any) {
+
+function MiniProgress({ label, val, max, color }: { label: string; val: number; max: number; color: string }) {
   return (
     <div className="w-full">
       <div className="flex justify-between text-[8px] font-black mb-1 uppercase text-slate-400"><span>{label}</span><span>{val}%</span></div>
@@ -226,14 +261,21 @@ function MiniProgress({ label, val, max, color }: any) {
     </div>
   )
 }
-function AgentInput({ label, val, onChange, color }: any) {
+
+function AgentInput({ label, val, onChange, color }: { label: string; val: number; onChange: (v: number) => void; color?: string }) {
   return (
     <div className="space-y-2">
       <label className="text-[10px] font-black text-slate-300 uppercase ml-2">{label}</label>
-      <input type="number" value={val || ''} onChange={(e)=>onChange(Number(e.target.value))} className={`w-full p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl font-black text-center text-xl outline-none transition-all ${color}`} />
+      <input 
+        type="number" 
+        value={val || ''} 
+        onChange={(e)=>onChange(Number(e.target.value))} 
+        className={`w-full p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl font-black text-center text-xl outline-none transition-all ${color}`} 
+      />
     </div>
   )
 }
+
 function AgentProgressBox({ label, unit, cur, tar, onCur, onTar, color }: any) {
   const pct = tar > 0 ? Math.min((cur/tar)*100, 100) : 0;
   return (
