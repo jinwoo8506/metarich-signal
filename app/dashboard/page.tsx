@@ -17,7 +17,8 @@ interface Performance {
 interface MonthlyTarget {
   year: number; month: number;
   target_count?: number; target_amount?: number; target_recruit?: number;
-  status?: string; admin_comment?: string;
+  target_call?: number; target_meet?: number; target_pt?: number; target_intro?: number;
+  status?: string;
 }
 interface Agent {
   id: string; name: string;
@@ -32,36 +33,31 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // 공통 상태 및 모달 제어
+  // ─── [상태 관리: 공통 및 모달] ──────────────────────
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [personalMemo, setPersonalMemo] = useState("")
-  const [dailySpecialNote, setDailySpecialNote] = useState("")
+  const [dailySpecialNote, setDailySpecialNote] = useState("") // 전사 공지용
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false)
   
-  // 관리자 팝업 제어
+  // 관리자 팝업 & 계산기 상태
   const [activeAdminPopup, setActiveAdminPopup] = useState<'perf' | 'act' | 'edu' | 'setting' | null>(null)
+  const [isBizToolOpen, setIsBizToolOpen] = useState(false)
+  const [activeTool, setActiveTool] = useState<'compound' | 'inflation' | 'retirement'>('compound')
   const [adminSideTab, setAdminSideTab] = useState<'activity' | 'performance'>('activity')
 
-  // 팀 목표 설정 상태 (설정 탭에서 수정 가능)
+  // 팀 목표 및 교육 설정
   const [teamGoal, setTeamGoal] = useState({ amount: 5000, count: 100, recruit: 10 })
+  const [eduSchedule, setEduSchedule] = useState(["1주차: 신상품 화법", "2주차: 약관 분석", "3주차: 거절 처리", "4주차: 클로징 기법"])
 
-  // [기존 실적 데이터 상태]
-  const [goal, setGoal] = useState(0)
-  const [targetAmount, setTargetAmount] = useState(0)
-  const [contract, setContract] = useState(0)
-  const [contractAmount, setContractAmount] = useState(0)
-  const [ap, setAp] = useState(0)
-  const [pt, setPt] = useState(0)
-  const [calls, setCalls] = useState(0)
-  const [meets, setMeets] = useState(0)
-  const [intros, setIntros] = useState(0)
-  const [recruits, setRecruits] = useState(0)
-  const [dbAssigned, setDbAssigned] = useState(0)
-  const [dbReturned, setDbReturned] = useState(0)
-  const [isApproved, setIsApproved] = useState(false)
+  // [본인 실적 데이터]
+  const [goal, setGoal] = useState(0); const [targetAmount, setTargetAmount] = useState(0)
+  const [contract, setContract] = useState(0); const [contractAmount, setContractAmount] = useState(0)
+  const [ap, setAp] = useState(0); const [pt, setPt] = useState(0)
+  const [calls, setCalls] = useState(0); const [meets, setMeets] = useState(0)
+  const [intros, setIntros] = useState(0); const [recruits, setRecruits] = useState(0)
+  const [dbAssigned, setDbAssigned] = useState(0); const [dbReturned, setDbReturned] = useState(0)
 
-  // 관리자 데이터
+  // 관리자 모니터링 데이터
   const [agents, setAgents] = useState<Agent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
 
@@ -69,8 +65,7 @@ export default function DashboardPage() {
   const currentMonth = selectedDate.getMonth() + 1
   const todayDate = new Date().getDate()
 
-  // ─── 🔄 [LOGIC] ──────────────────────────
-
+  // ─── 🔄 [데이터 로드 로직] ──────────────────────────
   useEffect(() => { checkUser() }, [])
   useEffect(() => { if (userId) fetchDailyData(selectedDate) }, [selectedDate, userId])
 
@@ -81,7 +76,7 @@ export default function DashboardPage() {
     if (!userInfo) return router.replace("/login")
     setUserId(session.user.id); setRole(userInfo.role); setUserName(userInfo.name)
     if (userInfo.role === "admin" || userInfo.role === "master") fetchAdminData()
-    if (userInfo.role === "agent" || userInfo.role === "master") fetchAgentData(session.user.id)
+    fetchAgentData(session.user.id)
     setLoading(false)
   }
 
@@ -100,31 +95,21 @@ export default function DashboardPage() {
   async function fetchAgentData(id: string) {
     const { data: t } = await supabase.from("monthly_targets").select("*").eq("user_id", id).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
     const { data: p } = await supabase.from("performances").select("*").eq("user_id", id).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
-    if (t) { setGoal(t.target_count || 0); setTargetAmount(t.target_amount || 0); setIsApproved(t.status === 'approved') }
+    if (t) { setGoal(t.target_count || 0); setTargetAmount(t.target_amount || 0) }
     if (p) { setAp(p.ap || 0); setPt(p.pt || 0); setContract(p.contract_count || 0); setContractAmount(p.contract_amount || 0); setCalls(p.call_count || 0); setMeets(p.meet_count || 0); setIntros(p.intro_count || 0); setRecruits(p.recruit_count || 0); setDbAssigned(p.db_assigned || 0); setDbReturned(p.db_returned || 0) }
   }
 
-  const handleAgentSave = async () => {
-    const payloadT = { user_id: userId, year: currentYear, month: currentMonth, target_count: Number(goal), target_amount: Number(targetAmount), status: isApproved ? 'approved' : 'pending' }
-    const payloadP = { user_id: userId, year: currentYear, month: currentMonth, ap: Number(ap), pt: Number(pt), contract_count: Number(contract), contract_amount: Number(contractAmount), call_count: Number(calls), meet_count: Number(meets), intro_count: Number(intros), recruit_count: Number(recruits), db_assigned: Number(dbAssigned), db_returned: Number(dbReturned) }
-    await supabase.from("monthly_targets").upsert(payloadT, { onConflict: 'user_id, year, month' })
-    await supabase.from("performances").upsert(payloadP, { onConflict: 'user_id, year, month' })
-    alert("성공적으로 업데이트되었습니다.")
-  }
-
-  // 관리자용 전체 통계 계산
   const totalStats = agents.reduce((acc, a) => {
     const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
     if (p) {
       acc.calls += (p.call_count || 0); acc.meets += (p.meet_count || 0);
       acc.pts += (p.pt || 0); acc.intros += (p.intro_count || 0);
-      acc.dbIn += (p.db_assigned || 0); acc.dbOut += (p.db_returned || 0);
       acc.contracts += (p.contract_count || 0); acc.amounts += (p.contract_amount || 0);
     }
     return acc;
-  }, { calls: 0, meets: 0, pts: 0, intros: 0, dbIn: 0, dbOut: 0, contracts: 0, amounts: 0 });
+  }, { calls: 0, meets: 0, pts: 0, intros: 0, contracts: 0, amounts: 0 });
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-300 italic animate-pulse">SIGNAL LOADING...</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-300 italic animate-pulse tracking-tighter">SIGNAL SYSTEM LOADING...</div>
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
@@ -132,21 +117,21 @@ export default function DashboardPage() {
       {/* 📱 모바일 헤더 */}
       <div className="lg:hidden bg-white border-b px-5 py-4 flex justify-between items-center sticky top-0 z-[100] shadow-sm">
         <h1 className="text-xl font-black italic tracking-tighter">SIGNAL</h1>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="bg-black text-[#d4af37] px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Menu</button>
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="bg-black text-[#d4af37] px-3 py-2 rounded-xl text-[10px] font-black uppercase">Menu</button>
       </div>
 
-      {/* ─── 📟 사이드바 (관리자 분석 통합) ─────────────────── */}
+      {/* ─── 📟 사이드바 (분석 및 메모) ─────────────────── */}
       <aside className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative inset-y-0 left-0 w-80 bg-white border-r z-[110] transition-transform duration-300 p-6 flex flex-col gap-6 overflow-y-auto shadow-2xl lg:shadow-none`}>
         <div className="flex justify-between items-center">
             <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase">History</h2>
             <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-2xl">✕</button>
         </div>
         
-        <div className="hidden lg:block border rounded-3xl overflow-hidden shadow-inner bg-slate-50 p-2 scale-90 origin-top">
+        <div className="border rounded-3xl overflow-hidden shadow-inner bg-slate-50 p-2 scale-95 origin-top">
             <Calendar onChange={(d: any) => setSelectedDate(d)} value={selectedDate} calendarType="gregory" className="border-0 w-full bg-transparent" />
         </div>
 
-        {/* [요청사항 1] 관리자 하단 활동/실적 관리 2개 탭 */}
+        {/* [관리자 하단 통계] 활동/실적 관리 탭 */}
         {(role === 'admin' || role === 'master') && (
           <div className="space-y-4 border-t pt-4">
             <div className="flex bg-slate-100 p-1 rounded-2xl">
@@ -160,16 +145,11 @@ export default function DashboardPage() {
                   <StatItem label="MEET" val={totalStats.meets} />
                   <StatItem label="PT" val={totalStats.pts} />
                   <StatItem label="INTRO" val={totalStats.intros} />
-                  <StatItem label="DB IN/OUT" val={`${totalStats.dbIn}/${totalStats.dbOut}`} colSpan />
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <StatItem label="팀 전체 건수" val={`${totalStats.contracts}건`} />
-                  <StatItem label="팀 전체 금액" val={`${totalStats.amounts.toLocaleString()}만`} />
-                  <div className="bg-emerald-50 p-3 rounded-2xl text-center">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase mb-1">팀 목표 달성률</p>
-                    <p className="text-xl font-black text-emerald-700">{((totalStats.amounts / teamGoal.amount) * 100).toFixed(1)}%</p>
-                  </div>
+                <div className="space-y-2 text-center bg-slate-900 text-white p-4 rounded-2xl">
+                  <p className="text-[10px] font-black text-[#d4af37] uppercase">팀 목표 달성률</p>
+                  <p className="text-xl font-black">{((totalStats.amounts / teamGoal.amount) * 100).toFixed(1)}%</p>
                 </div>
               )}
             </div>
@@ -177,73 +157,68 @@ export default function DashboardPage() {
         )}
 
         <div className="space-y-4">
-            <MemoBox label="ADMIN NOTICE" value={dailySpecialNote} onChange={(e: any)=>setDailySpecialNote(e.target.value)} readOnly={role === 'agent'} color="bg-blue-50" />
+            <MemoBox label="ADMIN NOTICE" value={dailySpecialNote} readOnly={role === 'agent'} color="bg-blue-50" />
             <MemoBox label="PERSONAL MEMO" value={personalMemo} onChange={(e: any)=>setPersonalMemo(e.target.value)} color="bg-slate-50" />
-            <button onClick={handleAgentSave} className="w-full bg-black text-[#d4af37] py-5 rounded-[1.5rem] font-black text-sm uppercase shadow-xl tracking-widest">Update Signal</button>
+            <button onClick={() => setIsBizToolOpen(true)} className="w-full bg-[#d4af37] text-black py-4 rounded-2xl font-black text-xs uppercase shadow-lg hover:scale-[1.02] transition-all">Open Sales Calculator</button>
         </div>
       </aside>
 
       {/* ─── 💎 메인 섹션 ─────────────────────────────────────────── */}
-      <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-x-hidden">
+      <main className="flex-1 p-4 lg:p-8 space-y-6">
         
-        {/* [요청사항 2] 3월 실적현황 및 목표대비 달성률 상단 배치 */}
-        <section className="max-w-6xl mx-auto space-y-4">
-          <div className="bg-white p-8 rounded-[3rem] shadow-sm border flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-center md:text-left">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{currentMonth}월 팀 실적 대시보드</p>
-              <h1 className="text-3xl font-black italic uppercase">Team Signal Status</h1>
-            </div>
-            <div className="flex gap-4">
-               <div className="text-center">
-                 <p className="text-[9px] font-black text-slate-400 uppercase">금액</p>
-                 <p className="text-xl font-black">{((totalStats.amounts / teamGoal.amount)*100).toFixed(0)}%</p>
-               </div>
-               <div className="text-center border-x px-4">
-                 <p className="text-[9px] font-black text-slate-400 uppercase">건수</p>
-                 <p className="text-xl font-black">{((totalStats.contracts / teamGoal.count)*100).toFixed(0)}%</p>
-               </div>
-               <div className="text-center">
-                 <p className="text-[9px] font-black text-slate-400 uppercase">도입</p>
-                 <p className="text-xl font-black">0%</p>
-               </div>
-            </div>
-          </div>
-
-          {/* [요청사항 2] 클릭 시 팝업으로 뜨는 4개 탭 */}
-          {(role === "admin" || role === "master") && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <MainTabBtn label="실적 관리" sub="팀 목표/분석" onClick={()=>setActiveAdminPopup('perf')} />
-                <MainTabBtn label="활동 관리" sub="전환율/상세" onClick={()=>setActiveAdminPopup('act')} />
-                <MainTabBtn label="교육 관리" sub="인지도 체크" onClick={()=>setActiveAdminPopup('edu')} />
-                <MainTabBtn label="목표 설정" sub="설정 및 수정" onClick={()=>setActiveAdminPopup('setting')} />
-            </div>
-          )}
+        {/* [복구] 최상단 퀵링크 탭 */}
+        <section className="max-w-6xl mx-auto grid grid-cols-3 gap-2 lg:gap-4">
+            <QuickLink label="메타온" href="https://metaon.metarich.co.kr" />
+            <QuickLink label="보험사" href="#" onClick={() => alert('보험사 시스템 연동 중')} />
+            <QuickLink label="자료실" href="#" onClick={() => alert('공유 자료실 이동')} />
         </section>
 
-        {/* 직원 목록 (부진자 깜빡임 효과) */}
+        <div className="max-w-6xl mx-auto space-y-6">
+          <header className="bg-white p-6 lg:p-10 rounded-[3rem] shadow-sm border flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{userName} CA 실적현황</p>
+              <h1 className="text-2xl lg:text-3xl font-black uppercase italic tracking-tighter">{currentMonth}월 실적 목표대비 달성률</h1>
+            </div>
+            <div className="flex gap-4 items-center">
+                <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="px-5 py-2.5 border-2 border-black rounded-2xl text-[10px] font-black hover:bg-black hover:text-[#d4af37] transition-all uppercase">Logout</button>
+            </div>
+          </header>
+
+          {/* 달성률 요약 */}
+          <section className="grid grid-cols-3 gap-4">
+              <SummaryCard label="금액 달성" val={`${((totalStats.amounts / teamGoal.amount)*100).toFixed(0)}%`} color="text-black" />
+              <SummaryCard label="건수 달성" val={`${((totalStats.contracts / teamGoal.count)*100).toFixed(0)}%`} color="text-blue-600" />
+              <SummaryCard label="도입 달성" val="0%" color="text-[#d4af37]" />
+          </section>
+
+          {/* 관리자 4개 탭 팝업 */}
+          {(role === "admin" || role === "master") && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <MainTabBtn label="실적 관리" sub="금액/건수/도입" onClick={()=>setActiveAdminPopup('perf')} />
+                <MainTabBtn label="활동 관리" sub="전화→미팅 전환율" onClick={()=>setActiveAdminPopup('act')} />
+                <MainTabBtn label="교육 관리" sub="주차별 인지도" onClick={()=>setActiveAdminPopup('edu')} />
+                <MainTabBtn label="목표 설정" sub="전체 목표/교육 수정" onClick={()=>setActiveAdminPopup('setting')} />
+            </div>
+          )}
+        </div>
+
+        {/* 직원 모니터링 리스트 */}
         <section className="max-w-6xl mx-auto">
-          <h2 className="text-xl font-black italic mb-6 border-l-8 border-black pl-4 uppercase">Agent Monitoring</h2>
+          <h2 className="text-xl font-black italic mb-6 border-l-8 border-black pl-4 uppercase">Team Monitoring</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {agents.map(a => {
                const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
                const isNoPerf = todayDate >= 10 && (!p || (p.contract_count || 0) === 0);
-               const isLowAvg = (p?.contract_amount || 0) < 30;
-               const isWarning = isNoPerf || isLowAvg;
-
                return (
                  <div key={a.id} onClick={() => setSelectedAgent(a)} 
-                  className={`bg-white p-8 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm group 
-                    ${isWarning ? 'animate-pulse border-rose-500 bg-rose-50 shadow-rose-100' : 'hover:border-black'}`}>
+                  className={`bg-white p-8 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm group hover:border-black ${isNoPerf ? 'animate-pulse border-rose-500 bg-rose-50':''}`}>
                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <p className="font-black text-xl underline underline-offset-8 decoration-[#d4af37] decoration-4 uppercase">{a.name} CA</p>
-                        {isWarning && <p className="text-[9px] font-black text-rose-500 mt-2 uppercase tracking-tighter">⚠️ 실적 부진/코칭 필요</p>}
-                      </div>
+                      <p className="font-black text-xl underline underline-offset-8 decoration-[#d4af37] decoration-4 uppercase">{a.name} CA</p>
                       <span className="text-[10px] font-black bg-slate-900 text-white px-3 py-1.5 rounded-full uppercase tracking-widest">COACH</span>
                    </div>
                    <div className="space-y-4">
-                      <MiniProgress label="체결 건수" val={p?.contract_count || 0} max={10} color="bg-black" />
-                      <MiniProgress label="실적 금액" val={p?.contract_amount || 0} max={300} color="bg-[#d4af37]" />
+                      <MiniProgress label="건수" val={p?.contract_count || 0} max={10} color="bg-black" />
+                      <MiniProgress label="금액" val={p?.contract_amount || 0} max={300} color="bg-[#d4af37]" />
                    </div>
                  </div>
                )
@@ -252,90 +227,89 @@ export default function DashboardPage() {
         </section>
       </main>
 
-      {/* ─── 🧱 [MODALS & POPUPS] ────────────────────────── */}
+      {/* ─── 🧱 [MODALS] ────────────────────────── */}
 
-      {/* [요청사항 3] 직원 클릭 시 상세 코칭 팝업 */}
-      {selectedAgent && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[600] flex justify-end">
-            <div className="bg-white w-full max-w-2xl h-full p-8 lg:p-12 overflow-y-auto animate-in slide-in-from-right duration-300">
-                <button onClick={() => setSelectedAgent(null)} className="mb-8 font-black text-xs uppercase underline">← Back to Monitor</button>
-                <header className="mb-10">
-                    <h2 className="text-4xl font-black italic border-b-8 border-black inline-block mb-2 uppercase">{selectedAgent.name} Analysis</h2>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">지난달 및 3개월 평균 데이터 자동 비교 분석</p>
+      {/* [영업 계산기 모달 복구] */}
+      {isBizToolOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[800] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-4xl rounded-[3rem] h-[85vh] flex flex-col overflow-hidden relative shadow-2xl">
+                <header className="p-8 border-b flex justify-between items-center bg-slate-50">
+                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sales Calculation Tool</h2>
+                    <button onClick={() => setIsBizToolOpen(false)} className="text-2xl font-black">✕</button>
                 </header>
-                
-                <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <CompareCard label="상담 AP" current={12} prev={8} unit="회" />
-                        <CompareCard label="체결 실적" current={240} prev={310} unit="만" />
-                    </div>
-
-                    <div className="bg-slate-900 text-white p-8 rounded-[3rem] border-b-8 border-[#d4af37]">
-                        <p className="text-[#d4af37] text-xs font-black mb-6 uppercase italic tracking-widest">Coaching & Feedback</p>
-                        <div className="space-y-6">
-                            <div>
-                                <p className="text-[10px] font-black text-emerald-400 mb-2 uppercase">Improved (개선점)</p>
-                                <p className="text-sm font-medium leading-relaxed">지난달 대비 고객 만남(MEET) 횟수가 20% 상승했습니다. 현장 활동량은 매우 양호합니다.</p>
-                            </div>
-                            <div className="h-px bg-slate-800" />
-                            <div>
-                                <p className="text-[10px] font-black text-rose-400 mb-2 uppercase">Weakness (보충점)</p>
-                                <p className="text-sm font-medium leading-relaxed">활동량 대비 클로징 금액이 낮습니다. 3개월 평균 대비 객단가가 하락 중이므로 고액 보장 제안법 코칭이 시급합니다.</p>
+                <div className="flex flex-1 overflow-hidden">
+                    <aside className="w-20 lg:w-48 bg-slate-100 border-r flex flex-col">
+                        <ToolTab active={activeTool === 'compound'} label="복리/단리" onClick={()=>setActiveTool('compound')} />
+                        <ToolTab active={activeTool === 'inflation'} label="인플레이션" onClick={()=>setActiveTool('inflation')} />
+                        <ToolTab active={activeTool === 'retirement'} label="은퇴 준비" onClick={()=>setActiveTool('retirement')} />
+                    </aside>
+                    <main className="flex-1 p-8 overflow-y-auto bg-white">
+                        <div className="max-w-md mx-auto space-y-8 py-10">
+                            <h3 className="text-3xl font-black text-center mb-10 uppercase italic underline decoration-[#d4af37]">Ready for Analysis</h3>
+                            <div className="space-y-6">
+                                <CalcInput label="월 저축 금액 (만원)" unit="만" />
+                                <CalcInput label="기대 수익률 (%)" unit="%" />
+                                <CalcInput label="저축 기간 (년)" unit="년" />
+                                <button className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl">Calculate Result</button>
                             </div>
                         </div>
-                    </div>
-                    <button onClick={() => setSelectedAgent(null)} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase">Close</button>
+                    </main>
                 </div>
             </div>
         </div>
       )}
 
-      {/* [요청사항 2] 메인 4개 탭 팝업 모달 */}
-      {activeAdminPopup && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[700] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-3xl rounded-[3rem] p-8 lg:p-12 relative overflow-y-auto max-h-[90vh]">
-                <button onClick={() => setActiveAdminPopup(null)} className="absolute top-8 right-8 text-2xl font-black">✕</button>
+      {/* [직원 상세 코칭 팝업] */}
+      {selectedAgent && (
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[900] flex justify-end">
+            <div className="bg-white w-full max-w-2xl h-full p-8 lg:p-12 overflow-y-auto animate-in slide-in-from-right duration-300">
+                <button onClick={() => setSelectedAgent(null)} className="mb-8 font-black text-xs uppercase underline">← Back to List</button>
+                <header className="mb-10">
+                    <h2 className="text-4xl font-black italic border-b-8 border-black inline-block mb-2 uppercase">{selectedAgent.name} Analysis</h2>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">목표 대비 활동 실적 및 지난달 비교 코칭</p>
+                </header>
                 
-                {activeAdminPopup === 'perf' && (
-                    <div className="space-y-8">
-                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">실적 상세 분석</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <GoalBox label="팀 목표금액" val={`${totalStats.amounts} / ${teamGoal.amount}만`} />
-                            <GoalBox label="팀 목표건수" val={`${totalStats.contracts} / ${teamGoal.count}건`} />
-                            <GoalBox label="팀 도입실적" val={`0 / ${teamGoal.recruit}명`} />
-                        </div>
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <ActivityGoalCard label="📞 CALL (목표 50)" current={selectedAgent.performances?.find(p=>p.month===currentMonth)?.call_count || 0} target={50} unit="건" />
+                        <ActivityGoalCard label="🤝 MEET (목표 20)" current={selectedAgent.performances?.find(p=>p.month===currentMonth)?.meet_count || 0} target={20} unit="건" />
+                        <ActivityGoalCard label="📝 PT (목표 15)" current={selectedAgent.performances?.find(p=>p.month===currentMonth)?.pt || 0} target={15} unit="건" />
+                        <ActivityGoalCard label="🎁 INTRO (목표 5)" current={selectedAgent.performances?.find(p=>p.month===currentMonth)?.intro_count || 0} target={5} unit="건" />
                     </div>
-                )}
 
-                {activeAdminPopup === 'act' && (
-                    <div className="space-y-8">
-                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">활동 전환율 통계</h3>
-                        <div className="space-y-6">
-                            <RatioBar label="전화 대비 만남 (목표 30%)" val={totalStats.calls ? (totalStats.meets/totalStats.calls)*100 : 0} color="bg-blue-500" />
-                            <RatioBar label="만남 대비 제안 (목표 50%)" val={totalStats.meets ? (totalStats.pts/totalStats.meets)*100 : 0} color="bg-indigo-500" />
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                                <SmallStat label="총 전화" val={totalStats.calls} />
-                                <SmallStat label="총 만남" val={totalStats.meets} />
-                                <SmallStat label="총 제안" val={totalStats.pts} />
-                                <SmallStat label="총 소개" val={totalStats.intros} />
+                    <div className="bg-slate-900 text-white p-8 rounded-[3rem] border-b-8 border-[#d4af37]">
+                        <p className="text-[#d4af37] text-xs font-black mb-6 uppercase italic tracking-widest">Feedback & Coaching</p>
+                        <div className="space-y-4">
+                            <div className="flex gap-3">
+                                <span className="text-emerald-400 font-black">▲ 개선:</span>
+                                <p className="text-sm text-slate-300">지난달 대비 PT(제안) 횟수가 크게 증가했습니다. 집중도가 좋아졌습니다.</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <span className="text-rose-400 font-black">▼ 부족:</span>
+                                <p className="text-sm text-slate-300">활동량은 많으나 건당 체결 금액이 3개월 평균보다 낮습니다. 고액 계약 클로징이 필요합니다.</p>
                             </div>
                         </div>
                     </div>
-                )}
+                    <button onClick={() => setSelectedAgent(null)} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase">Close Analysis</button>
+                </div>
+            </div>
+        </div>
+      )}
 
+      {/* [관리자 4개 탭 팝업 모달] */}
+      {activeAdminPopup && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-3xl rounded-[3rem] p-8 lg:p-12 relative overflow-y-auto max-h-[90vh]">
+                <button onClick={() => setActiveAdminPopup(null)} className="absolute top-8 right-8 text-2xl font-black">✕</button>
+                
                 {activeAdminPopup === 'edu' && (
-                    <div className="space-y-8 text-center py-10">
-                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2 text-left">교육 인지도 관리</h3>
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">매주 진행되는 교육 컨텐츠에 대한 직원별 인지도 체크</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                            {agents.map(a => (
-                                <div key={a.id} className="p-4 bg-slate-50 rounded-2xl flex justify-between items-center">
-                                    <span className="font-black text-sm uppercase">{a.name} CA</span>
-                                    <select className="bg-white border rounded-xl px-3 py-1.5 text-[10px] font-black">
-                                        <option>인지 완료</option>
-                                        <option>재교육 필요</option>
-                                        <option>미참여</option>
-                                    </select>
+                    <div className="space-y-8">
+                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">교육 인지도 관리</h3>
+                        <div className="space-y-4">
+                            {eduSchedule.map((title, idx) => (
+                                <div key={idx} className="p-5 bg-slate-50 rounded-2xl flex justify-between items-center border">
+                                    <p className="font-black text-sm uppercase">{title}</p>
+                                    <span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase">80% 숙지</span>
                                 </div>
                             ))}
                         </div>
@@ -344,12 +318,48 @@ export default function DashboardPage() {
 
                 {activeAdminPopup === 'setting' && (
                     <div className="space-y-8">
-                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">팀 목표 설정 및 수정</h3>
-                        <div className="space-y-6">
-                            <AdminInput label="팀 전체 목표 금액 (만원)" val={teamGoal.amount} onChange={(v)=>setTeamGoal({...teamGoal, amount:v})} />
-                            <AdminInput label="팀 전체 목표 건수 (건)" val={teamGoal.count} onChange={(v)=>setTeamGoal({...teamGoal, count:v})} />
-                            <AdminInput label="팀 전체 도입 목표 (명)" val={teamGoal.recruit} onChange={(v)=>setTeamGoal({...teamGoal, recruit:v})} />
-                            <button onClick={() => {alert('설정이 저장되었습니다.'); setActiveAdminPopup(null);}} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl active:scale-95 transition-all">Save Changes</button>
+                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">전체 목표 및 교육 수정</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-4">
+                                <p className="font-black text-[10px] text-slate-400 uppercase tracking-widest border-b">1. 팀 목표 수정</p>
+                                <AdminInput label="팀 목표 금액" val={teamGoal.amount} onChange={(v)=>setTeamGoal({...teamGoal, amount:v})} />
+                                <AdminInput label="팀 목표 건수" val={teamGoal.count} onChange={(v)=>setTeamGoal({...teamGoal, count:v})} />
+                            </div>
+                            <div className="space-y-4">
+                                <p className="font-black text-[10px] text-slate-400 uppercase tracking-widest border-b">2. 교육 제목 설정</p>
+                                {eduSchedule.map((title, i) => (
+                                    <input key={i} value={title} onChange={(e) => {
+                                        const next = [...eduSchedule]; next[i] = e.target.value; setEduSchedule(next);
+                                    }} className="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-xs" />
+                                ))}
+                            </div>
+                        </div>
+                        <button onClick={() => {alert('저장되었습니다.'); setActiveAdminPopup(null);}} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl">Update System</button>
+                    </div>
+                )}
+                
+                {activeAdminPopup === 'act' && (
+                    <div className="space-y-8">
+                         <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">상세 활동 및 전환율</h3>
+                         <div className="space-y-6">
+                            <RatioBar label="전화 → 미팅 (전환율)" val={totalStats.calls ? (totalStats.meets/totalStats.calls)*100 : 0} color="bg-indigo-500" />
+                            <RatioBar label="미팅 → 제안 (전환율)" val={totalStats.meets ? (totalStats.pts/totalStats.meets)*100 : 0} color="bg-blue-500" />
+                            <div className="grid grid-cols-4 gap-4 mt-8">
+                                <SmallStat label="총 CALL" val={totalStats.calls} />
+                                <SmallStat label="총 MEET" val={totalStats.meets} />
+                                <SmallStat label="총 PT" val={totalStats.pts} />
+                                <SmallStat label="총 INTRO" val={totalStats.intros} />
+                            </div>
+                         </div>
+                    </div>
+                )}
+
+                {activeAdminPopup === 'perf' && (
+                    <div className="space-y-8">
+                        <h3 className="text-2xl font-black uppercase italic border-b-4 border-black pb-2">전체 실적 현황</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <GoalBox label="팀 누적 금액" val={`${totalStats.amounts.toLocaleString()}만`} />
+                            <GoalBox label="팀 누적 건수" val={`${totalStats.contracts}건`} />
                         </div>
                     </div>
                 )}
@@ -368,13 +378,22 @@ export default function DashboardPage() {
 
 // ─── 📦 [REUSABLE COMPONENTS] ──────────────────────────
 
-function StatItem({ label, val, colSpan }: any) {
-  return (
-    <div className={`bg-slate-50 p-3 rounded-2xl border ${colSpan ? 'col-span-2' : ''}`}>
-      <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{label}</p>
-      <p className="text-xs font-black">{val}</p>
-    </div>
-  )
+function QuickLink({ label, href, onClick }: any) {
+    return (
+        <a href={href} target={href !== "#" ? "_blank" : undefined} onClick={onClick} 
+           className="bg-white border-2 border-slate-900 text-center py-4 rounded-2xl font-black text-[11px] lg:text-sm shadow-sm hover:bg-black hover:text-[#d4af37] transition-all uppercase">
+            {label}
+        </a>
+    )
+}
+
+function SummaryCard({ label, val, color }: any) {
+    return (
+        <div className="bg-white p-6 rounded-3xl border text-center shadow-sm">
+            <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{label}</p>
+            <p className={`text-2xl font-black ${color}`}>{val}</p>
+        </div>
+    )
 }
 
 function MainTabBtn({ label, sub, onClick }: any) {
@@ -386,41 +405,62 @@ function MainTabBtn({ label, sub, onClick }: any) {
     )
 }
 
-function MiniProgress({ label, val, max, color }: any) {
-  const rate = Math.min((val / (max || 1)) * 100, 100);
-  return (
-    <div className="w-full">
-      <div className="flex justify-between text-[9px] font-black mb-1.5 uppercase tracking-tighter">
-        <span className="text-slate-400">{label}</span>
-        <span>{val} / {max}</span>
-      </div>
-      <div className="w-full h-1.5 bg-slate-50 rounded-full overflow-hidden shadow-inner">
-        <div className={`h-full ${color} transition-all duration-1000 ease-out`} style={{ width: `${rate}%` }} />
-      </div>
-    </div>
-  )
+function ToolTab({ active, label, onClick }: any) {
+    return (
+        <button onClick={onClick} className={`p-4 lg:p-6 text-[10px] lg:text-xs font-black uppercase transition-all ${active ? 'bg-white text-black border-r-4 border-black':'text-slate-400 hover:bg-slate-50'}`}>
+            {label}
+        </button>
+    )
 }
 
-function CompareCard({ label, current, prev, unit }: any) {
-    const isUp = current >= prev;
+function CalcInput({ label, unit }: any) {
     return (
-        <div className="bg-slate-50 p-6 rounded-3xl border">
-            <p className="text-[10px] font-black text-slate-400 uppercase mb-2">{label}</p>
-            <div className="flex justify-between items-end">
-                <p className="text-2xl font-black">{current.toLocaleString()}{unit}</p>
-                <p className={`text-[11px] font-black ${isUp ? 'text-emerald-500':'text-rose-500'}`}>
-                    {isUp ? '▲':'▼'} {Math.abs(current-prev)}{unit}
-                </p>
+        <div className="space-y-1">
+            <label className="text-[10px] font-black ml-4 uppercase text-slate-400 tracking-widest">{label}</label>
+            <div className="relative">
+                <input type="number" className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[2rem] font-black text-2xl outline-none focus:border-black transition-all" />
+                <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 uppercase">{unit}</span>
             </div>
         </div>
     )
 }
 
-function GoalBox({ label, val }: any) {
+function ActivityGoalCard({ label, current, target, unit }: any) {
+    const rate = Math.min((current / (target || 1)) * 100, 100);
     return (
-        <div className="bg-slate-900 p-6 rounded-3xl text-center">
-            <p className="text-[#d4af37] text-[10px] font-black uppercase mb-1">{label}</p>
-            <p className="text-white text-lg font-black">{val}</p>
+        <div className="bg-slate-50 p-5 rounded-3xl border">
+            <p className="text-[10px] font-black text-slate-400 uppercase mb-2">{label}</p>
+            <div className="flex justify-between items-end mb-2">
+                <p className="text-xl font-black">{current}{unit}</p>
+                <p className="text-[10px] font-bold text-slate-400">Target {target}</p>
+            </div>
+            <div className="w-full h-1.5 bg-white rounded-full overflow-hidden border">
+                <div className="h-full bg-black" style={{ width: `${rate}%` }} />
+            </div>
+        </div>
+    )
+}
+
+function MiniProgress({ label, val, max, color }: any) {
+  const rate = Math.min((val / (max || 1)) * 100, 100);
+  return (
+    <div className="w-full">
+      <div className="flex justify-between text-[9px] font-black mb-1.5 uppercase">
+        <span className="text-slate-400">{label}</span>
+        <span>{val} / {max}</span>
+      </div>
+      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${rate}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function AdminInput({ label, val, onChange }: any) {
+    return (
+        <div className="space-y-1">
+            <label className="text-[10px] font-black ml-4 uppercase text-slate-400">{label}</label>
+            <input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} className="w-full p-4 bg-slate-50 border rounded-2xl font-black outline-none focus:border-black" />
         </div>
     )
 }
@@ -428,7 +468,7 @@ function GoalBox({ label, val }: any) {
 function RatioBar({ label, val, color }: any) {
     return (
         <div className="space-y-2">
-            <div className="flex justify-between text-xs font-black uppercase">
+            <div className="flex justify-between text-xs font-black uppercase tracking-tighter">
                 <span>{label}</span>
                 <span>{val.toFixed(1)}%</span>
             </div>
@@ -441,20 +481,29 @@ function RatioBar({ label, val, color }: any) {
 
 function SmallStat({ label, val }: any) {
     return (
-        <div className="text-center p-4 bg-slate-50 rounded-2xl">
+        <div className="text-center p-4 bg-slate-50 rounded-2xl border">
             <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{label}</p>
             <p className="text-lg font-black">{val}</p>
         </div>
     )
 }
 
-function AdminInput({ label, val, onChange }: { label: string; val: number; onChange: (v: number) => void }) {
+function GoalBox({ label, val }: any) {
     return (
-        <div className="space-y-2">
-            <label className="text-[10px] font-black ml-4 uppercase text-slate-400 tracking-widest">{label}</label>
-            <input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-[2rem] font-black text-xl outline-none focus:border-black transition-all" />
+        <div className="bg-slate-900 p-6 rounded-3xl text-center border-b-8 border-[#d4af37]">
+            <p className="text-[#d4af37] text-[10px] font-black uppercase mb-1">{label}</p>
+            <p className="text-white text-lg font-black">{val}</p>
         </div>
     )
+}
+
+function StatItem({ label, val }: any) {
+  return (
+    <div className="bg-slate-50 p-3 rounded-2xl border">
+      <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{label}</p>
+      <p className="text-xs font-black">{val}</p>
+    </div>
+  )
 }
 
 function MemoBox({ label, value, onChange, readOnly, color }: any) {
