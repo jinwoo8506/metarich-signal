@@ -13,10 +13,20 @@ interface Performance {
   call_count?: number; meet_count?: number; pt?: number;
   intro_count?: number; db_assigned?: number; db_returned?: number;
 }
+
 interface Agent {
   id: string; name: string;
   monthly_targets?: any[];
   performances?: Performance[];
+}
+
+interface CalcState {
+  principal: number;
+  payYears: number;
+  totalYears: number;
+  bankRate: number;
+  insReturnRate: number;
+  inflationRate: number;
 }
 
 export default function DashboardPage() {
@@ -31,30 +41,26 @@ export default function DashboardPage() {
   const [personalMemo, setPersonalMemo] = useState("")
   const [dailySpecialNote, setDailySpecialNote] = useState("") 
   const [isBizToolOpen, setIsBizToolOpen] = useState(false)
-  const [activeAdminPopup, setActiveAdminPopup] = useState<'perf' | 'act' | 'edu' | null>(null)
   const [activeTool, setActiveTool] = useState<'comparison' | 'inflation' | 'compound'>('comparison')
 
-  // 활동 데이터
-  const [goalCount, setGoalCount] = useState(0); 
-  const [targetAmt, setTargetAmt] = useState(0);
-  const [contract, setContract] = useState(0); 
-  const [calls, setCalls] = useState(0);
-  const [meets, setMeets] = useState(0); 
-  const [pts, setPts] = useState(0);
+  // 활동 데이터 (예시용 상태)
+  const [calls, setCalls] = useState(0)
+  const [meets, setMeets] = useState(0)
+  const [pts, setPts] = useState(0)
+  const [contract, setContract] = useState(0)
 
-  // 계산기 입력값 (엑셀 연동형)
-  const [calc, setCalc] = useState({
-    principal: 50,    // 월납입액(만원) 또는 일시납
-    payYears: 5,      // 납입기간
-    totalYears: 10,   // 총기간
-    bankRate: 3.5,    // 은행이율
-    insReturnRate: 125, // 보험 환급률 (%)
-    inflationRate: 3.0  // 물가상승률
+  // 계산기 입력값 (엑셀 연동형) - 타입 명시
+  const [calc, setCalc] = useState<CalcState>({
+    principal: 50,
+    payYears: 5,
+    totalYears: 10,
+    bankRate: 3.5,
+    insReturnRate: 125,
+    inflationRate: 3.0
   })
   const [calcResult, setCalcResult] = useState<any>(null)
 
   const [agents, setAgents] = useState<Agent[]>([])
-  const currentYear = selectedDate.getFullYear()
   const currentMonth = selectedDate.getMonth() + 1
 
   // ─── 🔄 [DATA FETCH & AUTH] ──────────────────────────
@@ -86,19 +92,25 @@ export default function DashboardPage() {
     router.replace("/login")
   }
 
-  // 🧮 [상담용 계산기 로직]
+  // 🧮 [상담용 계산기 로직 - 엑셀 수식 기반]
   const runCalculation = () => {
     if (activeTool === 'comparison') {
       const monthlyPrincipal = calc.principal * 10000;
       const payMonths = calc.payYears * 12;
       const r = (calc.bankRate / 100) / 12;
       const totalPay = monthlyPrincipal * payMonths;
+      
+      // 은행 적금 (단리)
       const savingInt = monthlyPrincipal * (payMonths * (payMonths + 1) / 2) * r;
       const afterTaxSaving = totalPay + (savingInt * 0.846);
+      
+      // 예금 거치 (단리)
       const restYears = calc.totalYears - calc.payYears;
       const finalBank = restYears > 0 
         ? afterTaxSaving + (afterTaxSaving * (calc.bankRate/100) * restYears * 0.846) 
         : afterTaxSaving;
+      
+      // 보험 (입력 환급률 적용)
       const finalIns = totalPay * (calc.insReturnRate / 100);
 
       setCalcResult({
@@ -112,14 +124,14 @@ export default function DashboardPage() {
       const futureVal = (calc.principal * 10000) / Math.pow(1 + (calc.inflationRate/100), calc.totalYears);
       setCalcResult({
         title: `${calc.totalYears}년 후 자산 가치`,
-        val1: `현재 가치: ${calc.principal}만원`,
+        val1: `현재 가치: ${calc.principal.toLocaleString()}만원`,
         val2: `미래 실질가치: ${Math.round(futureVal/10000).toLocaleString()}만원`,
         loss: `가치 하락분: ${Math.round((calc.principal * 10000 - futureVal)/10000).toLocaleString()}만원`
       });
     } else if (activeTool === 'compound') {
       const finalCompound = (calc.principal * 10000) * Math.pow(1 + (calc.bankRate/100), calc.totalYears);
       setCalcResult({
-        title: `${calc.principal}만원 일시납 ${calc.totalYears}년 거치`,
+        title: `${calc.principal.toLocaleString()}만원 일시납 ${calc.totalYears}년 거치`,
         val1: `원금: ${calc.principal.toLocaleString()}만원`,
         val2: `복리 만기금: ${Math.round(finalCompound/10000).toLocaleString()}만원`,
         gain: `순수 수익: ${Math.round((finalCompound - calc.principal*10000)/10000).toLocaleString()}만원`
@@ -140,10 +152,10 @@ export default function DashboardPage() {
                 onChange={(d: any) => setSelectedDate(d)} 
                 value={selectedDate} 
                 calendarType="gregory"
-                formatDay={(locale, date) => date.getDate().toString()} 
+                formatDay={(_locale, date) => date.getDate().toString()} 
             />
         </div>
-        <MemoBox label="ADMIN NOTICE" value={dailySpecialNote} readOnly color="bg-blue-50" />
+        <MemoBox label="PERSONAL MEMO" value={personalMemo} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>setPersonalMemo(e.target.value)} color="bg-slate-50" />
         <button onClick={() => setIsBizToolOpen(true)} className="w-full bg-[#d4af37] text-black py-4 rounded-2xl font-black shadow-lg hover:scale-105 transition-all uppercase italic">Sales Tool</button>
         <button onClick={handleLogout} className="mt-auto text-slate-400 font-black text-xs hover:text-rose-500 transition-all uppercase underline">Logout</button>
       </aside>
@@ -151,7 +163,7 @@ export default function DashboardPage() {
       {/* ─── 💎 메인 섹션 ─────────────────── */}
       <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-x-hidden">
         
-        {/* 상단 네비게이션 탭 (복구) */}
+        {/* 상단 네비게이션 탭 (복구 및 타입 해결) */}
         <header className="flex justify-between items-center bg-white p-4 lg:p-6 rounded-[2rem] shadow-sm border mb-4">
             <div className="flex gap-4 items-center">
               <h1 className="font-black italic text-xl lg:hidden">SIGNAL</h1>
@@ -163,12 +175,11 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4">
               <button onClick={() => setIsBizToolOpen(true)} className="bg-black text-[#d4af37] px-4 py-2 rounded-xl text-xs font-black uppercase">Tools</button>
-              <button onClick={handleLogout} className="md:hidden text-[10px] font-black text-rose-500 underline">EXIT</button>
+              <button onClick={handleLogout} className="md:hidden text-[10px] font-black text-rose-500 underline uppercase">Exit</button>
             </div>
         </header>
 
         <div className="max-w-6xl mx-auto space-y-6">
-          {/* 활동 입력 섹션 */}
           <section className="bg-white p-6 lg:p-10 rounded-[3rem] border shadow-sm space-y-8">
             <div className="flex justify-between items-center border-b pb-4">
                 <h2 className="text-xl font-black italic underline decoration-[#d4af37] decoration-4 uppercase">Activity: {currentMonth}월</h2>
@@ -182,7 +193,6 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* 하단 공지/교육 확인 */}
           <section className="bg-slate-900 text-white p-8 rounded-[3rem] border-b-8 border-[#d4af37] shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="text-center md:text-left">
                   <h3 className="text-[#d4af37] font-black text-xs uppercase tracking-widest mb-2 italic">Admin Notice</h3>
@@ -193,7 +203,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* ─── 🧱 [모달: 상담용 계산기] ─────────────────── */}
+      {/* ─── 🧱 [모달: 상담용 계산기 - 타입 오류 해결] ─────────────────── */}
       {isBizToolOpen && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[1000] flex items-end lg:items-center justify-center">
             <div className="bg-white w-full lg:max-w-4xl h-[92vh] lg:h-[85vh] rounded-t-[3rem] lg:rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
@@ -213,31 +223,31 @@ export default function DashboardPage() {
                         <div className="max-w-md mx-auto space-y-6">
                             {activeTool === 'comparison' && (
                               <div className="space-y-4">
-                                <CalcInput label="월 납입액 (만원)" unit="만" value={calc.principal} onChange={(v)=>setCalc({...calc, principal: v})} />
+                                <CalcInput label="월 납입액 (만원)" unit="만" value={calc.principal} onChange={(v: number)=>setCalc({...calc, principal: v})} />
                                 <div className="grid grid-cols-2 gap-4">
-                                  <CalcInput label="납입 기간 (년)" unit="년" value={calc.payYears} onChange={(v)=>setCalc({...calc, payYears: v})} />
-                                  <CalcInput label="총 기간 (년)" unit="년" value={calc.totalYears} onChange={(v)=>setCalc({...calc, totalYears: v})} />
+                                  <CalcInput label="납입 기간 (년)" unit="년" value={calc.payYears} onChange={(v: number)=>setCalc({...calc, payYears: v})} />
+                                  <CalcInput label="총 기간 (년)" unit="년" value={calc.totalYears} onChange={(v: number)=>setCalc({...calc, totalYears: v})} />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                  <CalcInput label="은행 이율 (%)" unit="%" value={calc.bankRate} onChange={(v)=>setCalc({...calc, bankRate: v})} />
-                                  <CalcInput label="보험 환급률 (%)" unit="%" value={calc.insReturnRate} onChange={(v)=>setCalc({...calc, insReturnRate: v})} />
+                                  <CalcInput label="은행 이율 (%)" unit="%" value={calc.bankRate} onChange={(v: number)=>setCalc({...calc, bankRate: v})} />
+                                  <CalcInput label="보험 환급률 (%)" unit="%" value={calc.insReturnRate} onChange={(v: number)=>setCalc({...calc, insReturnRate: v})} />
                                 </div>
                               </div>
                             )}
 
                             {activeTool === 'inflation' && (
                               <div className="space-y-4">
-                                <CalcInput label="기준 금액 (만원)" unit="만" value={calc.principal} onChange={(v)=>setCalc({...calc, principal: v})} />
-                                <CalcInput label="물가 상승률 (%)" unit="%" value={calc.inflationRate} onChange={(v)=>setCalc({...calc, inflationRate: v})} />
-                                <CalcInput label="기간 (년)" unit="년" value={calc.totalYears} onChange={(v)=>setCalc({...calc, totalYears: v})} />
+                                <CalcInput label="기준 금액 (만원)" unit="만" value={calc.principal} onChange={(v: number)=>setCalc({...calc, principal: v})} />
+                                <CalcInput label="물가 상승률 (%)" unit="%" value={calc.inflationRate} onChange={(v: number)=>setCalc({...calc, inflationRate: v})} />
+                                <CalcInput label="기간 (년)" unit="년" value={calc.totalYears} onChange={(v: number)=>setCalc({...calc, totalYears: v})} />
                               </div>
                             )}
 
                             {activeTool === 'compound' && (
                               <div className="space-y-4">
-                                <CalcInput label="일시납 금액 (만원)" unit="만" value={calc.principal} onChange={(v)=>setCalc({...calc, principal: v})} />
-                                <CalcInput label="거치 기간 (년)" unit="년" value={calc.totalYears} onChange={(v)=>setCalc({...calc, totalYears: v})} />
-                                <CalcInput label="복리 이율 (%)" unit="%" value={calc.bankRate} onChange={(v)=>setCalc({...calc, bankRate: v})} />
+                                <CalcInput label="일시납 금액 (만원)" unit="만" value={calc.principal} onChange={(v: number)=>setCalc({...calc, principal: v})} />
+                                <CalcInput label="거치 기간 (년)" unit="년" value={calc.totalYears} onChange={(v: number)=>setCalc({...calc, totalYears: v})} />
+                                <CalcInput label="복리 이율 (%)" unit="%" value={calc.bankRate} onChange={(v: number)=>setCalc({...calc, bankRate: v})} />
                               </div>
                             )}
 
@@ -256,7 +266,7 @@ export default function DashboardPage() {
                                           <span className="font-bold">보험 (비과세/환급률)</span>
                                           <span className="font-black">{calcResult.insFinal} ({calc.insReturnRate}%)</span>
                                         </div>
-                                        <p className="text-center text-xs font-bold pt-4 text-slate-500 italic">은행보다 약 {calcResult.diff} 더 수령 가능</p>
+                                        <p className="text-center text-[10px] font-bold pt-4 text-slate-500 italic">은행보다 약 {calcResult.diff} 더 수령 가능</p>
                                       </div>
                                     ) : (
                                       <div className="space-y-4 text-center">
@@ -284,9 +294,9 @@ export default function DashboardPage() {
   )
 }
 
-// ─── 📦 [COMPONENTS] ──────────────────────────
+// ─── 📦 [REUSABLE COMPONENTS] ──────────────────────────
 
-function ActivityMini({ label, val, color }: any) {
+function ActivityMini({ label, val, color }: { label: string, val: number, color: string }) {
     return (
         <div className={`${color} p-5 rounded-3xl text-center border shadow-sm`}>
             <p className="text-[10px] font-black text-slate-400 uppercase mb-1">{label}</p>
@@ -295,19 +305,24 @@ function ActivityMini({ label, val, color }: any) {
     )
 }
 
-function CalcInput({ label, unit, value, onChange }: any) {
+function CalcInput({ label, unit, value, onChange }: { label: string, unit: string, value: number, onChange: (v: number) => void }) {
     return (
         <div className="space-y-1 w-full text-left">
             <label className="text-[10px] font-black ml-4 uppercase text-slate-400">{label}</label>
             <div className="relative">
-                <input type="number" value={value} onChange={(e)=>onChange(Number(e.target.value))} className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl font-black text-xl outline-none focus:border-black transition-all" />
+                <input 
+                  type="number" 
+                  value={value} 
+                  onChange={(e) => onChange(Number(e.target.value))} 
+                  className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl font-black text-xl outline-none focus:border-black transition-all" 
+                />
                 <span className="absolute right-6 top-1/2 -translate-y-1/2 font-black text-slate-300 text-sm italic">{unit}</span>
             </div>
         </div>
     )
 }
 
-function ToolTab({ active, label, onClick }: any) {
+function ToolTab({ active, label, onClick }: { active: boolean, label: string, onClick: () => void }) {
     return (
         <button onClick={onClick} className={`flex-1 lg:flex-none p-5 lg:p-7 text-[10px] lg:text-xs font-black uppercase transition-all whitespace-nowrap ${active ? 'bg-white text-black border-b-4 lg:border-b-0 lg:border-r-8 border-black shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}>
             {label}
@@ -315,7 +330,7 @@ function ToolTab({ active, label, onClick }: any) {
     )
 }
 
-function MemoBox({ label, value, onChange, readOnly, color }: any) {
+function MemoBox({ label, value, onChange, readOnly, color }: { label: string, value: string, onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, readOnly?: boolean, color: string }) {
   return (
     <div className={`${color} p-5 rounded-3xl border shadow-inner`}>
         <p className="text-[9px] font-black text-slate-400 mb-2 uppercase italic tracking-widest">{label}</p>
