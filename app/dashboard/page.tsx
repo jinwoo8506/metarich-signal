@@ -36,23 +36,26 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [personalMemo, setPersonalMemo] = useState("")
   const [dailySpecialNote, setDailySpecialNote] = useState("") 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   
-  // 관리자 & 도구 팝업
+  // 팝업 제어
   const [activeAdminPopup, setActiveAdminPopup] = useState<'perf' | 'act' | 'edu' | 'setting' | null>(null)
   const [isBizToolOpen, setIsBizToolOpen] = useState(false)
   const [activeTool, setActiveTool] = useState<'savings' | 'inflation' | 'compound'>('savings')
 
-  // 직원 실적 데이터 (요청하신 모든 탭 포함)
+  // 직원 실적 데이터
   const [goalCount, setGoalCount] = useState(0)
   const [targetAmt, setTargetAmt] = useState(0)
   const [targetRecruit, setTargetRecruit] = useState(0)
   const [isApproved, setIsApproved] = useState(false) 
 
-  const [contract, setContract] = useState(0); const [contractAmount, setContractAmount] = useState(0)
-  const [calls, setCalls] = useState(0); const [meets, setMeets] = useState(0)
-  const [pts, setPts] = useState(0); const [intros, setIntros] = useState(0)
-  const [dbIn, setDbIn] = useState(0); const [dbOut, setDbOut] = useState(0)
+  const [contract, setContract] = useState(0)
+  const [contractAmount, setContractAmount] = useState(0)
+  const [calls, setCalls] = useState(0)
+  const [meets, setMeets] = useState(0)
+  const [pts, setPts] = useState(0)
+  const [intros, setIntros] = useState(0)
+  const [dbIn, setDbIn] = useState(0)
+  const [dbOut, setDbOut] = useState(0)
 
   // 계산기 입력값 및 결과값
   const [calcInput, setCalcInput] = useState({ principal: 0, rate: 0, years: 0 })
@@ -87,7 +90,7 @@ export default function DashboardPage() {
     const { data: myMemo } = await supabase.from("daily_notes").select("agent_memo").eq("user_id", userId).eq("date", dateStr).maybeSingle()
     setDailySpecialNote(note?.admin_notice || ""); setPersonalMemo(myMemo?.agent_memo || "")
 
-    // 2. 직원 목표 및 실적 (전화, 미팅 등 모든 탭 포함)
+    // 2. 직원 목표 및 실적
     const { data: t } = await supabase.from("monthly_targets").select("*").eq("user_id", userId).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
     const { data: p } = await supabase.from("performances").select("*").eq("user_id", userId).eq("year", currentYear).eq("month", currentMonth).maybeSingle()
     
@@ -104,14 +107,13 @@ export default function DashboardPage() {
       setIntros(p.intro_count || 0); setDbIn(p.db_assigned || 0); setDbOut(p.db_returned || 0)
     }
 
-    // 3. 관리자용 전체 요약
+    // 3. 관리자용 데이터
     if (role !== 'agent') {
         const { data } = await supabase.from("users").select(`id, name, monthly_targets(*), performances(*)`).eq("role", "agent")
         if (data) setAgents(data as Agent[])
     }
   }
 
-  // 데이터 저장 (목표는 미승인 시에만, 실적은 상시)
   const handleSave = async () => {
     const targetPayload = { user_id: userId, year: currentYear, month: currentMonth, target_count: goalCount, target_amount: targetAmt, target_recruit: targetRecruit }
     const perfPayload = { user_id: userId, year: currentYear, month: currentMonth, contract_count: contract, contract_amount: contractAmount, call_count: calls, meet_count: meets, pt: pts, intro_count: intros, db_assigned: dbIn, db_returned: dbOut }
@@ -124,30 +126,28 @@ export default function DashboardPage() {
     fetchData()
   }
 
-  // 🧮 계산기 로직
   const calculateResult = () => {
     const { principal, rate, years } = calcInput;
     if (principal <= 0 || years <= 0) return alert("금액과 기간을 입력하세요.");
-    
     let result = 0;
     if (activeTool === 'compound') {
       result = principal * Math.pow((1 + (rate / 100)), years);
     } else if (activeTool === 'inflation') {
       result = principal / Math.pow((1 + (rate / 100)), years);
     } else {
-      // 적금 vs 보험 단순 비교 예시
       result = principal * (1 + (rate / 100) * years);
     }
     setCalcResult(result.toLocaleString(undefined, { maximumFractionDigits: 0 }));
   }
 
+  // 관리자용 합계 계산
   const totalStats = agents.reduce((acc, a) => {
     const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
     const t = a.monthly_targets?.find(tf => tf.year === currentYear && tf.month === currentMonth);
-    if (p) { acc.curAmt += (p.contract_amount || 0); acc.curCnt += (p.contract_count || 0); acc.calls += (p.call_count || 0); acc.meets += (p.meet_count || 0); acc.pts += (p.pt || 0); }
+    if (p) { acc.curAmt += (p.contract_amount || 0); acc.curCnt += (p.contract_count || 0); }
     if (t) { acc.tarAmt += (t.target_amount || 0); acc.tarCnt += (t.target_count || 0); acc.tarRec += (t.target_recruit || 0); }
     return acc;
-  }, { curAmt: 0, curCnt: 0, tarAmt: 0, tarCnt: 0, tarRec: 0, calls: 0, meets: 0, pts: 0 });
+  }, { curAmt: 0, curCnt: 0, tarAmt: 0, tarCnt: 0, tarRec: 0 });
 
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black text-slate-400 animate-pulse">SYSTEM UPDATING...</div>
 
@@ -167,10 +167,8 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* ─── 💎 메인 메인 섹션 ─────────────────────────────────────────── */}
+      {/* ─── 💎 메인 섹션 ─────────────────────────────────────────── */}
       <main className="flex-1 p-4 lg:p-8 space-y-6">
-        
-        {/* 퀵링크 */}
         <section className="max-w-6xl mx-auto grid grid-cols-3 gap-3">
             <QuickLink label="메타온" href="https://metaon.metarich.co.kr" />
             <QuickLink label="보험사 협회" href="#" />
@@ -186,7 +184,7 @@ export default function DashboardPage() {
             <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="px-5 py-2 border-2 border-black rounded-2xl text-[10px] font-black uppercase">Logout</button>
           </header>
 
-          {/* [관리자 전용 탭] - 모든 탭 활성화 */}
+          {/* [관리자 전용 탭] */}
           {(role !== "agent") && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <MainTabBtn label="실적 분석" sub="팀 막대 그래프" onClick={()=>setActiveAdminPopup('perf')} />
@@ -196,7 +194,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* 📝 [직원 활동 입력] - 승인 시 목표 수정 불가 로직 포함 */}
+          {/* 📝 [직원 활동 입력] */}
           <section className="bg-white p-6 lg:p-10 rounded-[3rem] border shadow-sm space-y-8">
             <div className="flex justify-between items-end border-b-2 border-slate-100 pb-4">
                 <h2 className="text-xl font-black italic uppercase underline decoration-[#d4af37] decoration-4">Monthly Input</h2>
@@ -209,7 +207,7 @@ export default function DashboardPage() {
                 <InputBox label="도입 목표 (명)" value={targetRecruit} onChange={setTargetRecruit} disabled={isApproved} highlight />
             </div>
 
-            {/* 활동 내역 6종 (전화, 만남, 제안, 소개, DB배정/반품) */}
+            {/* 활동 내역 6종 필수 UI */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 <ActivityMini label="전화" val={calls} onChange={setCalls} color="bg-blue-50" />
                 <ActivityMini label="만남" val={meets} onChange={setMeets} color="bg-indigo-50" />
@@ -224,7 +222,7 @@ export default function DashboardPage() {
 
       {/* ─── 🧱 [모달창들] ────────────────────────── */}
 
-      {/* 1. 관리자 실적 관리 (가로 막대 그래프) */}
+      {/* 1. 실적 관리 팝업 */}
       {activeAdminPopup === 'perf' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 relative">
@@ -239,7 +237,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 2. 교육 관리 탭 (인지도 체크) */}
+      {/* 2. 교육 관리 팝업 */}
       {activeAdminPopup === 'edu' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 relative">
@@ -257,7 +255,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 3. 시스템 목표 설정 (관리자 전용 수정) */}
+      {/* 3. 시스템 설정 팝업 */}
       {activeAdminPopup === 'setting' && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-2xl rounded-[3rem] p-10 relative">
@@ -272,13 +270,13 @@ export default function DashboardPage() {
                             }} className="w-full p-4 border rounded-xl font-bold text-xs" />
                         ))}
                     </div>
-                    <button onClick={()=>{alert('시스템 설정이 저장되었습니다.'); setActiveAdminPopup(null)}} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl">Update System</button>
+                    <button onClick={()=>{alert('저장되었습니다.'); setActiveAdminPopup(null)}} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl">Update System</button>
                 </div>
             </div>
         </div>
       )}
 
-      {/* 4. 영업 계산기 (수익 결과 도출 로직 포함) */}
+      {/* 4. 영업 계산기 팝업 */}
       {isBizToolOpen && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[800] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-4xl h-[85vh] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl">
@@ -293,7 +291,7 @@ export default function DashboardPage() {
                         <ToolTab active={activeTool==='compound'} label="복리 계산" onClick={()=>setActiveTool('compound')} />
                     </aside>
                     <main className="flex-1 p-10 overflow-y-auto bg-white flex flex-col items-center">
-                        <div className="max-w-md w-full space-y-6 py-6">
+                        <div className="max-w-md w-full space-y-6">
                             <h3 className="text-2xl font-black text-center uppercase underline decoration-[#d4af37] decoration-4 mb-10">
                                 {activeTool === 'savings' ? "적금/보험 비교" : activeTool === 'inflation' ? "물가상승 계산" : "복리 수익 시뮬레이션"}
                             </h3>
@@ -301,14 +299,12 @@ export default function DashboardPage() {
                                 <CalcInput label="금액 (만원)" unit="만" value={calcInput.principal} onChange={(v)=>setCalcInput({...calcInput, principal: v})} />
                                 <CalcInput label="이율/물가율 (%)" unit="%" value={calcInput.rate} onChange={(v)=>setCalcInput({...calcInput, rate: v})} />
                                 <CalcInput label="기간 (년)" unit="년" value={calcInput.years} onChange={(v)=>setCalcInput({...calcInput, years: v})} />
-                                <button onClick={calculateResult} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl transition-all active:scale-95">결과 분석</button>
+                                <button onClick={calculateResult} className="w-full bg-black text-[#d4af37] py-6 rounded-3xl font-black text-lg uppercase shadow-xl">결과 분석</button>
                             </div>
-
                             {calcResult && (
                                 <div className="mt-10 p-8 bg-slate-900 text-white rounded-[2rem] border-b-8 border-[#d4af37] animate-bounce-short">
                                     <p className="text-[10px] font-black text-[#d4af37] mb-2 uppercase">Analysis Result</p>
                                     <p className="text-3xl font-black">{calcResult}<span className="text-sm ml-1 text-slate-400">만원</span></p>
-                                    <p className="text-[10px] text-slate-400 mt-2 font-bold italic">* 위 수치는 세전 금액이며 시뮬레이션 결과입니다.</p>
                                 </div>
                             )}
                         </div>
@@ -328,7 +324,7 @@ export default function DashboardPage() {
   )
 }
 
-// ─── 📦 [컴포넌트 라이브러리] ──────────────────────────
+// ─── 📦 [하위 컴포넌트] ──────────────────────────
 
 function ProgressBar({ label, current, target, unit, color }: any) {
     const rate = target > 0 ? Math.min((current / target) * 100, 100) : 0;
