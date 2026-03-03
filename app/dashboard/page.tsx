@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase"
 import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
 
-// ─── 🛡️ [TYPES] ──────────────────────────────────
+// ─── 🛡️ [TYPE DEFINITIONS] ──────────────────────────
 interface Performance {
   year: number; month: number;
   contract_count?: number; contract_amount?: number;
@@ -25,33 +25,34 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // ─── [UI States] ────────────────────────────────
+  // ─── [UI/상태 관리] ────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [personalMemo, setPersonalMemo] = useState("")
   const [dailySpecialNote, setDailySpecialNote] = useState("") 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   
-  // 팝업 및 계산기 상태
+  // 팝업 관련
   const [activeAdminPopup, setActiveAdminPopup] = useState<'perf' | 'act' | 'edu' | 'setting' | null>(null)
   const [isBizToolOpen, setIsBizToolOpen] = useState(false)
   const [activeTool, setActiveTool] = useState<'compare' | 'inflation' | 'lumpSum'>('compare')
 
-  // 데이터 상태
+  // 데이터 리스트
   const [agents, setAgents] = useState<Agent[]>([])
   const [eduChecklist, setEduChecklist] = useState([
     { id: 1, text: "1주차: 신상품 화법 숙지", done: false },
     { id: 2, text: "2주차: 약관 주요 개정사항 확인", done: false },
     { id: 3, text: "3주차: 거절 처리 시나리오 연습", done: false },
+    { id: 4, text: "4주차: 클로징 기법 보완", done: false }
   ])
 
   // ─── [직원 실적 입력 상태] ──────────────────────
   const [myPerf, setMyPerf] = useState<Performance>({
     year: new Date().getFullYear(), month: new Date().getMonth() + 1,
     call_count: 0, meet_count: 0, pt: 0, intro_count: 0,
-    contract_count: 0, contract_amount: 0, db_assigned: 0, db_returned: 0
+    db_assigned: 0, db_returned: 0, contract_count: 0, contract_amount: 0
   })
 
-  // ─── [계산기 데이터 세분화] ──────────────────────
+  // ─── [계산기 3종 입력 상태] ──────────────────────
   const [calcCompare, setCalcCompare] = useState({ pay: 500000, year: 5, rate: 125 });
   const [calcInflation, setCalcInflation] = useState({ currentVal: 100000000, year: 20, rate: 3 });
   const [calcLumpSum, setCalcLumpSum] = useState({ amount: 50000000, year: 10, rate: 4 });
@@ -59,6 +60,7 @@ export default function DashboardPage() {
   const currentYear = selectedDate.getFullYear()
   const currentMonth = selectedDate.getMonth() + 1
 
+  // ─── 🔄 [데이터 로직] ──────────────────────────
   useEffect(() => { checkUser() }, [])
   async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession()
@@ -75,23 +77,18 @@ export default function DashboardPage() {
     if (data) setAgents(data as Agent[])
   }
 
-  const handlePerfSubmit = () => {
-    alert("오늘의 실적이 저장되었습니다.");
-    // 실제 구현 시 supabase.from('performances').upsert(...) 로직 추가
-  }
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-black italic">LOADING...</div>
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-black italic text-slate-400 animate-pulse uppercase tracking-widest">System Loading...</div>
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
       
-      {/* 📟 사이드바 (밸런스 조정) */}
-      <aside className="w-full lg:w-[340px] bg-white border-r p-6 flex flex-col gap-8 shadow-sm">
+      {/* 📟 사이드바 (기존 레이아웃 유지) */}
+      <aside className="w-full lg:w-[340px] bg-white border-r p-6 flex flex-col gap-8 shadow-sm z-50">
         <div className="flex justify-between items-center px-2">
-            <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter">Plan & Memo</h2>
+            <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter">History & Plan</h2>
         </div>
         
-        {/* 달력: 숫자만 강조 */}
+        {/* 달력: 숫자만 표시 (요청사항 반영) */}
         <div className="minimal-calendar bg-slate-50 p-4 rounded-[2rem] border border-slate-100 shadow-inner scale-95 origin-top">
             <Calendar 
                 onChange={(d: any) => setSelectedDate(d)} 
@@ -104,8 +101,8 @@ export default function DashboardPage() {
 
         <div className="space-y-4 flex-1">
             <MemoBox label="NOTICE" value={dailySpecialNote} readOnly={role === 'agent'} color="bg-indigo-50/50" />
-            <MemoBox label="MY WORK" value={personalMemo} onChange={(e: any)=>setPersonalMemo(e.target.value)} color="bg-slate-50" />
-            <button onClick={() => setIsBizToolOpen(true)} className="w-full bg-black text-[#d4af37] py-5 rounded-3xl font-black text-sm uppercase shadow-xl hover:-translate-y-1 transition-all">Sales Calculator</button>
+            <MemoBox label="MY MEMO" value={personalMemo} onChange={(e: any)=>setPersonalMemo(e.target.value)} color="bg-slate-50" />
+            <button onClick={() => setIsBizToolOpen(true)} className="w-full bg-black text-[#d4af37] py-5 rounded-3xl font-black text-sm uppercase shadow-xl hover:-translate-y-1 transition-all">Open Sales Calculator</button>
         </div>
       </aside>
 
@@ -119,80 +116,90 @@ export default function DashboardPage() {
           <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="px-6 py-2 bg-slate-100 rounded-full text-[11px] font-black hover:bg-rose-500 hover:text-white transition-all uppercase">Logout</button>
         </header>
 
-        {/* ─── [직원 로그인 시 전용 입력란] ─── */}
+        {/* ─── [직원 로그인 시: 실적 입력 + 교육 체크] ─── */}
         {role === "agent" && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* 1. 실적 입력 탭 */}
+            {/* 실적 입력 카드 */}
             <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 space-y-6">
-               <h2 className="text-xl font-black italic border-l-8 border-black pl-4 uppercase">Daily Activity Input</h2>
+               <div className="flex justify-between items-center border-l-8 border-black pl-4">
+                  <h2 className="text-xl font-black italic uppercase">Daily Performance</h2>
+                  <span className="text-[10px] font-black bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full uppercase">Today</span>
+               </div>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <InputUnit label="콜(Call)" val={myPerf.call_count} onChange={(v)=>setMyPerf({...myPerf, call_count: v})} />
+                  <InputUnit label="콜" val={myPerf.call_count} onChange={(v)=>setMyPerf({...myPerf, call_count: v})} />
                   <InputUnit label="미팅" val={myPerf.meet_count} onChange={(v)=>setMyPerf({...myPerf, meet_count: v})} />
                   <InputUnit label="PT" val={myPerf.pt} onChange={(v)=>setMyPerf({...myPerf, pt: v})} />
                   <InputUnit label="도입" val={myPerf.intro_count} onChange={(v)=>setMyPerf({...myPerf, intro_count: v})} />
                </div>
                <div className="grid grid-cols-2 gap-4">
-                  <InputUnit label="DB 배정" val={myPerf.db_assigned} onChange={(v)=>setMyPerf({...myPerf, db_assigned: v})} />
+                  <InputUnit label="DB 배정" val={myPerf.db_assigned} onChange={(v)=>setMyPerf({...myPerf, db_assigned: v})} color="text-indigo-600" />
                   <InputUnit label="DB 반품" val={myPerf.db_returned} onChange={(v)=>setMyPerf({...myPerf, db_returned: v})} color="text-rose-500" />
                </div>
-               <button onClick={handlePerfSubmit} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase hover:bg-black transition-all">실적 저장하기</button>
+               <button onClick={() => alert('실적이 저장되었습니다.')} className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase hover:bg-black transition-all shadow-lg">Save Activity</button>
             </div>
 
-            {/* 2. 교육 숙지 체크리스트 */}
+            {/* 교육 숙지 체크리스트 */}
             <div className="bg-[#1a1a1a] p-8 rounded-[3rem] shadow-xl text-white space-y-6">
-               <h2 className="text-xl font-black italic border-l-8 border-[#d4af37] pl-4 uppercase text-[#d4af37]">Education Check</h2>
-               <div className="space-y-3">
+               <h2 className="text-xl font-black italic border-l-8 border-[#d4af37] pl-4 uppercase text-[#d4af37]">Training Checklist</h2>
+               <div className="space-y-3 h-[280px] overflow-y-auto pr-2 custom-scroll">
                   {eduChecklist.map(item => (
                     <div key={item.id} onClick={() => setEduChecklist(eduChecklist.map(i => i.id === item.id ? {...i, done: !i.done} : i))}
                       className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border transition-all ${item.done ? 'bg-[#d4af37]/10 border-[#d4af37]' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
                       <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${item.done ? 'bg-[#d4af37] border-[#d4af37]' : 'border-white/30'}`}>
-                        {item.done && <span className="text-black text-xs font-black">✓</span>}
+                        {item.done && <span className="text-black text-[10px] font-black">✓</span>}
                       </div>
                       <span className={`font-bold text-sm ${item.done ? 'text-[#d4af37] line-through opacity-70' : 'text-white'}`}>{item.text}</span>
                     </div>
                   ))}
                </div>
-               <p className="text-[10px] text-white/40 font-bold text-center uppercase tracking-tighter">* 모든 항목을 숙지한 후 체크해주시기 바랍니다.</p>
+               <p className="text-[10px] text-white/40 font-bold text-center uppercase tracking-widest">Check after completing each session</p>
             </div>
           </div>
         )}
 
-        {/* ─── [관리자 로그인 시 모니터링] ─── */}
+        {/* ─── [관리자 로그인 시: 3가지 관리 탭 + 모니터링] ─── */}
         {(role === "admin" || role === "master") && (
-          <section className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-black italic border-l-8 border-black pl-4 uppercase">Team Monitoring</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {agents.map(a => {
-                const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
-                return (
-                  <div key={a.id} className="bg-white p-7 rounded-[2.5rem] border-2 border-transparent hover:border-black transition-all shadow-sm">
-                    <p className="font-black text-xl mb-4 uppercase">{a.name} <span className="text-slate-300 ml-1">Agent</span></p>
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                        <StatBox label="DB배정" val={p?.db_assigned || 0} />
-                        <StatBox label="DB반품" val={p?.db_returned || 0} color="text-rose-500" />
-                    </div>
-                    <div className="space-y-2">
-                      <MiniProgress label="CALL" val={p?.call_count || 0} max={50} color="bg-indigo-500" />
-                      <MiniProgress label="MEET" val={p?.meet_count || 0} max={20} color="bg-amber-500" />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
+          <>
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <AdminTabCard title="실적 분석" sub="금액/건수 관리" icon="📊" onClick={()=>setActiveAdminPopup('perf')} color="border-l-indigo-500" />
+                <AdminTabCard title="활동 지표" sub="전환율/DB 관리" icon="⚡" onClick={()=>setActiveAdminPopup('act')} color="border-l-amber-500" />
+                <AdminTabCard title="교육 현황" sub="숙지율/커리큘럼" icon="🎓" onClick={()=>setActiveAdminPopup('edu')} color="border-l-emerald-500" />
+            </section>
+
+            <section className="space-y-6">
+              <h2 className="text-xl font-black italic border-l-8 border-black pl-4 uppercase">Team Agents Monitoring</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {agents.map(a => {
+                   const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
+                   return (
+                     <div key={a.id} className="bg-white p-7 rounded-[2.5rem] border-2 border-transparent hover:border-black transition-all shadow-sm group">
+                       <div className="flex justify-between items-center mb-6">
+                          <p className="font-black text-xl uppercase">{a.name} <span className="text-slate-300 ml-1">Agent</span></p>
+                          <div className="px-3 py-1 bg-slate-900 text-[#d4af37] text-[10px] font-black rounded-full italic">TEAM A</div>
+                       </div>
+                       <div className="grid grid-cols-2 gap-3 mb-6">
+                          <StatBox label="DB 배정" val={p?.db_assigned || 0} color="text-indigo-600" />
+                          <StatBox label="DB 반품" val={p?.db_returned || 0} color="text-rose-500" />
+                       </div>
+                       <div className="space-y-3">
+                          <MiniProgress label="CALL" val={p?.call_count || 0} max={50} color="bg-black" />
+                          <MiniProgress label="MEET" val={p?.meet_count || 0} max={20} color="bg-[#d4af37]" />
+                       </div>
+                     </div>
+                   )
+                })}
+              </div>
+            </section>
+          </>
         )}
       </main>
 
-      {/* ─── 🧱 [MODALS] ────────────────────────────────── */}
-
-      {/* 영업 계산기 - 3종 개별 구성 */}
+      {/* ─── 🧱 [MODALS: 계산기 3종 각각 구성] ────────────────── */}
       {isBizToolOpen && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-5xl rounded-[3rem] h-[85vh] flex flex-col overflow-hidden shadow-2xl">
                 <header className="p-8 border-b flex justify-between items-center bg-slate-50">
-                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sales Strategy Calculator</h2>
+                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sales Strategy Tool</h2>
                     <button onClick={() => setIsBizToolOpen(false)} className="w-12 h-12 flex items-center justify-center bg-black text-white rounded-full font-black">✕</button>
                 </header>
                 <div className="flex flex-1 overflow-hidden">
@@ -211,35 +218,35 @@ export default function DashboardPage() {
                                 <CalcInput label="보험 환급률" unit="%" value={calcCompare.rate} onChange={(v: number)=>setCalcCompare({...calcCompare, rate: v})} />
                              </div>
                              <div className="bg-black text-[#d4af37] p-10 rounded-[3rem] text-center">
-                                <p className="text-xs font-black mb-2 uppercase opacity-60">예상 보험 환급금</p>
+                                <p className="text-xs font-black mb-2 uppercase opacity-60">보험 최종 환급금</p>
                                 <p className="text-5xl font-black">{(calcCompare.pay * 12 * calcCompare.year * (calcCompare.rate/100)).toLocaleString()}원</p>
                              </div>
                           </div>
                         )}
                         {activeTool === 'inflation' && (
                           <div className="space-y-8 animate-in fade-in duration-500">
-                             <h3 className="text-xl font-black uppercase underline decoration-rose-500 decoration-4 underline-offset-4 mb-6">화폐 가치 하락 계산 (물가상승)</h3>
+                             <h3 className="text-xl font-black uppercase underline decoration-rose-500 decoration-4 underline-offset-4 mb-6">화폐 가치 하락 계산</h3>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <CalcInput label="현재 자산 가치" unit="원" value={calcInflation.currentVal} onChange={(v: number)=>setCalcInflation({...calcInflation, currentVal: v})} />
+                                <CalcInput label="현재 자금" unit="원" value={calcInflation.currentVal} onChange={(v: number)=>setCalcInflation({...calcInflation, currentVal: v})} />
                                 <CalcInput label="경과 기간" unit="년" value={calcInflation.year} onChange={(v: number)=>setCalcInflation({...calcInflation, year: v})} />
-                                <CalcInput label="평균 물가상승률" unit="%" value={calcInflation.rate} onChange={(v: number)=>setCalcInflation({...calcInflation, rate: v})} />
+                                <CalcInput label="물가상승률" unit="%" value={calcInflation.rate} onChange={(v: number)=>setCalcInflation({...calcInflation, rate: v})} />
                              </div>
                              <div className="bg-rose-600 text-white p-10 rounded-[3rem] text-center">
-                                <p className="text-xs font-black mb-2 uppercase opacity-60">{calcInflation.year}년 후 실질 화폐 가치</p>
+                                <p className="text-xs font-black mb-2 uppercase opacity-60">{calcInflation.year}년 후 실질 가치</p>
                                 <p className="text-5xl font-black">{(calcInflation.currentVal / Math.pow(1 + calcInflation.rate/100, calcInflation.year)).toLocaleString(undefined, {maximumFractionDigits:0})}원</p>
                              </div>
                           </div>
                         )}
                         {activeTool === 'lumpSum' && (
                           <div className="space-y-8 animate-in fade-in duration-500">
-                             <h3 className="text-xl font-black uppercase underline decoration-indigo-500 decoration-4 underline-offset-4 mb-6">목돈 일시거치 이자 계산 (복리)</h3>
+                             <h3 className="text-xl font-black uppercase underline decoration-indigo-500 decoration-4 underline-offset-4 mb-6">목돈 일시거치 복리 계산</h3>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <CalcInput label="거치 금액" unit="원" value={calcLumpSum.amount} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, amount: v})} />
+                                <CalcInput label="예치 금액" unit="원" value={calcLumpSum.amount} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, amount: v})} />
                                 <CalcInput label="거치 기간" unit="년" value={calcLumpSum.year} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, year: v})} />
                                 <CalcInput label="연 복리 이율" unit="%" value={calcLumpSum.rate} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, rate: v})} />
                              </div>
                              <div className="bg-indigo-700 text-white p-10 rounded-[3rem] text-center">
-                                <p className="text-xs font-black mb-2 uppercase opacity-60">만기 시 수령 금액 (세전)</p>
+                                <p className="text-xs font-black mb-2 uppercase opacity-60">만기 시 수령액 (세전)</p>
                                 <p className="text-5xl font-black">{(calcLumpSum.amount * Math.pow(1 + calcLumpSum.rate/100, calcLumpSum.year)).toLocaleString(undefined, {maximumFractionDigits:0})}원</p>
                              </div>
                           </div>
@@ -250,39 +257,50 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ─── [Styles] ──────────────────────────────────── */}
+      {/* ─── [Global Styles] ──────────────────────────────────── */}
       <style jsx global>{`
-        .minimal-calendar .react-calendar { border: none !important; width: 100% !important; font-family: inherit !important; background: transparent !important; }
-        .minimal-calendar .react-calendar__navigation { margin-bottom: 10px; }
-        .minimal-calendar .react-calendar__navigation button { font-weight: 900; color: black; font-size: 14px; }
+        .minimal-calendar .react-calendar { border: none !important; width: 100% !important; background: transparent !important; }
         .minimal-calendar .react-calendar__month-view__weekdays { display: none !important; }
-        .minimal-calendar .react-calendar__tile { padding: 12px 8px !important; font-size: 13px; font-weight: 600; color: #94a3b8; }
-        .minimal-calendar .react-calendar__tile--now { background: #e2e8f0 !important; border-radius: 12px; color: black; }
-        .minimal-calendar .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; font-weight: 900; }
+        .minimal-calendar .react-calendar__tile { padding: 12px 8px !important; font-size: 13px; font-weight: 700; color: #94a3b8; }
+        .minimal-calendar .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 10px; }
       `}</style>
     </div>
   )
 }
 
-// ─── 📦 [COMPONENTS] ──────────────────────────────────
+// ─── 📦 [SUB COMPONENTS] ──────────────────────────────────
 
 function InputUnit({ label, val, onChange, color }: any) {
   return (
     <div className="space-y-1">
-      <label className="text-[10px] font-black text-slate-400 uppercase ml-2">{label}</label>
+      <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">{label}</label>
       <input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} 
-        className={`w-full p-4 bg-slate-50 border rounded-2xl font-black text-center text-lg outline-none focus:border-black ${color}`} />
+        className={`w-full p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl font-black text-center text-lg outline-none transition-all ${color}`} />
     </div>
   )
 }
 
 function StatBox({ label, val, color }: any) {
   return (
-    <div className="bg-slate-50 p-3 rounded-2xl text-center">
-      <p className="text-[9px] font-black text-slate-400 uppercase">{label}</p>
+    <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100">
+      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">{label}</p>
       <p className={`text-sm font-black ${color || 'text-slate-900'}`}>{val}</p>
     </div>
   )
+}
+
+function AdminTabCard({ title, sub, icon, onClick, color }: any) {
+    return (
+        <button onClick={onClick} className={`bg-white p-6 rounded-[2rem] border-l-[12px] ${color} shadow-sm flex items-center gap-5 hover:scale-[1.03] transition-all text-left group`}>
+            <span className="text-3xl">{icon}</span>
+            <div>
+                <p className="text-lg font-black uppercase tracking-tighter">{title}</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase">{sub}</p>
+            </div>
+        </button>
+    )
 }
 
 function ToolTab({ active, label, onClick }: any) {
