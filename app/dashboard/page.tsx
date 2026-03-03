@@ -25,13 +25,10 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // ─── [상태 관리] ────────────────────────────────
+  // ─── [UI/상태 관리] ────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [personalMemo, setPersonalMemo] = useState("")
   const [dailySpecialNote, setDailySpecialNote] = useState("") 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  
-  const [activeAdminPopup, setActiveAdminPopup] = useState<'perf' | 'act' | 'edu' | 'setting' | null>(null)
   const [isBizToolOpen, setIsBizToolOpen] = useState(false)
   const [activeTool, setActiveTool] = useState<'compare' | 'inflation' | 'lumpSum'>('compare')
 
@@ -50,8 +47,8 @@ export default function DashboardPage() {
     db_assigned: 0, db_returned: 0, contract_count: 0, contract_amount: 0
   })
 
-  // ─── [계산기 3종 상태] ──────────────────────────
-  const [calcCompare, setCalcCompare] = useState({ pay: 500000, year: 5, rate: 125 });
+  // ─── [계산기 3종 입력 상태] ──────────────────────
+  const [calcCompare, setCalcCompare] = useState({ pay: 500000, year: 5, bankRate: 3.5, insuRate: 125 });
   const [calcInflation, setCalcInflation] = useState({ currentVal: 100000000, year: 20, rate: 3 });
   const [calcLumpSum, setCalcLumpSum] = useState({ amount: 50000000, year: 10, rate: 4 });
 
@@ -75,18 +72,32 @@ export default function DashboardPage() {
     if (data) setAgents(data as Agent[])
   }
 
+  // ─── 🧮 [계산 로직] ──────────────────────────
+  const formatKRW = (val: number) => new Intl.NumberFormat('ko-KR').format(Math.round(val)) + "원";
+
+  // 1. 적금 vs 보험 비교 계산
+  const getCompareResult = () => {
+    const totalMonths = calcCompare.year * 12;
+    const totalPrincipal = calcCompare.pay * totalMonths;
+    // 단순 적금 계산 (원금 + 단리 이자 가정)
+    const bankInterest = calcCompare.pay * (totalMonths * (totalMonths + 1) / 2) * (calcCompare.bankRate / 100 / 12);
+    const bankFinal = totalPrincipal + bankInterest;
+    // 보험 환급금 계산 (원금 * 환급률)
+    const insuFinal = totalPrincipal * (calcCompare.insuRate / 100);
+    return { bankFinal, insuFinal, totalPrincipal };
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center font-black italic text-slate-400 animate-pulse uppercase tracking-widest">System Loading...</div>
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
       
-      {/* 📟 사이드바 */}
+      {/* 📟 사이드바 (기존 488줄 레이아웃 유지) */}
       <aside className="w-full lg:w-[340px] bg-white border-r p-6 flex flex-col gap-8 shadow-sm z-50">
         <div className="flex justify-between items-center px-2">
             <h2 className="font-black text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter">History</h2>
         </div>
         
-        {/* 달력: 숫자만 표시 */}
         <div className="minimal-calendar bg-slate-50 p-4 rounded-[2rem] border border-slate-100 shadow-inner scale-95 origin-top">
             <Calendar 
                 onChange={(d: any) => setSelectedDate(d)} 
@@ -104,7 +115,7 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* 💎 메인 섹션 */}
+      {/* 💎 메인 대시보드 */}
       <main className="flex-1 p-6 lg:p-10 space-y-8 max-w-[1400px] mx-auto w-full">
         <header className="flex flex-col md:flex-row justify-between items-end gap-4 border-b-2 border-slate-200 pb-6">
           <div>
@@ -118,9 +129,7 @@ export default function DashboardPage() {
         {role === "agent" && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 space-y-6">
-               <div className="flex justify-between items-center border-l-8 border-black pl-4">
-                  <h2 className="text-xl font-black italic uppercase">Daily Performance</h2>
-               </div>
+               <h2 className="text-xl font-black italic border-l-8 border-black pl-4 uppercase">Daily Performance</h2>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <InputUnit label="콜" val={myPerf.call_count} onChange={(v: number)=>setMyPerf({...myPerf, call_count: v})} />
                   <InputUnit label="미팅" val={myPerf.meet_count} onChange={(v: number)=>setMyPerf({...myPerf, meet_count: v})} />
@@ -151,7 +160,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ─── [관리자 로그인 시: 모니터링] ─── */}
+        {/* ─── [관리자 로그인 시: 팀 모니터링] ─── */}
         {(role === "admin" || role === "master") && (
           <section className="space-y-6">
             <h2 className="text-xl font-black italic border-l-8 border-black pl-4 uppercase">Team Monitoring</h2>
@@ -160,7 +169,7 @@ export default function DashboardPage() {
                  const p = a.performances?.find(pf => pf.year === currentYear && pf.month === currentMonth);
                  return (
                    <div key={a.id} className="bg-white p-7 rounded-[2.5rem] border-2 border-transparent hover:border-black transition-all shadow-sm">
-                     <p className="font-black text-xl mb-4 uppercase">{a.name} Agent</p>
+                     <p className="font-black text-xl mb-6 uppercase">{a.name} <span className="text-slate-300">Agent</span></p>
                      <div className="grid grid-cols-2 gap-3 mb-6">
                         <StatBox label="DB 배정" val={p?.db_assigned || 0} color="text-indigo-600" />
                         <StatBox label="DB 반품" val={p?.db_returned || 0} color="text-rose-500" />
@@ -177,12 +186,12 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* ─── 🧱 [계산기 모달] ────────────────── */}
+      {/* ─── 🧱 [계산기 모달 - 비교 로직 & 콤마 표기 추가] ────────────────── */}
       {isBizToolOpen && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-5xl rounded-[3rem] h-[85vh] flex flex-col overflow-hidden">
+            <div className="bg-white w-full max-w-5xl rounded-[3rem] h-[85vh] flex flex-col overflow-hidden shadow-2xl">
                 <header className="p-8 border-b flex justify-between items-center bg-slate-50">
-                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sales Calculator</h2>
+                    <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sales Strategy Tool</h2>
                     <button onClick={() => setIsBizToolOpen(false)} className="w-12 h-12 flex items-center justify-center bg-black text-white rounded-full font-black">✕</button>
                 </header>
                 <div className="flex flex-1 overflow-hidden">
@@ -194,40 +203,50 @@ export default function DashboardPage() {
                     <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
                         {activeTool === 'compare' && (
                           <div className="space-y-8 animate-in fade-in duration-500">
-                             <h3 className="text-xl font-black uppercase underline decoration-[#d4af37] decoration-4 mb-6 tracking-tight">보험 환급률 비교</h3>
+                             <h3 className="text-xl font-black uppercase underline decoration-[#d4af37] decoration-4 mb-6">은행 적금 vs 보험 환급률 비교</h3>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <CalcInput label="월 납입액" unit="원" value={calcCompare.pay} onChange={(v: number)=>setCalcCompare({...calcCompare, pay: v})} />
                                 <CalcInput label="납입 기간" unit="년" value={calcCompare.year} onChange={(v: number)=>setCalcCompare({...calcCompare, year: v})} />
-                                <CalcInput label="보험 환급률" unit="%" value={calcCompare.rate} onChange={(v: number)=>setCalcCompare({...calcCompare, rate: v})} />
+                                <CalcInput label="은행 적금 금리" unit="%" value={calcCompare.bankRate} onChange={(v: number)=>setCalcCompare({...calcCompare, bankRate: v})} />
+                                <CalcInput label="보험 환급률" unit="%" value={calcCompare.insuRate} onChange={(v: number)=>setCalcCompare({...calcCompare, insuRate: v})} />
                              </div>
-                             <div className="bg-black text-[#d4af37] p-10 rounded-[3rem] text-center">
-                                <p className="text-5xl font-black">{(calcCompare.pay * 12 * calcCompare.year * (calcCompare.rate/100)).toLocaleString()}원</p>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-slate-100 p-8 rounded-[2.5rem] text-center">
+                                    <p className="text-[10px] font-black uppercase text-slate-400 mb-2">은행 적금 만기액 (단리)</p>
+                                    <p className="text-3xl font-black text-slate-800">{formatKRW(getCompareResult().bankFinal)}</p>
+                                </div>
+                                <div className="bg-black text-[#d4af37] p-8 rounded-[2.5rem] text-center shadow-xl">
+                                    <p className="text-[10px] font-black uppercase opacity-60 mb-2">보험 최종 환급금</p>
+                                    <p className="text-3xl font-black">{formatKRW(getCompareResult().insuFinal)}</p>
+                                </div>
                              </div>
                           </div>
                         )}
                         {activeTool === 'inflation' && (
                           <div className="space-y-8 animate-in fade-in duration-500">
-                             <h3 className="text-xl font-black uppercase underline decoration-rose-500 decoration-4 mb-6 tracking-tight">화폐 가치 하락</h3>
+                             <h3 className="text-xl font-black uppercase underline decoration-rose-500 decoration-4 mb-6">미래 화폐 가치 하락 계산</h3>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <CalcInput label="현재 자금" unit="원" value={calcInflation.currentVal} onChange={(v: number)=>setCalcInflation({...calcInflation, currentVal: v})} />
                                 <CalcInput label="경과 기간" unit="년" value={calcInflation.year} onChange={(v: number)=>setCalcInflation({...calcInflation, year: v})} />
                                 <CalcInput label="물가상승률" unit="%" value={calcInflation.rate} onChange={(v: number)=>setCalcInflation({...calcInflation, rate: v})} />
                              </div>
                              <div className="bg-rose-600 text-white p-10 rounded-[3rem] text-center">
-                                <p className="text-5xl font-black">{(calcInflation.currentVal / Math.pow(1 + calcInflation.rate/100, calcInflation.year)).toLocaleString(undefined, {maximumFractionDigits:0})}원</p>
+                                <p className="text-[10px] font-black uppercase opacity-60 mb-2">{calcInflation.year}년 후 실질 가치</p>
+                                <p className="text-5xl font-black">{formatKRW(calcInflation.currentVal / Math.pow(1 + calcInflation.rate/100, calcInflation.year))}</p>
                              </div>
                           </div>
                         )}
                         {activeTool === 'lumpSum' && (
                           <div className="space-y-8 animate-in fade-in duration-500">
-                             <h3 className="text-xl font-black uppercase underline decoration-indigo-500 decoration-4 mb-6 tracking-tight">목돈 복리 계산</h3>
+                             <h3 className="text-xl font-black uppercase underline decoration-indigo-500 decoration-4 mb-6">목돈 일시거치 복리 계산</h3>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <CalcInput label="예치 금액" unit="원" value={calcLumpSum.amount} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, amount: v})} />
                                 <CalcInput label="거치 기간" unit="년" value={calcLumpSum.year} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, year: v})} />
-                                <CalcInput label="복리 이율" unit="%" value={calcLumpSum.rate} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, rate: v})} />
+                                <CalcInput label="연 복리 이율" unit="%" value={calcLumpSum.rate} onChange={(v: number)=>setCalcLumpSum({...calcLumpSum, rate: v})} />
                              </div>
                              <div className="bg-indigo-700 text-white p-10 rounded-[3rem] text-center">
-                                <p className="text-5xl font-black">{(calcLumpSum.amount * Math.pow(1 + calcLumpSum.rate/100, calcLumpSum.year)).toLocaleString(undefined, {maximumFractionDigits:0})}원</p>
+                                <p className="text-[10px] font-black uppercase opacity-60 mb-2">만기 시 수령액 (세전)</p>
+                                <p className="text-5xl font-black">{formatKRW(calcLumpSum.amount * Math.pow(1 + calcLumpSum.rate/100, calcLumpSum.year))}</p>
                              </div>
                           </div>
                         )}
@@ -242,12 +261,14 @@ export default function DashboardPage() {
         .minimal-calendar .react-calendar__month-view__weekdays { display: none !important; }
         .minimal-calendar .react-calendar__tile { padding: 12px 8px !important; font-size: 13px; font-weight: 700; color: #94a3b8; }
         .minimal-calendar .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 10px; }
       `}</style>
     </div>
   )
 }
 
-// ─── 📦 [COMPONENTS - TypeScript 타입 수정됨] ─────────────
+// ─── 📦 [COMPONENTS] ──────────────────────────────────
 
 function InputUnit({ label, val, onChange, color }: { label: string, val: number | undefined, onChange: (v: number) => void, color?: string }) {
   return (
