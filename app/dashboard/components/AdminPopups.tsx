@@ -47,10 +47,10 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
           </div>
         )}
 
-        {/* 2. 활동관리: 전체 건수, 비율, DB반품율 */}
+        {/* 2. 활동관리: 통계 및 DB 비율 */}
         {type === 'act' && (
           <div className="space-y-8">
-            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">Activity & DB Stats</h3>
+            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">Activity Stats</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <MiniBox label="총 전화" val={totalCall} />
               <MiniBox label="총 만남" val={totalMeet} />
@@ -59,24 +59,24 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
             </div>
             <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex justify-between items-center">
               <div>
-                <p className="text-[#d4af37] text-xs font-black uppercase">DB 효율 관리</p>
+                <p className="text-[#d4af37] text-[10px] uppercase font-black">DB Efficiency</p>
                 <p className="text-3xl font-black mt-2">배정 {totalDBA} / 반품 {totalDBR}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs opacity-50 font-black">전체 반품율</p>
+                <p className="text-[10px] opacity-50 font-black">반품율</p>
                 <p className="text-5xl font-black italic text-rose-500">{totalDBA > 0 ? ((totalDBR/totalDBA)*100).toFixed(1) : 0}%</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* 3. 교육관리 (유지) */}
+        {/* 3. 교육관리 */}
         {type === 'edu' && (
-          <div className="space-y-6">
-            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">Education Check</h3>
+          <div className="space-y-6 text-center">
+            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase mb-8">Education Status</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {agents.map((a:any)=>(
-                <div key={a.id} className="p-4 bg-slate-50 rounded-2xl border text-center">
+                <div key={a.id} className="p-4 bg-slate-50 rounded-2xl border font-black">
                   <p className="text-sm mb-2">{a.name}</p>
                   <span className={`text-[10px] px-3 py-1 rounded-full text-white ${a.performance.edu_status==='참여'?'bg-indigo-600':'bg-slate-300'}`}>{a.performance.edu_status}</span>
                 </div>
@@ -85,24 +85,24 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
           </div>
         )}
 
-        {/* 4. 목표 설정 (전체 목표, 교육내용, 공지사항 수정) */}
+        {/* 4. 목표 설정 */}
         {type === 'sys' && (
           <div className="space-y-10">
             <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">목표 및 공지 설정</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-black">
               <div className="space-y-4">
-                <p className="text-xs text-slate-400 border-b pb-1">팀 전체 목표 수치</p>
+                <p className="text-xs text-slate-400 border-b pb-1">팀 목표 수치</p>
                 <InputItem label="전체 목표 금액" val={tarAmt} onChange={setTarAmt} />
                 <InputItem label="전체 목표 건수" val={tarCnt} onChange={setTarCnt} />
                 <InputItem label="전체 도입 목표" val={tarIntro} onChange={setTarIntro} />
               </div>
               <div className="space-y-4">
-                <p className="text-xs text-slate-400 border-b pb-1">공지 및 교육 내용</p>
-                <textarea value={notice} onChange={(e)=>setNotice(e.target.value)} className="w-full h-24 p-4 bg-slate-50 border rounded-2xl outline-none text-xs" placeholder="전체 공지사항 내용 입력" />
-                <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs" placeholder="당월 주차별 교육 내용 전체 수정" />
+                <p className="text-xs text-slate-400 border-b pb-1">공지 및 교육</p>
+                <textarea value={notice} onChange={(e)=>setNotice(e.target.value)} className="w-full h-24 p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-black" placeholder="전체 공지사항 입력" />
+                <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs font-black" placeholder="주차별 교육 내용 수정" />
               </div>
             </div>
-            <button onClick={saveSettings} className="w-full bg-black text-[#d4af37] py-6 rounded-[2rem] text-xl shadow-xl">설정값 일괄 배포</button>
+            <button onClick={saveSettings} className="w-full bg-black text-[#d4af37] py-6 rounded-[2rem] text-xl shadow-xl hover:scale-[1.01] active:scale-95 transition-all">설정 배포하기</button>
           </div>
         )}
       </div>
@@ -113,15 +113,13 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
 function StatBox({ label, cur, tar, unit, color }: any) {
   const pct = tar > 0 ? Math.min((cur/tar)*100, 100) : 0;
   return (
-    <div className="bg-slate-50 p-6 rounded-[2.5rem] border text-center">
+    <div className="bg-slate-50 p-6 rounded-[2.5rem] border text-center font-black">
       <p className="text-[10px] text-slate-400 mb-2">{label}</p>
-      <p className="text-2xl font-black">{cur}{unit} / <span className="text-slate-300">{tar}</span></p>
-      <p className={`text-3xl italic font-black my-2 ${color.replace('bg-', 'text-')}`}>{pct.toFixed(1)}%</p>
-      <div className="w-full h-1.5 bg-white rounded-full overflow-hidden border">
-        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
-      </div>
+      <p className="text-2xl">{cur}{unit} / <span className="text-slate-300 font-bold">{tar}</span></p>
+      <p className={`text-3xl italic my-2 ${color.replace('bg-', 'text-')}`}>{pct.toFixed(1)}%</p>
+      <div className="w-full h-1.5 bg-white rounded-full overflow-hidden border"><div className={`h-full ${color}`} style={{ width: `${pct}%` }} /></div>
     </div>
   )
 }
-function MiniBox({ label, val }: any) { return <div className="bg-slate-50 p-4 rounded-2xl border text-center"><p className="text-[10px] text-slate-400 mb-1">{label}</p><p className="text-xl font-black">{val}</p></div> }
-function InputItem({ label, val, onChange }: any) { return <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl"><label className="text-xs">{label}</label><input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} className="w-24 p-2 bg-white border rounded-xl text-center outline-none border-black" /></div> }
+function MiniBox({ label, val }: any) { return <div className="bg-slate-50 p-4 rounded-2xl border text-center font-black"><p className="text-[10px] text-slate-400 mb-1">{label}</p><p className="text-xl">{val}</p></div> }
+function InputItem({ label, val, onChange }: any) { return <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl"><label className="text-xs">{label}</label><input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} className="w-24 p-2 bg-white border rounded-xl text-center outline-none border-black font-black" /></div> }

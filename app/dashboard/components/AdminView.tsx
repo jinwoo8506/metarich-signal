@@ -36,10 +36,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="space-y-6 animate-in fade-in pb-20">
-      {/* 최상단 전체 공지사항 탭 */}
-      <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4">
-        <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] font-black italic shrink-0">NOTICE</span>
-        <marquee className="font-black text-sm text-black">{globalNotice}</marquee>
+      {/* 최상단 전체 공지사항 탭 (Marquee 에러 해결) */}
+      <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4 overflow-hidden">
+        <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] font-black italic shrink-0 z-10">NOTICE</span>
+        <div className="relative flex-1 overflow-hidden h-5">
+          <div className="absolute whitespace-nowrap animate-marquee font-black text-sm text-black">
+            {globalNotice} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {globalNotice}
+          </div>
+        </div>
       </div>
 
       {/* 상단 퀵링크 5종 */}
@@ -62,7 +66,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <TabBtn label="목표 설정" sub="전체 목표 및 공지" active={activeTab === 'sys'} onClick={()=>setActiveTab('sys')} />
       </div>
 
-      {/* 직원 리스트 (입력한 목표/실적만 상하 분리 표기) */}
+      {/* 직원 리스트 */}
       <section className="bg-white p-8 rounded-[3.5rem] border shadow-sm">
         <h2 className="text-xl font-black mb-6 border-l-8 border-black pl-4">직원 실적 모니터링</h2>
         <div className="space-y-3">
@@ -73,13 +77,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <span className={`text-[9px] font-black px-2 py-1 rounded-full ${a.performance.edu_status === '참여' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>교육 {a.performance.edu_status}</span>
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white p-3 rounded-2xl border text-center">
-                    <p className="text-[8px] text-slate-400 font-black">금액 (실적 / 목표)</p>
-                    <p className="text-sm font-black text-indigo-600">{a.performance.contract_amt}만 / <span className="text-slate-400">{a.performance.target_amt}만</span></p>
+                  <div className="bg-white p-3 rounded-2xl border text-center font-black">
+                    <p className="text-[8px] text-slate-400">금액 (실적 / 목표)</p>
+                    <p className="text-sm text-indigo-600">{a.performance.contract_amt}만 / <span className="text-slate-400">{a.performance.target_amt}만</span></p>
                   </div>
-                  <div className="bg-white p-3 rounded-2xl border text-center">
-                    <p className="text-[8px] text-slate-400 font-black">건수 (실적 / 목표)</p>
-                    <p className="text-sm font-black text-emerald-600">{a.performance.contract_cnt}건 / <span className="text-slate-400">{a.performance.target_cnt}건</span></p>
+                  <div className="bg-white p-3 rounded-2xl border text-center font-black">
+                    <p className="text-[8px] text-slate-400">건수 (실적 / 목표)</p>
+                    <p className="text-sm text-emerald-600">{a.performance.contract_cnt}건 / <span className="text-slate-400">{a.performance.target_cnt}건</span></p>
                   </div>
                 </div>
             </div>
@@ -89,10 +93,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
       {activeTab && <AdminPopups type={activeTab} agents={agents} teamMeta={teamMeta} onClose={() => {setActiveTab(null); fetchTeamData();}} />}
       
-      {/* 직원 상세 팝업 (유지) */}
       {selectedAgent && (
-        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-6" onClick={()=>setSelectedAgent(null)}>
-          <div className="bg-white w-full max-w-xl rounded-[3rem] p-10 font-black relative shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 font-black" onClick={()=>setSelectedAgent(null)}>
+          <div className="bg-white w-full max-w-xl rounded-[3rem] p-10 relative shadow-2xl" onClick={e=>e.stopPropagation()}>
             <h3 className="text-2xl italic mb-8 border-b pb-4">{selectedAgent.name} CA 활동 상세</h3>
             <div className="grid grid-cols-2 gap-3 mb-8 text-center">
                 <div className="bg-slate-50 p-4 rounded-2xl border"><p className="text-[10px] text-slate-400">전화</p><p className="text-xl">{selectedAgent.performance.call}</p></div>

@@ -31,10 +31,14 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20">
-      {/* 최상단 전체 공지사항 탭 */}
-      <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4">
-        <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] font-black italic shrink-0">NOTICE</span>
-        <marquee className="font-black text-sm text-black">{globalNotice}</marquee>
+      {/* 최상단 전체 공지사항 탭 (Marquee 에러 해결 버전) */}
+      <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4 overflow-hidden">
+        <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] font-black italic shrink-0 z-10">NOTICE</span>
+        <div className="relative flex-1 overflow-hidden h-5">
+          <div className="absolute whitespace-nowrap animate-marquee font-black text-sm text-black">
+            {globalNotice} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {globalNotice}
+          </div>
+        </div>
       </div>
 
       {/* 상단 퀵링크 5종 */}
@@ -49,7 +53,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 개인 목표 설정 및 달성률 (입력탭 추가) */}
+      {/* 개인 목표 설정 및 달성률 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
           <p className="text-[10px] font-black text-slate-400 text-center">나의 월 목표 금액 / 현재 실적</p>
@@ -58,7 +62,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-3 bg-indigo-50 text-indigo-600 rounded-xl text-center font-black outline-none border border-indigo-200 focus:border-black" placeholder="실적만" />
           </div>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-indigo-600" style={{ width: `${Math.min((perfInput.contract_amt/perfInput.target_amt)*100, 100)}%` }} />
+            <div className="h-full bg-indigo-600" style={{ width: `${Math.min((perfInput.contract_amt/(perfInput.target_amt || 1))*100, 100)}%` }} />
           </div>
         </div>
         <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
@@ -68,12 +72,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-3 bg-emerald-50 text-emerald-600 rounded-xl text-center font-black outline-none border border-emerald-200 focus:border-black" placeholder="실적건" />
           </div>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500" style={{ width: `${Math.min((perfInput.contract_cnt/perfInput.target_cnt)*100, 100)}%` }} />
+            <div className="h-full bg-emerald-500" style={{ width: `${Math.min((perfInput.contract_cnt/(perfInput.target_cnt || 1))*100, 100)}%` }} />
           </div>
         </div>
       </div>
 
-      {/* 활동 데이터 (도입->소개 변경) */}
+      {/* 활동 데이터 (소개로 명칭 유지) */}
       <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border">
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
           <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
@@ -85,7 +89,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 교육 관리 (유지) */}
+      {/* 교육 관리 */}
       <div className="bg-slate-900 p-8 rounded-[3rem] text-white">
         <h3 className="text-[#d4af37] font-black italic mb-6 uppercase text-sm">Weekly Education</h3>
         <div className="grid grid-cols-4 gap-2 mb-6">
