@@ -3,93 +3,125 @@
 import React, { useState } from "react"
 import { supabase } from "../../../lib/supabase"
 
-export default function AdminPopups({ type, agents, teamTotals, onClose }: any) {
-  const [tarAmt, setTarAmt] = useState(agents[0]?.target_amt || 300);
-  const [tarCnt, setTarCnt] = useState(agents[0]?.target_cnt || 10);
+export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
+  const [tarAmt, setTarAmt] = useState(teamMeta.targetAmt);
+  const [tarCnt, setTarCnt] = useState(teamMeta.targetCnt);
+  const [tarIntro, setTarIntro] = useState(teamMeta.targetIntro);
   const [notice, setNotice] = useState("");
 
   const saveSettings = async () => {
     const settings = [
         { key: 'team_target_amt', value: String(tarAmt) },
-        { key: 'team_target_cnt', value: String(tarCnt) }
+        { key: 'team_target_cnt', value: String(tarCnt) },
+        { key: 'team_target_intro', value: String(tarIntro) },
+        { key: 'global_notice', value: notice }
     ];
-    const { error } = await supabase.from("team_settings").upsert(settings);
-    if (!error) {
-        alert("팀 전체 목표가 설정되었습니다. 직원 화면에 즉시 반영됩니다.");
-        onClose();
-    }
+    await supabase.from("team_settings").upsert(settings);
+    alert("목표 및 공지사항이 배포되었습니다.");
+    onClose();
   };
+
+  const totalAmt = agents.reduce((s:any, a:any) => s + a.performance.contract_amt, 0);
+  const totalCnt = agents.reduce((s:any, a:any) => s + a.performance.contract_cnt, 0);
+  const totalIntro = agents.reduce((s:any, a:any) => s + a.performance.intro, 0);
+  const totalCall = agents.reduce((s:any, a:any) => s + a.performance.call, 0);
+  const totalMeet = agents.reduce((s:any, a:any) => s + a.performance.meet, 0);
+  const totalPt = agents.reduce((s:any, a:any) => s + a.performance.pt, 0);
+  const totalDBA = agents.reduce((s:any, a:any) => s + a.performance.db_assigned, 0);
+  const totalDBR = agents.reduce((s:any, a:any) => s + a.performance.db_returned, 0);
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-lg flex items-center justify-center p-6 font-black">
-      <div className="bg-white w-full max-w-4xl rounded-[4rem] p-12 relative overflow-y-auto max-h-[90vh]">
+      <div className="bg-white w-full max-w-4xl rounded-[4rem] p-12 relative overflow-y-auto max-h-[90vh] shadow-2xl">
         <button onClick={onClose} className="absolute top-10 right-10 text-3xl font-black">✕</button>
-        
-        {/* 시스템 설정 및 공지 통합 */}
+
+        {/* 1. 실적관리: 팀 전체 목표 합계 대비 진행률 */}
+        {type === 'perf' && (
+          <div className="space-y-8">
+            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">Team Performance</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <StatBox label="전체 목표금액 대비" cur={totalAmt} tar={tarAmt} unit="만" color="bg-indigo-600" />
+              <StatBox label="전체 목표건수 대비" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
+              <StatBox label="전체 도입 대비" cur={totalIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
+            </div>
+          </div>
+        )}
+
+        {/* 2. 활동관리: 전체 건수, 비율, DB반품율 */}
+        {type === 'act' && (
+          <div className="space-y-8">
+            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">Activity & DB Stats</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <MiniBox label="총 전화" val={totalCall} />
+              <MiniBox label="총 만남" val={totalMeet} />
+              <MiniBox label="총 제안" val={totalPt} />
+              <MiniBox label="상담전환율" val={`${totalCall > 0 ? ((totalMeet/totalCall)*100).toFixed(1) : 0}%`} />
+            </div>
+            <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex justify-between items-center">
+              <div>
+                <p className="text-[#d4af37] text-xs font-black uppercase">DB 효율 관리</p>
+                <p className="text-3xl font-black mt-2">배정 {totalDBA} / 반품 {totalDBR}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs opacity-50 font-black">전체 반품율</p>
+                <p className="text-5xl font-black italic text-rose-500">{totalDBA > 0 ? ((totalDBR/totalDBA)*100).toFixed(1) : 0}%</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. 교육관리 (유지) */}
+        {type === 'edu' && (
+          <div className="space-y-6">
+            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">Education Check</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {agents.map((a:any)=>(
+                <div key={a.id} className="p-4 bg-slate-50 rounded-2xl border text-center">
+                  <p className="text-sm mb-2">{a.name}</p>
+                  <span className={`text-[10px] px-3 py-1 rounded-full text-white ${a.performance.edu_status==='참여'?'bg-indigo-600':'bg-slate-300'}`}>{a.performance.edu_status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 4. 목표 설정 (전체 목표, 교육내용, 공지사항 수정) */}
         {type === 'sys' && (
           <div className="space-y-10">
-            <header><h3 className="text-4xl italic border-b-8 border-black inline-block uppercase">시스템 설정 및 공지</h3></header>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <div className="space-y-6">
-                <p className="text-sm text-slate-400 uppercase tracking-widest border-b">팀 전체 월간 목표 설정</p>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs">전체 목표 금액 (만원)</label>
-                    <input type="number" value={tarAmt} onChange={(e)=>setTarAmt(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-black rounded-2xl font-black outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs">전체 목표 건수 (건)</label>
-                    <input type="number" value={tarCnt} onChange={(e)=>setTarCnt(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-black rounded-2xl font-black outline-none" />
-                  </div>
-                </div>
+            <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase">목표 및 공지 설정</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <p className="text-xs text-slate-400 border-b pb-1">팀 전체 목표 수치</p>
+                <InputItem label="전체 목표 금액" val={tarAmt} onChange={setTarAmt} />
+                <InputItem label="전체 목표 건수" val={tarCnt} onChange={setTarCnt} />
+                <InputItem label="전체 도입 목표" val={tarIntro} onChange={setTarIntro} />
               </div>
-              <div className="space-y-6">
-                <p className="text-sm text-slate-400 uppercase tracking-widest border-b">팀 공지사항 전달</p>
-                <textarea value={notice} onChange={(e)=>setNotice(e.target.value)} className="w-full h-40 p-4 bg-slate-50 border rounded-2xl outline-none text-sm font-bold" placeholder="직원 화면에 노출될 공지를 입력하세요." />
+              <div className="space-y-4">
+                <p className="text-xs text-slate-400 border-b pb-1">공지 및 교육 내용</p>
+                <textarea value={notice} onChange={(e)=>setNotice(e.target.value)} className="w-full h-24 p-4 bg-slate-50 border rounded-2xl outline-none text-xs" placeholder="전체 공지사항 내용 입력" />
+                <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none text-xs" placeholder="당월 주차별 교육 내용 전체 수정" />
               </div>
             </div>
-            <button onClick={saveSettings} className="w-full bg-black text-[#d4af37] py-6 rounded-[2rem] text-xl shadow-xl">전체 목표 및 공지 배포하기</button>
-          </div>
-        )}
-
-        {/* 실적 관리: 팀 전체 데이터 합계 노출 */}
-        {type === 'perf' && (
-          <div className="space-y-10">
-            <header><h3 className="text-4xl italic border-b-8 border-indigo-600 inline-block uppercase">팀 통합 실적 분석</h3></header>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-8 bg-indigo-50 rounded-[3rem] border border-indigo-100 text-center">
-                    <p className="text-xs text-indigo-600 mb-2 font-black">팀 전체 실적 합계</p>
-                    <p className="text-5xl font-black italic">{teamTotals.amt}만</p>
-                </div>
-                <div className="p-8 bg-emerald-50 rounded-[3rem] border border-emerald-100 text-center">
-                    <p className="text-xs text-emerald-600 mb-2 font-black">팀 전체 건수 합계</p>
-                    <p className="text-5xl font-black italic">{teamTotals.cnt}건</p>
-                </div>
-                <div className="p-8 bg-slate-50 rounded-[3rem] border border-slate-200 text-center">
-                    <p className="text-xs text-slate-400 mb-2 font-black">평균 달성률</p>
-                    <p className="text-5xl font-black italic">{((teamTotals.amt/tarAmt/agents.length)*100 || 0).toFixed(0)}%</p>
-                </div>
-            </div>
-          </div>
-        )}
-
-        {/* 교육 관리 및 참석 명단 */}
-        {type === 'edu' && (
-          <div className="space-y-10 text-center">
-            <header><h3 className="text-4xl italic border-b-8 border-black inline-block uppercase">교육 이수 관리</h3></header>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {agents.map((a:any) => (
-                    <div key={a.id} className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border">
-                        <span className="font-black">{a.name} CA</span>
-                        <span className={`px-4 py-2 rounded-xl text-[10px] text-white font-black ${a.performance.edu_status === '참여' ? 'bg-indigo-600' : 'bg-slate-300'}`}>
-                            {a.performance.edu_status}
-                        </span>
-                    </div>
-                ))}
-            </div>
+            <button onClick={saveSettings} className="w-full bg-black text-[#d4af37] py-6 rounded-[2rem] text-xl shadow-xl">설정값 일괄 배포</button>
           </div>
         )}
       </div>
     </div>
   )
 }
+
+function StatBox({ label, cur, tar, unit, color }: any) {
+  const pct = tar > 0 ? Math.min((cur/tar)*100, 100) : 0;
+  return (
+    <div className="bg-slate-50 p-6 rounded-[2.5rem] border text-center">
+      <p className="text-[10px] text-slate-400 mb-2">{label}</p>
+      <p className="text-2xl font-black">{cur}{unit} / <span className="text-slate-300">{tar}</span></p>
+      <p className={`text-3xl italic font-black my-2 ${color.replace('bg-', 'text-')}`}>{pct.toFixed(1)}%</p>
+      <div className="w-full h-1.5 bg-white rounded-full overflow-hidden border">
+        <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+function MiniBox({ label, val }: any) { return <div className="bg-slate-50 p-4 rounded-2xl border text-center"><p className="text-[10px] text-slate-400 mb-1">{label}</p><p className="text-xl font-black">{val}</p></div> }
+function InputItem({ label, val, onChange }: any) { return <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl"><label className="text-xs">{label}</label><input type="number" value={val} onChange={(e)=>onChange(Number(e.target.value))} className="w-24 p-2 bg-white border rounded-xl text-center outline-none border-black" /></div> }
