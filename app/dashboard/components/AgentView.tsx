@@ -17,11 +17,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   useEffect(() => { fetchData() }, [selectedDate]);
 
   async function fetchData() {
-    // 공지사항 로드
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
 
-    // 당일 실적 데이터 로드
     const { data: perf } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).eq("date", dateStr).maybeSingle();
     if (perf) {
       setPerfInput(perf);
@@ -47,7 +45,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
-      {/* 1. 최상단 전체 공지사항 탭 */}
       <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4 overflow-hidden">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] italic shrink-0 z-10">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
@@ -57,12 +54,11 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 2. 상단 퀵링크 5종 */}
       <div className="flex flex-wrap justify-between items-center gap-2 bg-white p-5 rounded-[2.5rem] shadow-sm border font-black">
         <div className="flex items-center gap-2">
           <p className="text-lg">{user.name} <span className="text-blue-600">설계사</span></p>
           {perfInput.is_approved && (
-            <span className="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-1 rounded-lg border border-emerald-200">승인완료</span>
+            <span className="bg-emerald-100 text-emerald-600 text-[10px] px-2 py-1 rounded-lg border border-emerald-200 font-black">승인완료</span>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -74,13 +70,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 3. 목표금액 및 목표건수 입력탭 (승인 후 비활성화) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className={`bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 ${perfInput.is_approved ? 'opacity-50' : ''}`}>
           <p className="text-[10px] text-slate-400 text-center">나의 월 목표 금액 / 현재 실적</p>
           <div className="flex items-center gap-2">
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-3 bg-slate-100 rounded-xl text-center outline-none border focus:border-black" placeholder="목표" />
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-3 bg-indigo-50 text-indigo-600 rounded-xl text-center outline-none border border-indigo-200" placeholder="실적" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-3 bg-slate-100 rounded-xl text-center outline-none border focus:border-black" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-3 bg-indigo-50 text-indigo-600 rounded-xl text-center outline-none border border-indigo-200" />
           </div>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-indigo-600" style={{ width: `${Math.min((perfInput.contract_amt/(perfInput.target_amt||1))*100, 100)}%` }} />
@@ -89,8 +84,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         <div className={`bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 ${perfInput.is_approved ? 'opacity-50' : ''}`}>
           <p className="text-[10px] text-slate-400 text-center">나의 월 목표 건수 / 현재 건수</p>
           <div className="flex items-center gap-2">
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-3 bg-slate-100 rounded-xl text-center outline-none border focus:border-black" placeholder="목표" />
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-3 bg-emerald-50 text-emerald-600 rounded-xl text-center outline-none border border-emerald-200" placeholder="건수" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-3 bg-slate-100 rounded-xl text-center outline-none border focus:border-black" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-3 bg-emerald-50 text-emerald-600 rounded-xl text-center outline-none border border-emerald-200" />
           </div>
           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div className="h-full bg-emerald-500" style={{ width: `${Math.min((perfInput.contract_cnt/(perfInput.target_cnt||1))*100, 100)}%` }} />
@@ -98,21 +93,18 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 4. 활동 데이터 입력 */}
       <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border">
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <MetricInput label="전화" val={perfInput.call} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
           <MetricInput label="만남" val={perfInput.meet} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
           <MetricInput label="제안" val={perfInput.pt} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
           <MetricInput label="소개" val={perfInput.intro} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, intro:v})} />
-          <MetricInput label="DB배정" val={perfInput.db_assigned} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, db_assigned:v})} color="text-blue-600" />
           <MetricInput label="반품" val={perfInput.db_returned} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
         </div>
       </div>
 
-      {/* 5. 교육 관리 */}
       <div className="bg-slate-900 p-8 rounded-[3rem] text-white">
-        <h3 className="text-[#d4af37] italic mb-6 uppercase text-sm font-black">Weekly Education</h3>
+        <h3 className="text-[#d4af37] italic mb-6 uppercase text-sm font-black text-center">Weekly Education Status</h3>
         <div className="flex gap-2">
           <button disabled={perfInput.is_approved} onClick={()=>setPerfInput({...perfInput, edu_status:'참여'})} className={`flex-1 py-4 rounded-xl font-black text-xs ${perfInput.edu_status==='참여'?'bg-indigo-600':'bg-slate-800'}`}>참여</button>
           <button disabled={perfInput.is_approved} onClick={()=>setPerfInput({...perfInput, edu_status:'불참'})} className={`flex-1 py-4 rounded-xl font-black text-xs ${perfInput.edu_status==='불참'?'bg-rose-600':'bg-slate-800'}`}>불참</button>
