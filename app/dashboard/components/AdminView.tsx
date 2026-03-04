@@ -11,12 +11,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   const [globalNotice, setGlobalNotice] = useState("");
   const [teamMeta, setTeamMeta] = useState({ targetAmt: 0, targetCnt: 0, targetIntro: 0 });
   
-  // [수정] 직원 화면과 동일한 강력한 날짜 포맷 적용
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
-  useEffect(() => { 
-    fetchTeamData() 
-  }, [monthKey]);
+  useEffect(() => { fetchTeamData() }, [monthKey]);
 
   async function fetchTeamData() {
     const { data: settings } = await supabase.from("team_settings").select("*");
@@ -41,41 +38,37 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     }
   }
 
-  // 승인 로직 강화
   const handleApprove = async (agent: any) => {
-    // 1. 현재 데이터 상태 확인 후 is_approved만 true로 바꾼 객체 생성
-    const updateData = {
-        ...agent.performance,
+    try {
+      const { id, created_at, ...purePerformance } = agent.performance;
+      const updateData = {
+        ...purePerformance,
         user_id: agent.id,
         date: monthKey,
         is_approved: true
-    };
+      };
 
-    // 2. upsert를 사용하여 업데이트 또는 생성
-    const { error } = await supabase.from("daily_perf").upsert(updateData);
+      const { error } = await supabase.from("daily_perf").upsert(updateData, { onConflict: 'user_id, date' });
 
-    if (error) {
-      console.error("Approve Error:", error);
-      alert("승인 처리 중 오류가 발생했습니다.");
-    } else {
-      alert(`${agent.name}님의 ${selectedDate.getMonth() + 1}월 실적이 승인되었습니다.`);
-      fetchTeamData(); // 즉시 새로고침
+      if (error) throw error;
+      alert(`${agent.name} CA의 실적이 정상 승인되었습니다.`);
+      fetchTeamData();
+    } catch (err: any) {
+      alert("승인 오류: " + err.message);
     }
   };
 
   return (
     <div className="space-y-6 animate-in fade-in pb-20 font-black">
-      {/* 상단 노티스 */}
       <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4 overflow-hidden font-black">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] italic shrink-0 z-10 font-black">NOTICE</span>
-        <div className="relative flex-1 overflow-hidden h-5 font-black">
+        <div className="relative flex-1 overflow-hidden h-5">
           <div className="absolute whitespace-nowrap animate-marquee text-sm text-black italic font-black">{globalNotice}</div>
         </div>
       </div>
 
-      {/* 퀵링크 (직원과 동일한 5개 버튼) */}
       <div className="flex flex-wrap justify-between items-center gap-2 bg-white p-5 rounded-[2.5rem] shadow-sm border font-black">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 font-black">
           <p className="text-lg font-black">{user.name} <span className="text-amber-600 italic">MANAGER</span></p>
         </div>
         <div className="flex flex-wrap gap-2 font-black">
@@ -87,7 +80,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 관리 탭 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 font-black">
         <TabBtn label="실적 관리" sub="월간 생산성" active={activeTab === 'perf'} onClick={()=>setActiveTab('perf')} />
         <TabBtn label="활동 관리" sub="월간 퍼널 분석" active={activeTab === 'act'} onClick={()=>setActiveTab('act')} />
@@ -95,9 +87,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <TabBtn label="지침 설정" sub="목표/교육/공지" active={activeTab === 'sys'} onClick={()=>setActiveTab('sys')} />
       </div>
 
-      {/* 모니터링 섹션 */}
       <section className="bg-white p-8 rounded-[3.5rem] border shadow-sm font-black">
-        <h2 className="text-xl font-black mb-6 border-l-8 border-black pl-4 uppercase font-black">{selectedDate.getMonth()+1}월 CA 실적 모니터링</h2>
+        <h2 className="text-xl font-black mb-6 border-l-8 border-black pl-4 uppercase font-black">{selectedDate.getMonth()+1}월 CA 모니터링</h2>
         <div className="space-y-4 font-black">
           {agents.map(a => (
             <div key={a.id} 
@@ -123,15 +114,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 관리자 팝업들 */}
       {activeTab && <AdminPopups type={activeTab} agents={agents} teamMeta={teamMeta} onClose={() => {setActiveTab(null); fetchTeamData();}} />}
       
-      {/* 직원 개별 활동 상세 팝업 */}
       {selectedAgent && (
         <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 font-black" onClick={()=>setSelectedAgent(null)}>
           <div className="bg-white w-full max-w-xl rounded-[3.5rem] p-10 relative shadow-2xl font-black" onClick={e=>e.stopPropagation()}>
-            <button onClick={()=>setSelectedAgent(null)} className="absolute top-8 right-8 text-2xl font-black">✕</button>
-            <h3 className="text-2xl italic mb-8 border-b-4 border-black pb-2 inline-block uppercase font-black">{selectedAgent.name} CA 활동 내역</h3>
+            <button onClick={()=>setSelectedAgent(null)} className="absolute top-8 right-8 text-2xl font-black font-black">✕</button>
+            <h3 className="text-2xl italic mb-8 border-b-4 border-black pb-2 inline-block uppercase font-black">{selectedAgent.name} CA DETAIL</h3>
             <div className="grid grid-cols-2 gap-3 mb-8 text-center font-black">
                 <div className="bg-slate-50 p-6 rounded-3xl border font-black"><p className="text-[10px] text-slate-400 mb-1 font-black">총 전화</p><p className="text-3xl font-black italic">{selectedAgent.performance?.call || 0}</p></div>
                 <div className="bg-slate-50 p-6 rounded-3xl border font-black"><p className="text-[10px] text-slate-400 mb-1 font-black">총 만남</p><p className="text-3xl font-black italic">{selectedAgent.performance?.meet || 0}</p></div>
@@ -139,8 +128,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                 <div className="bg-slate-50 p-6 rounded-3xl border font-black"><p className="text-[10px] text-slate-400 mb-1 font-black">총 소개</p><p className="text-3xl font-black italic">{selectedAgent.performance?.intro || 0}</p></div>
             </div>
             <div className="bg-slate-900 text-[#d4af37] p-8 rounded-[2.5rem] flex justify-between items-center font-black">
-              <span className="text-xs uppercase font-black tracking-widest italic">DB assigned Analysis</span>
-              <span className="text-2xl font-black italic">반품 {selectedAgent.performance?.db_returned || 0} / 배정 {selectedAgent.performance?.db_assigned || 0}</span>
+              <span className="text-xs uppercase font-black tracking-widest italic font-black">DB Status</span>
+              <span className="text-2xl font-black italic font-black">반품 {selectedAgent.performance?.db_returned || 0} / 배정 {selectedAgent.performance?.db_assigned || 0}</span>
             </div>
           </div>
         </div>

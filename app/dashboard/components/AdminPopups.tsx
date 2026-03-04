@@ -45,7 +45,6 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
       <div className="bg-white w-full max-w-5xl rounded-[4rem] p-12 relative overflow-y-auto max-h-[90vh] shadow-2xl font-black">
         <button onClick={onClose} className="absolute top-10 right-10 text-3xl font-black hover:rotate-90 transition-all font-black">✕</button>
 
-        {/* 실적 관리 */}
         {type === 'perf' && (
           <div className="space-y-8 animate-in fade-in font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Monthly Team Stat</h3>
@@ -54,16 +53,15 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
               <StatBox label="전체 목표건수 대비" cur={sum('contract_cnt')} tar={tarCnt} unit="건" color="bg-emerald-500" />
               <StatBox label="도입 실제 진행도" cur={curIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
             </div>
-            <div className="bg-slate-900 p-10 rounded-[3rem] text-white flex justify-between items-center shadow-2xl font-black">
+            <div className="bg-slate-900 p-10 rounded-[3rem] text-white flex justify-between items-center shadow-2xl font-black font-black">
                <div className="font-black">
-                  <p className="text-[#d4af37] text-xs font-black uppercase tracking-widest">Efficiency Report</p>
-                  <p className="text-4xl font-black mt-2 italic">건당 평균 생산성: {avgAmt}만원</p>
+                  <p className="text-[#d4af37] text-xs font-black uppercase tracking-widest font-black">Efficiency Report</p>
+                  <p className="text-4xl font-black mt-2 italic font-black">건당 평균 생산성: {avgAmt}만원</p>
                </div>
             </div>
           </div>
         )}
 
-        {/* 활동 관리 (3단 구성) */}
         {type === 'act' && (
           <div className="space-y-8 animate-in slide-in-from-top-4 font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Monthly Funnel</h3>
@@ -83,16 +81,9 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
                   <p className="text-4xl text-emerald-600 font-black italic">{sum('meet') > 0 ? ((sum('pt')/sum('meet'))*100).toFixed(1) : 0}%</p>
                </div>
             </div>
-            <div className="bg-slate-900 p-10 rounded-[3rem] text-white flex justify-between items-center font-black">
-               <div className="font-black">
-                  <p className="text-rose-400 text-xs font-black uppercase mb-2">DB Analysis</p>
-                  <p className="text-4xl font-black italic text-rose-500">누적 반품율: {sum('db_assigned') > 0 ? ((sum('db_returned')/sum('db_assigned'))*100).toFixed(1) : 0}%</p>
-               </div>
-            </div>
           </div>
         )}
 
-        {/* 교육 관리 */}
         {type === 'edu' && (
           <div className="space-y-6 font-black">
             <h3 className="text-3xl italic border-b-8 border-black inline-block uppercase font-black">Monthly Attendance</h3>
@@ -109,7 +100,6 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
           </div>
         )}
 
-        {/* 지침 설정 */}
         {type === 'sys' && (
           <div className="space-y-10 font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Management</h3>
@@ -147,7 +137,7 @@ export default function AdminPopups({ type, agents, teamMeta, onClose }: any) {
 function StatBox({ label, cur, tar, unit, color }: any) {
   const pct = tar > 0 ? Math.min((cur / tar) * 100, 100) : 0;
   return (
-    <div className="bg-slate-50 p-8 rounded-[3.5rem] border text-center font-black transition-all hover:bg-white hover:shadow-xl">
+    <div className="bg-slate-50 p-8 rounded-[3.5rem] border text-center font-black transition-all hover:bg-white hover:shadow-xl font-black">
       <p className="text-[10px] text-slate-400 mb-2 uppercase tracking-widest font-black">{label}</p>
       <p className="text-2xl font-black">{cur}{unit} / {tar}{unit}</p>
       <p className={`text-5xl italic my-4 font-black ${color.replace('bg-', 'text-')}`}>{pct.toFixed(1)}%</p>
