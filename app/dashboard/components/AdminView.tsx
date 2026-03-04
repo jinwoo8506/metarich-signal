@@ -91,12 +91,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <TabBtn label="시스템 설정" sub="Policy & Target" active={activeTab === 'sys'} onClick={()=>setActiveTab('sys')} />
       </div>
 
-      {/* 직원 현황 리스트 (그래프 추가됨) */}
+      {/* 직원 현황 리스트 (DB 현황 및 반품률 추가) */}
       <section className="bg-white p-8 rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-xl font-black mb-6 border-l-8 border-black pl-4 uppercase font-black">{selectedDate.getMonth()+1}월 팀 실적 모니터링</h2>
         <div className="space-y-6 font-black">
           {agents.map(a => {
             const pct = a.performance.target_amt > 0 ? Math.min((a.performance.contract_amt / a.performance.target_amt) * 100, 100) : 0;
+            const returnRate = a.performance.db_assigned > 0 ? ((a.performance.db_returned / a.performance.db_assigned) * 100).toFixed(1) : "0";
+            
             return (
               <div key={a.id} 
                    onClick={() => setSelectedAgent(a)} 
@@ -109,19 +111,19 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                       </span>
                     </div>
                     <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3 font-black">
-                        <DataBox label="목표액" val={`${a.performance.target_amt}만`} />
                         <DataBox label="실적액" val={`${a.performance.contract_amt}만`} color="text-indigo-600" />
-                        <DataBox label="목표건" val={`${a.performance.target_cnt}건`} />
                         <DataBox label="실적건" val={`${a.performance.contract_cnt}건`} color="text-emerald-600" />
+                        <DataBox label="DB배정" val={`${a.performance.db_assigned}건`} />
+                        <DataBox label="DB반품" val={`${a.performance.db_returned}건 (${returnRate}%)`} color="text-rose-500" />
                     </div>
                     {!a.performance.is_approved && (
                       <button onClick={(e)=>{e.stopPropagation(); handleApprove(a);}} className="bg-black text-[#d4af37] px-8 py-4 rounded-[1.5rem] text-sm font-black italic shadow-lg active:scale-95 transition-all">목표 승인</button>
                     )}
                   </div>
-                  {/* 시각적 막대 그래프 */}
+                  {/* 달성률 그래프 */}
                   <div className="relative w-full h-4 bg-white rounded-full border overflow-hidden font-black">
                     <div className="absolute top-0 left-0 h-full bg-indigo-600 transition-all duration-1000" style={{ width: `${pct}%` }} />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black italic">{pct.toFixed(1)}% ACHIEVED</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black italic uppercase tracking-tighter">{pct.toFixed(1)}% ACHIEVED</span>
                   </div>
               </div>
             )
@@ -135,7 +137,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 font-black" onClick={()=>setSelectedAgent(null)}>
           <div className="bg-white w-full max-w-xl rounded-[3.5rem] p-10 relative shadow-2xl font-black font-black" onClick={e=>e.stopPropagation()}>
             <button onClick={()=>setSelectedAgent(null)} className="absolute top-8 right-8 text-2xl font-black font-black">✕</button>
-            <h3 className="text-2xl italic mb-8 border-b-4 border-black pb-2 inline-block uppercase font-black font-black">{selectedAgent.name} CA 상세</h3>
+            <h3 className="text-2xl italic mb-8 border-b-4 border-black pb-2 inline-block uppercase font-black font-black">{selectedAgent.name} CA 상세 활동</h3>
             <div className="grid grid-cols-2 gap-3 mb-8 text-center font-black">
                 <div className="bg-slate-50 p-6 rounded-3xl border font-black font-black"><p className="text-[10px] text-slate-400 mb-1 font-black uppercase">Call</p><p className="text-3xl font-black italic">{selectedAgent.performance?.call || 0}</p></div>
                 <div className="bg-slate-50 p-6 rounded-3xl border font-black font-black"><p className="text-[10px] text-slate-400 mb-1 font-black uppercase">Meet</p><p className="text-3xl font-black italic">{selectedAgent.performance?.meet || 0}</p></div>
@@ -143,8 +145,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                 <div className="bg-slate-50 p-6 rounded-3xl border font-black font-black"><p className="text-[10px] text-slate-400 mb-1 font-black uppercase">Intro</p><p className="text-3xl font-black italic">{selectedAgent.performance?.intro || 0}</p></div>
             </div>
             <div className="bg-slate-900 text-[#d4af37] p-8 rounded-[2.5rem] flex justify-between items-center font-black">
-              <span className="text-xs uppercase font-black tracking-widest italic font-black font-black">Monthly DB Status</span>
-              <span className="text-2xl font-black italic font-black">반품 {selectedAgent.performance?.db_returned || 0} / 배정 {selectedAgent.performance?.db_assigned || 0}</span>
+              <span className="text-xs uppercase font-black tracking-widest italic font-black font-black font-black">Total DB Report</span>
+              <span className="text-2xl font-black italic font-black">배정 {selectedAgent.performance?.db_assigned || 0} / 반품 {selectedAgent.performance?.db_returned || 0}</span>
             </div>
           </div>
         </div>
@@ -153,6 +155,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-function TabBtn({ label, sub, active, onClick }: any) { return <button onClick={onClick} className={`${active ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black p-5 rounded-[2rem] text-center transition-all shadow-sm font-black`}><p className="text-sm font-black italic">{label}</p><p className="text-[9px] font-bold opacity-40 mt-1 uppercase tracking-tighter font-black">{sub}</p></button> }
-function QuickBtn({ label, url, onClick, color }: any) { return <button onClick={() => url && url !== "#" ? window.open(url, "_blank") : (onClick ? onClick() : null)} className={`${color} px-5 py-2.5 rounded-xl font-black text-[11px] border border-slate-200 shadow-sm transition-all hover:bg-black hover:text-white shrink-0 font-black`}>{label}</button> }
-function DataBox({ label, val, color = "text-black" }: any) { return <div className="bg-white p-3 rounded-2xl border text-center font-black"><p className="text-[9px] text-slate-400 font-black">{label}</p><p className={`text-sm font-black ${color}`}>{val}</p></div> }
+function TabBtn({ label, sub, active, onClick }: any) { return <button onClick={onClick} className={`${active ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black p-5 rounded-[2rem] text-center transition-all shadow-sm font-black font-black`}><p className="text-sm font-black italic font-black">{label}</p><p className="text-[9px] font-bold opacity-40 mt-1 uppercase tracking-tighter font-black font-black">{sub}</p></button> }
+function QuickBtn({ label, url, onClick, color }: any) { return <button onClick={() => url && url !== "#" ? window.open(url, "_blank") : (onClick ? onClick() : null)} className={`${color} px-5 py-2.5 rounded-xl font-black text-[11px] border border-slate-200 shadow-sm transition-all hover:bg-black hover:text-white shrink-0 font-black font-black`}>{label}</button> }
+function DataBox({ label, val, color = "text-black" }: any) { return <div className="bg-white p-3 rounded-2xl border text-center font-black font-black font-black"><p className="text-[9px] text-slate-400 font-black">{label}</p><p className={`text-sm font-black ${color}`}>{val}</p></div> }
