@@ -2,169 +2,140 @@
 
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
-import CalcModal from "./CalcModal"
 
-export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
-  const [perfInput, setPerfInput] = useState({
-    call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
-    contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
-    edu_status: "미참여", is_approved: false
+export default function AgentView({ user, selectedDate }: any) {
+  const [performance, setPerformance] = useState<any>({
+    call: 0, meet: 0, pt: 0, intro: 0,
+    db_assigned: 0, db_returned: 0,
+    contract_amt: 0, contract_cnt: 0,
+    edu_status: '미참여'
   });
-  const [globalNotice, setGlobalNotice] = useState("");
-  const [eduSchedule, setEduSchedule] = useState("");
-  const [isToolOpen, setIsToolOpen] = useState(false);
-  
-  // [신규] 3개월 평균 데이터 상태
-  const [avgTab, setAvgTab] = useState('perf'); // 'perf' or 'act'
-  const [avgData, setAvgData] = useState({
-    amt: 0, cnt: 0, perAmt: 0, call: 0, meet: 0, pt: 0, intro: 0
-  });
+  const [eduNotice, setEduNotice] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const year = selectedDate.getFullYear();
-  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-  const monthKey = `${year}-${month}-01`;
+  const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
-  const LINKS = { metaon: "https://metaon.metarich.co.kr", insu: "#", claim: "#", archive: "#" };
-
-  useEffect(() => { 
-    fetchData();
-    fetchAvgData();
+  useEffect(() => {
+    fetchMyData();
   }, [monthKey, user.id]);
 
-  async function fetchData() {
-    const { data: settings } = await supabase.from("team_settings").select("*");
-    setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
-    setEduSchedule(settings?.find(s => s.key === 'edu_schedule')?.value || "등록된 교육 일정이 없습니다.");
+  async function fetchMyData() {
+    setLoading(true);
+    // 1. 나의 해당 월 실적 가져오기
+    const { data: perf } = await supabase
+      .from("daily_perf")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("date", monthKey)
+      .single();
 
-    const { data: perf } = await supabase.from("daily_perf")
-      .select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
-
-    if (perf) setPerfInput(perf);
-    else setPerfInput({ 
-      call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0, 
-      contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
-      edu_status: "미참여", is_approved: false 
-    });
-  }
-
-  // [신규] 3개월 평균 데이터 계산 (선택달 기준 이전 3개월)
-  async function fetchAvgData() {
-    const dates = [];
-    for (let i = 1; i <= 3; i++) {
-      const d = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - i, 1);
-      dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`);
-    }
-
-    const { data } = await supabase.from("daily_perf")
-      .select("*").eq("user_id", user.id).in("date", dates);
-
-    if (data && data.length > 0) {
-      const sum = data.reduce((acc, curr) => ({
-        amt: acc.amt + curr.contract_amt,
-        cnt: acc.cnt + curr.contract_cnt,
-        call: acc.call + curr.call,
-        meet: acc.meet + curr.meet,
-        pt: acc.pt + curr.pt,
-        intro: acc.intro + curr.intro
-      }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
-
-      const count = data.length;
-      setAvgData({
-        amt: Math.round(sum.amt / count),
-        cnt: Number((sum.cnt / count).toFixed(1)),
-        perAmt: sum.cnt > 0 ? Math.round(sum.amt / sum.cnt) : 0,
-        call: Math.round(sum.call / count),
-        meet: Math.round(sum.meet / count),
-        pt: Math.round(sum.pt / count),
-        intro: Math.round(sum.intro / count)
+    if (perf) {
+      setPerformance(perf);
+    } else {
+      setPerformance({
+        call: 0, meet: 0, pt: 0, intro: 0,
+        db_assigned: 0, db_returned: 0,
+        contract_amt: 0, contract_cnt: 0,
+        edu_status: '미참여'
       });
     }
+
+    // 2. 관리자가 설정한 교육 공지 가져오기
+    const { data: settings } = await supabase.from("team_settings").select("*");
+    setEduNotice(settings?.find(s => s.key === 'edu_content')?.value || "현재 설정된 교육 내용이 없습니다.");
+    setLoading(false);
   }
 
-  const handleSave = async () => {
-    const { error } = await supabase.from("daily_perf").upsert({ 
-      ...perfInput, user_id: user.id, date: monthKey
+  // 데이터 업데이트 핸들러 (실적 & 교육 공통)
+  const handleUpdate = async (field: string, value: any) => {
+    const updated = { ...performance, [field]: value };
+    setPerformance(updated);
+
+    const { error } = await supabase.from("daily_perf").upsert({
+      user_id: user.id,
+      date: monthKey,
+      ...updated
     }, { onConflict: 'user_id, date' });
-    if (error) alert("저장 실패: " + error.message);
-    else { alert(`${month}월 실적이 업데이트되었습니다.`); fetchData(); }
+
+    if (error) alert("저장 중 오류가 발생했습니다.");
   };
 
+  if (loading) return <div className="p-10 font-black italic">Loading Data...</div>;
+
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
-      {/* 상단 공지/프로필/퀵링크 - 기존과 동일 */}
-      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black">
-        <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[12px] italic shrink-0 font-black">NOTICE</span>
-        <div className="relative flex-1 overflow-hidden h-5"><div className="absolute whitespace-nowrap animate-marquee text-[14px] text-black italic font-black">{globalNotice}</div></div>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black">
-        <div className="flex items-center gap-3 shrink-0"><p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p></div>
-        <div className="flex flex-nowrap overflow-x-auto gap-2 no-scrollbar font-black">
-          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" />
-          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" />
-          <QuickBtn label="보험금청구" url={LINKS.claim} color="bg-slate-50" />
-          <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
-          <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
+    <div className="flex-1 space-y-6 font-black p-4 overflow-y-auto">
+      
+      {/* 🎓 [신규 추가] 교육 체크리스트 영역 */}
+      <div className="bg-white p-8 rounded-[3rem] border-4 border-black shadow-xl space-y-6">
+        <div className="flex justify-between items-center border-b-4 border-black pb-2">
+          <h2 className="text-2xl italic uppercase font-black">Daily Training Topic</h2>
+          <span className="text-[10px] bg-black text-[#d4af37] px-3 py-1 rounded-full italic uppercase">Checklist</span>
+        </div>
+        <div className="bg-slate-50 p-6 rounded-[2rem] border-2 border-dashed border-slate-300">
+          <p className="text-lg mb-8 leading-relaxed font-black italic">{eduNotice}</p>
+          
+          <button 
+            onClick={() => handleUpdate('edu_status', performance.edu_status === '참여' ? '미참여' : '참여')}
+            className={`w-full flex items-center justify-center gap-4 py-5 rounded-2xl text-lg transition-all shadow-md font-black italic ${performance.edu_status === '참여' ? 'bg-black text-[#d4af37]' : 'bg-white border-2 border-black text-black'}`}
+          >
+            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center ${performance.edu_status === '참여' ? 'bg-[#d4af37] border-black text-black' : 'border-black'}`}>
+              {performance.edu_status === '참여' && "✓"}
+            </div>
+            오늘의 교육을 완료했습니다
+          </button>
         </div>
       </div>
 
-      {/* 실적/활동 입력부 - 기존과 동일 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
-        <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
-          <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액</p>
-          <div className="flex gap-2 font-black">
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black" />
-            <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100" />
-          </div>
+      {/* 📊 [기존 복구] 실적 입력 영역 */}
+      <div className="bg-white p-10 rounded-[4rem] border-4 border-black shadow-2xl space-y-10 font-black">
+        <h2 className="text-3xl italic uppercase border-b-8 border-black inline-block">Monthly Performance Input</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* 활동량 섹션 */}
+          <section className="space-y-6">
+            <h3 className="text-xl italic text-slate-400 uppercase tracking-tighter border-l-4 border-slate-200 pl-3">Activity Data</h3>
+            <div className="space-y-4">
+              <InputItem label="전화량 (Call)" val={performance.call} onChange={(v) => handleUpdate('call', v)} />
+              <InputItem label="미팅 (Meet)" val={performance.meet} onChange={(v) => handleUpdate('meet', v)} />
+              <InputItem label="제안 (PT)" val={performance.pt} onChange={(v) => handleUpdate('pt', v)} />
+              <InputItem label="소개 (Intro)" val={performance.intro} onChange={(v) => handleUpdate('intro', v)} />
+            </div>
+          </section>
+
+          {/* DB 및 계약 섹션 */}
+          <section className="space-y-6">
+            <h3 className="text-xl italic text-slate-400 uppercase tracking-tighter border-l-4 border-slate-200 pl-3">Results & DB</h3>
+            <div className="space-y-4">
+              <InputItem label="배정 DB" val={performance.db_assigned} onChange={(v) => handleUpdate('db_assigned', v)} />
+              <InputItem label="반품 DB" val={performance.db_returned} onChange={(v) => handleUpdate('db_returned', v)} color="text-rose-500" />
+              <div className="pt-4 border-t-2 border-dashed">
+                <InputItem label="계약 실적 (만)" val={performance.contract_amt} onChange={(v) => handleUpdate('contract_amt', v)} color="text-indigo-600" />
+                <InputItem label="계약 건수" val={performance.contract_cnt} onChange={(v) => handleUpdate('contract_cnt', v)} color="text-indigo-600" />
+              </div>
+            </div>
+          </section>
         </div>
-        <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
-          <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적건</p>
-          <div className="flex gap-2 font-black">
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black" />
-            <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center text-[18px] font-black border border-emerald-100" />
-          </div>
+
+        {/* 하단 요약 안내 */}
+        <div className="bg-slate-900 p-6 rounded-[2.5rem] text-center italic text-[#d4af37]">
+          <p className="text-sm">입력된 데이터는 실시간으로 관리자 화면에 반영됩니다.</p>
         </div>
       </div>
-
-      {/* 활동 수치 입력 */}
-      <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3">
-        <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
-        <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
-        <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
-        <MetricInput label="소개" val={perfInput.intro} onChange={(v:any)=>setPerfInput({...perfInput, intro:v})} />
-        <MetricInput label="배정" val={perfInput.db_assigned} onChange={(v:any)=>setPerfInput({...perfInput, db_assigned:v})} color="text-blue-600" />
-        <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
-      </div>
-
-      {/* [신규] 하단 3개월 평균 데이터 탭 */}
-      <div className="bg-slate-900 p-8 rounded-[3rem] text-white font-black shadow-xl">
-        <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
-          <button onClick={()=>setAvgTab('perf')} className={`text-[14px] italic font-black ${avgTab==='perf' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 실적</button>
-          <button onClick={()=>setAvgTab('act')} className={`text-[14px] italic font-black ${avgTab==='act' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 활동</button>
-        </div>
-        
-        {avgTab === 'perf' ? (
-          <div className="grid grid-cols-3 gap-4 font-black">
-            <AvgBox label="평균 매출" val={`${avgData.amt.toLocaleString()}만`} />
-            <AvgBox label="평균 건수" val={`${avgData.cnt}건`} />
-            <AvgBox label="건당 매출" val={`${avgData.perAmt.toLocaleString()}만`} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 gap-2 font-black">
-            <AvgBox label="전화" val={`${avgData.call}회`} />
-            <AvgBox label="만남" val={`${avgData.meet}회`} />
-            <AvgBox label="제안" val={`${avgData.pt}회`} />
-            <AvgBox label="소개" val={`${avgData.intro}회`} />
-          </div>
-        )}
-      </div>
-
-      <button onClick={handleSave} className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-[20px] shadow-2xl italic uppercase font-black">Save & Update Record</button>
-      {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
     </div>
   )
 }
 
-function AvgBox({ label, val }: any) { return <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 font-black"><p className="text-[10px] text-white/40 uppercase mb-1 font-black">{label}</p><p className="text-[16px] text-[#d4af37] font-black italic">{val}</p></div> }
-function QuickBtn({ label, url, onClick, color }: any) { return <button onClick={() => url && url !== "#" ? window.open(url, "_blank") : (onClick ? onClick() : null)} className={`${color} px-5 py-2.5 rounded-xl font-black text-[12px] border shadow-sm shrink-0 font-black`}>{label}</button> }
-function MetricInput({ label, val, onChange, color }: any) { return <div className="space-y-1 text-center font-black"><label className="text-[11px] text-slate-400 font-black">{label}</label><input type="number" value={val || ''} onChange={e=>onChange(Number(e.target.value))} className={`w-full p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl text-center text-[18px] font-black outline-none ${color}`} /></div> }
+// 공통 입력 컴포넌트
+function InputItem({ label, val, onChange, color = "text-black" }: any) {
+  return (
+    <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border-2 border-transparent focus-within:border-black transition-all">
+      <label className="text-sm italic font-black text-slate-600">{label}</label>
+      <input 
+        type="number" 
+        value={val} 
+        onChange={(e) => onChange(Number(e.target.value))}
+        className={`w-24 bg-transparent text-right text-xl font-black outline-none ${color}`}
+      />
+    </div>
+  )
+}
