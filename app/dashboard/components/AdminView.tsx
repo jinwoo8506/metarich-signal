@@ -16,6 +16,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   const [isCalcOpen, setIsCalcOpen] = useState(false);
   const [showExportOpt, setShowExportOpt] = useState(false);
 
+  // 활동 관리 탭용 전체 합산 데이터
+  const [totalActivity, setTotalActivity] = useState({ call: 0, meet: 0, pt: 0, intro: 0 });
+
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
   useEffect(() => { fetchTeamData(); }, [monthKey]);
@@ -34,13 +37,23 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     const { data: perfs } = await supabase.from("daily_perf").select("*").eq("date", monthKey);
     
     if (users) {
-      setAgents(users.map(u => ({
+      const mappedAgents = users.map(u => ({
         ...u,
         performance: perfs?.find(p => p.user_id === u.id) || { 
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
-          contract_amt: 0, contract_cnt: 0, edu_status: '미참여', is_approved: false 
+          contract_amt: 0, contract_cnt: 0, target_amt: 300, edu_status: '미참여', is_approved: false 
         }
-      })));
+      }));
+      setAgents(mappedAgents);
+
+      // 전체 활동 합산 계산
+      const totals = mappedAgents.reduce((acc, curr) => ({
+        call: acc.call + (curr.performance.call || 0),
+        meet: acc.meet + (curr.performance.meet || 0),
+        pt: acc.pt + (curr.performance.pt || 0),
+        intro: acc.intro + (curr.performance.intro || 0)
+      }), { call: 0, meet: 0, pt: 0, intro: 0 });
+      setTotalActivity(totals);
     }
   }
 
@@ -60,7 +73,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="flex-1 space-y-6 font-black">
-      {/* 상단 공지 및 퀵링크 (출력 버튼 이동) */}
+      {/* 상단 공지 및 퀵링크 */}
       <div className="flex flex-col md:flex-row gap-4 items-center font-black">
         <div className="flex-1 bg-[#d4af37] p-4 rounded-3xl border-2 border-black h-14 relative flex items-center overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="absolute whitespace-nowrap animate-marquee font-black italic uppercase text-black">{globalNotice}</div>
@@ -79,6 +92,16 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
+      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
+      {activeTab === 'act' && !selectedAgent && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
+          <TotalBox label="전체 전화" val={totalActivity.call} />
+          <TotalBox label="전체 만남" val={totalActivity.meet} sub={`전환율 ${totalActivity.call > 0 ? ((totalActivity.meet/totalActivity.call)*100).toFixed(1) : 0}%`} />
+          <TotalBox label="전체 제안" val={totalActivity.pt} sub={`전환율 ${totalActivity.meet > 0 ? ((totalActivity.pt/totalActivity.meet)*100).toFixed(1) : 0}%`} />
+          <TotalBox label="전체 소개" val={totalActivity.intro} />
+        </div>
+      )}
+
       {/* 탭 메뉴 */}
       <div className="grid grid-cols-4 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys'].map(t => (
@@ -88,24 +111,58 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 직원 리스트 (클릭 시 활동 관리로 이동) */}
+      {/* 직원 리스트 (직관성 강화) */}
       <section className="bg-white p-8 rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
-        <div className="space-y-4">
-          {agents.map(a => (
-            <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-6 bg-slate-50 rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all flex justify-between items-center font-black shadow-sm">
-              <p className="text-lg font-black">{a.name} CA</p>
-              <div className="flex gap-8">
-                 <div className="text-center font-black"><p className="text-[9px] text-slate-400">실적</p><p className="text-sm">{a.performance.contract_amt}만</p></div>
-                 <div className="text-center font-black"><p className="text-[9px] text-slate-400">전화</p><p className="text-sm">{a.performance.call}회</p></div>
+        <div className="space-y-6">
+          {agents.map(a => {
+            const progress = Math.min(((a.performance.contract_amt || 0) / (a.performance.target_amt || 1)) * 100, 100);
+            return (
+              <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-8 bg-slate-50 rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4">
+                <div className="flex justify-between items-end">
+                  <p className="text-xl font-black">{a.name} CA</p>
+                  <div className="flex gap-10 text-right">
+                    <div className="font-black">
+                      <p className="text-[10px] text-slate-400 uppercase">Goal</p>
+                      <p className="text-[15px] italic">{(a.performance.target_amt || 0).toLocaleString()}만</p>
+                    </div>
+                    <div className="font-black">
+                      <p className="text-[10px] text-indigo-500 uppercase font-black">Actual</p>
+                      <p className="text-[18px] text-indigo-600 italic">{(a.performance.contract_amt || 0).toLocaleString()}만</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 실적 막대 그래프 */}
+                <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-black" style={{ width: `${progress}%` }} />
+                </div>
+
+                {/* 하단 활동 건수 표기 */}
+                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-dashed border-slate-300">
+                  <div className="text-center"><p className="text-[9px] text-slate-400">전화</p><p className="text-sm italic">{a.performance.call}회</p></div>
+                  <div className="text-center"><p className="text-[9px] text-slate-400">만남</p><p className="text-sm italic">{a.performance.meet}회</p></div>
+                  <div className="text-center"><p className="text-[9px] text-slate-400">제안</p><p className="text-sm italic">{a.performance.pt}회</p></div>
+                  <div className="text-center"><p className="text-[9px] text-slate-400">소개</p><p className="text-sm italic">{a.performance.intro}회</p></div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
       {activeTab && <AdminPopups type={activeTab} agents={agents} selectedAgent={selectedAgent} teamMeta={teamMeta} onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }} />}
       {isCalcOpen && <CalcModal onClose={() => setIsCalcOpen(false)} />}
+    </div>
+  )
+}
+
+function TotalBox({ label, val, sub }: any) {
+  return (
+    <div className="bg-black p-5 rounded-[2rem] text-center font-black">
+      <p className="text-[#d4af37] text-[10px] uppercase mb-1">{label}</p>
+      <p className="text-white text-xl italic">{val}건</p>
+      {sub && <p className="text-[#d4af37] text-[9px] mt-1 opacity-80">{sub}</p>}
     </div>
   )
 }
