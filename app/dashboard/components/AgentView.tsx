@@ -14,19 +14,21 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [eduSchedule, setEduSchedule] = useState("");
   const [isToolOpen, setIsToolOpen] = useState(false);
 
-  // [핵심] 선택된 날짜가 몇 일이든 무조건 해당 월의 1일로 고정 (예: 2월 15일 클릭 -> 2026-02-01)
-  const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
+  // [수정] 날짜 생성 로직 강화: YYYY-MM-01 형식 강제
+  const year = selectedDate.getFullYear();
+  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+  const monthKey = `${year}-${month}-01`;
 
   useEffect(() => { 
     fetchData() 
-  }, [monthKey]); // 월이 바뀔 때만 데이터를 새로 불러옴
+  }, [monthKey]);
 
   async function fetchData() {
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
     setEduSchedule(settings?.find(s => s.key === 'edu_schedule')?.value || "등록된 교육 일정이 없습니다.");
 
-    const { data: perf } = await supabase.from("daily_perf")
+    const { data: perf, error } = await supabase.from("daily_perf")
       .select("*")
       .eq("user_id", user.id)
       .eq("date", monthKey)
@@ -35,6 +37,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     if (perf) {
       setPerfInput(perf);
     } else {
+      // 데이터가 없을 때 초기화 (is_approved는 반드시 false)
       setPerfInput({ 
         call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0, 
         contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
@@ -48,19 +51,27 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       alert("이미 승인된 월의 데이터는 수정할 수 없습니다.");
       return;
     }
-    const { error } = await supabase.from("daily_perf").upsert({ 
-      user_id: user.id, 
-      date: monthKey, // 무조건 월 1일자로 저장
-      ...perfInput 
-    });
-    if (error) alert("저장 실패"); 
-    else alert(`${selectedDate.getMonth() + 1}월 데이터가 최종 저장되었습니다.`);
-    fetchData();
+
+    // 전송 전 데이터 정리 (date와 user_id 포함 확인)
+    const saveData = {
+        ...perfInput,
+        user_id: user.id,
+        date: monthKey
+    };
+
+    const { error } = await supabase.from("daily_perf").upsert(saveData);
+
+    if (error) {
+        console.error("Save Error:", error);
+        alert("저장 중 오류가 발생했습니다.");
+    } else {
+        alert(`${year}년 ${month}월 데이터가 저장되었습니다.`);
+        fetchData();
+    }
   };
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
-      {/* 공지사항 라인 */}
       <div className="bg-[#d4af37] p-4 rounded-3xl shadow-sm border-2 border-black flex items-center gap-4 overflow-hidden">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[10px] italic shrink-0 z-10 font-black">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
@@ -68,7 +79,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 (직원용 5개) */}
       <div className="flex flex-wrap justify-between items-center gap-2 bg-white p-5 rounded-[2.5rem] shadow-sm border font-black">
         <div className="flex items-center gap-2">
           <p className="text-lg font-black">{user.name} <span className="text-blue-600 italic">CA</span></p>
@@ -83,25 +93,23 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 월간 목표 설정 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
         <div className={`bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 ${perfInput.is_approved ? 'opacity-50' : ''}`}>
-          <p className="text-[10px] text-slate-400 text-center font-black uppercase tracking-widest">{selectedDate.getMonth()+1}월 목표 금액</p>
+          <p className="text-[10px] text-slate-400 text-center font-black uppercase tracking-widest">{month}월 목표 금액</p>
           <div className="flex items-center gap-2">
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center outline-none border focus:border-black font-black" placeholder="목표" />
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center outline-none border border-indigo-200 font-black" placeholder="실적" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center outline-none border focus:border-black font-black" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center outline-none border border-indigo-200 font-black" />
           </div>
         </div>
         <div className={`bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 ${perfInput.is_approved ? 'opacity-50' : ''}`}>
-          <p className="text-[10px] text-slate-400 text-center font-black uppercase tracking-widest">{selectedDate.getMonth()+1}월 목표 건수</p>
+          <p className="text-[10px] text-slate-400 text-center font-black uppercase tracking-widest">{month}월 목표 건수</p>
           <div className="flex items-center gap-2">
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center outline-none border focus:border-black font-black" placeholder="목표" />
-            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center outline-none border border-emerald-200 font-black" placeholder="실적" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center outline-none border focus:border-black font-black" />
+            <input type="number" disabled={perfInput.is_approved} value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center outline-none border border-emerald-200 font-black" />
           </div>
         </div>
       </div>
 
-      {/* 월간 활동 누계 */}
       <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border font-black">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 font-black">
           <MetricInput label="전화" val={perfInput.call} disabled={perfInput.is_approved} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
@@ -113,15 +121,14 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 교육 일정 (관리자 연동) */}
       <div className="bg-slate-900 p-8 rounded-[3.5rem] text-white font-black shadow-2xl">
         <h3 className="text-[#d4af37] italic mb-4 uppercase text-xs text-center tracking-widest font-black">Monthly Education Schedule</h3>
         <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 mb-6 min-h-[120px] text-[13px] leading-relaxed whitespace-pre-wrap font-black text-slate-300">
           {eduSchedule}
         </div>
         <div className="flex gap-2 font-black">
-          <button disabled={perfInput.is_approved} onClick={()=>setPerfInput({...perfInput, edu_status:'참여'})} className={`flex-1 py-5 rounded-2xl font-black text-xs transition-all ${perfInput.edu_status==='참여'?'bg-indigo-600':'bg-slate-800'}`}>참여</button>
-          <button disabled={perfInput.is_approved} onClick={()=>setPerfInput({...perfInput, edu_status:'불참'})} className={`flex-1 py-5 rounded-2xl font-black text-xs transition-all ${perfInput.edu_status==='불참'?'bg-rose-600':'bg-slate-800'}`}>불참</button>
+          <button disabled={perfInput.is_approved} onClick={()=>setPerfInput({...perfInput, edu_status:'참여'})} className={`flex-1 py-5 rounded-2xl font-black text-xs transition-all ${perfInput.edu_status==='참여'?'bg-indigo-600 shadow-lg shadow-indigo-500/20':'bg-slate-800'}`}>참여</button>
+          <button disabled={perfInput.is_approved} onClick={()=>setPerfInput({...perfInput, edu_status:'불참'})} className={`flex-1 py-5 rounded-2xl font-black text-xs transition-all ${perfInput.edu_status==='불참'?'bg-rose-600 shadow-lg shadow-rose-500/20':'bg-slate-800'}`}>불참</button>
         </div>
       </div>
 
