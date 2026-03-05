@@ -40,10 +40,10 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
 
   return (
     <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 font-black">
-      <div className="bg-white w-full max-w-5xl rounded-[4rem] p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black">
-        <button onClick={onClose} className="absolute top-10 right-10 text-3xl font-black">✕</button>
+      <div className="bg-white w-full max-w-5xl rounded-[4rem] p-8 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black">
+        <button onClick={onClose} className="absolute top-8 right-8 text-3xl font-black">✕</button>
 
-        {/* 1. 실적 관리 */}
+        {/* 1. 실적 관리 (기존 유지) */}
         {type === 'perf' && (
           <div className="space-y-10">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase">Team Performance</h3>
@@ -52,73 +52,100 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
               <StatBox label="건수 달성율" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
               <StatBox label="도입 달성율" cur={curIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
             </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-slate-900 p-8 rounded-[2.5rem] text-[#d4af37] text-center italic font-black">
-                <p className="text-xs opacity-50 uppercase mb-2 font-black">인당 생산성</p>
-                <p className="text-3xl">{(totalAmt / (agents.length || 1)).toFixed(0)}만원</p>
-              </div>
-              <div className="bg-slate-100 p-8 rounded-[2.5rem] text-black text-center italic font-black">
-                <p className="text-xs opacity-50 uppercase mb-2 font-black">1건당 평균 실적</p>
-                <p className="text-3xl">{totalCnt > 0 ? (totalAmt / totalCnt).toFixed(0) : 0}만원</p>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* 2. 활동 관리 */}
+        {/* 2. 활동 관리 - 개인별 실제 건수 + 전환율 상세 */}
         {type === 'act' && (
-          <div className="space-y-8">
-            <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
-            <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-black grid grid-cols-3 gap-4 text-center font-black">
-              <div><p className="text-xs text-slate-400">총 배정 DB</p><p className="text-2xl">{totalDB}건</p></div>
-              <div><p className="text-xs text-slate-400">총 반품 DB</p><p className="text-2xl text-rose-500">{totalReturn}건</p></div>
-              <div><p className="text-xs text-slate-400">전체 반품율</p><p className="text-2xl text-rose-600 font-black">{getRate(totalReturn, totalDB)}%</p></div>
-            </div>
-            {selectedAgent && (
-              <div className="bg-white p-10 rounded-[3rem] border shadow-xl space-y-10 font-black animate-in slide-in-from-bottom-4">
-                <p className="text-2xl font-black underline decoration-4">{selectedAgent.name} CA 전환율 분석</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                  <FunnelBox label="전화→만남" val={getRate(selectedAgent.performance.meet, selectedAgent.performance.call)} />
-                  <FunnelBox label="만남→제안(PT)" val={getRate(selectedAgent.performance.pt, selectedAgent.performance.meet)} />
-                  <FunnelBox label="제안→계약" val={getRate(selectedAgent.performance.contract_cnt, selectedAgent.performance.pt)} />
-                  <FunnelBox label="소개율" val={getRate(selectedAgent.performance.intro, selectedAgent.performance.contract_cnt)} />
+          <div className="space-y-8 font-black">
+            <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase">Activity & Funnel</h3>
+            
+            {!selectedAgent ? (
+               <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-black grid grid-cols-3 gap-4 text-center">
+                 <div><p className="text-xs text-slate-400 font-black">총 배정 DB</p><p className="text-2xl font-black">{totalDB}건</p></div>
+                 <div><p className="text-xs text-slate-400 font-black">총 반품 DB</p><p className="text-2xl text-rose-500 font-black">{totalReturn}건</p></div>
+                 <div><p className="text-xs text-slate-400 font-black">전체 반품율</p><p className="text-2xl text-rose-600 font-black">{getRate(totalReturn, totalDB)}%</p></div>
+               </div>
+            ) : (
+              <div className="bg-white p-8 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-10 animate-in slide-in-from-bottom-4">
+                <div className="flex justify-between items-center border-b-2 border-slate-100 pb-6 font-black">
+                   <p className="text-2xl font-black underline decoration-4 underline-offset-8">{selectedAgent.name} CA 리포트</p>
+                   <p className="text-emerald-500 font-black italic uppercase">Detailed Activity</p>
+                </div>
+
+                {/* 개인 DB 통계 (배정/반품/반품율) */}
+                <div className="grid grid-cols-3 gap-4">
+                   <div className="bg-blue-50 p-6 rounded-3xl border-2 border-blue-100 text-center font-black">
+                      <p className="text-[10px] text-blue-400 font-black mb-1 uppercase">개인 배정건</p>
+                      <p className="text-2xl text-blue-800 italic font-black">{selectedAgent.performance.db_assigned || 0}건</p>
+                   </div>
+                   <div className="bg-rose-50 p-6 rounded-3xl border-2 border-rose-100 text-center font-black">
+                      <p className="text-[10px] text-rose-400 font-black mb-1 uppercase">개인 반품건</p>
+                      <p className="text-2xl text-rose-800 italic font-black">{selectedAgent.performance.db_returned || 0}건</p>
+                   </div>
+                   <div className="bg-slate-900 p-6 rounded-3xl text-center font-black">
+                      <p className="text-[10px] text-slate-500 font-black mb-1 uppercase">개인 반품율</p>
+                      <p className="text-2xl text-[#d4af37] italic font-black">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p>
+                   </div>
+                </div>
+
+                {/* 핵심 활동 실제 건수 표기 (요청하신 부분) */}
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-400 italic uppercase ml-2 font-black">Actual Activity Count</p>
+                  <div className="grid grid-cols-4 gap-4">
+                    <ActivityCountBox label="전화" val={selectedAgent.performance.call} />
+                    <ActivityCountBox label="만남" val={selectedAgent.performance.meet} />
+                    <ActivityCountBox label="제안" val={selectedAgent.performance.pt} />
+                    <ActivityCountBox label="소개" val={selectedAgent.performance.intro} />
+                  </div>
+                </div>
+
+                {/* 영업 단계 전환율 분석 */}
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-400 italic uppercase ml-2 font-black">Funnel Conversion Rate</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <FunnelBox label="전화→만남" val={getRate(selectedAgent.performance.meet, selectedAgent.performance.call)} />
+                    <FunnelBox label="만남→제안" val={getRate(selectedAgent.performance.pt, selectedAgent.performance.meet)} />
+                    <FunnelBox label="제안→계약" val={getRate(selectedAgent.performance.contract_cnt, selectedAgent.performance.pt)} />
+                    <FunnelBox label="계약→소개" val={getRate(selectedAgent.performance.intro, selectedAgent.performance.contract_cnt)} />
+                  </div>
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* 3. 교육 관리 */}
+        {/* 3. 교육 관리 (기존 유지) */}
         {type === 'edu' && (
           <div className="space-y-6">
-            <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Attendance</h3>
+            <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase">Attendance</h3>
             <div className="border-2 border-black rounded-[2.5rem] overflow-hidden">
               <table className="w-full text-left font-black">
                 <thead className="bg-slate-900 text-[#d4af37] text-xs uppercase"><tr><th className="p-6">Name</th><th className="p-6 text-center">Status</th></tr></thead>
-                <tbody className="divide-y divide-slate-100">{agents.map((a:any) => (<tr key={a.id}><td className="p-6">{a.name} CA</td><td className="p-6 text-center">{a.performance.edu_status}</td></tr>))}</tbody>
+                <tbody className="divide-y divide-slate-100">{agents.map((a:any) => (<tr key={a.id}><td className="p-6">{a.name} CA</td><td className="p-6 text-center font-black">{a.performance.edu_status}</td></tr>))}</tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* 4. 시스템 설정 - 공지사항 수정 기능 포함 */}
+        {/* 4. 시스템 설정 (기존 유지) */}
         {type === 'sys' && (
           <div className="space-y-10">
-            <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Settings</h3>
+            <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase">Settings</h3>
             <div className="grid grid-cols-2 gap-10">
-              <div className="space-y-4">
+              <div className="space-y-4 font-black">
                 <InputRow label="팀 실적 목표" val={tarAmt} onChange={setTarAmt} />
                 <InputRow label="팀 건수 목표" val={tarCnt} onChange={setTarCnt} />
                 <InputRow label="도입 인원 목표" val={tarIntro} onChange={setTarIntro} />
                 <InputRow label="실제 도입 확정" val={curIntro} onChange={setCurIntro} />
-                <div className="pt-4 space-y-2">
+                <div className="pt-4 space-y-2 font-black">
                   <p className="text-xs text-slate-400 uppercase font-black">상단 전체 공지(전광판)</p>
-                  <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-black rounded-2xl outline-none font-black italic" placeholder="전광판 공지 내용을 입력하세요." />
+                  <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-black rounded-2xl outline-none font-black italic" />
                 </div>
               </div>
               <div className="space-y-4">
-                <p className="text-xs text-slate-400 uppercase font-black">교육 공지 (직원 체크리스트용)</p>
-                <textarea value={eduContent} onChange={e=>setEduContent(e.target.value)} className="w-full h-64 p-6 bg-slate-50 border-2 border-black rounded-[2.5rem] outline-none text-sm italic font-black" placeholder="직원 화면에 나타날 교육 내용을 입력하세요." />
+                <p className="text-xs text-slate-400 uppercase font-black">교육 공지 (직원용)</p>
+                <textarea value={eduContent} onChange={e=>setEduContent(e.target.value)} className="w-full h-64 p-6 bg-slate-50 border-2 border-black rounded-[2.5rem] outline-none text-sm italic font-black" />
               </div>
             </div>
             <button onClick={saveSys} className="w-full bg-black text-[#d4af37] py-8 rounded-[3rem] text-2xl italic shadow-2xl uppercase font-black">Save All Settings</button>
@@ -129,7 +156,16 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-// 헬퍼 컴포넌트들
+// 신규 추가: 실제 건수를 보여주는 박스
+function ActivityCountBox({ label, val }: any) {
+  return (
+    <div className="bg-slate-50 p-5 rounded-3xl border-2 border-black text-center font-black">
+      <p className="text-[10px] text-slate-400 uppercase mb-1 font-black">{label}</p>
+      <p className="text-xl font-black italic">{val || 0}건</p>
+    </div>
+  )
+}
+
 function StatBox({ label, cur, tar, unit, color }: any) {
   const pct = Math.min((cur / (tar || 1)) * 100, 100).toFixed(1);
   return (
@@ -143,5 +179,21 @@ function StatBox({ label, cur, tar, unit, color }: any) {
     </div>
   )
 }
-function FunnelBox({ label, val }: any) { return <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200"><p className="text-2xl italic font-black text-indigo-600">{val}%</p><p className="text-[10px] text-slate-400 font-black">{label}</p></div> }
-function InputRow({ label, val, onChange }: any) { return <div className="flex justify-between items-center bg-slate-50 p-5 rounded-2xl border font-black"><label className="text-xs italic font-black">{label}</label><input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-24 p-2 bg-white border rounded-xl text-center outline-none font-black" /></div> }
+
+function FunnelBox({ label, val }: any) { 
+  return (
+    <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 text-center font-black">
+      <p className="text-2xl italic font-black text-indigo-600">{val}%</p>
+      <p className="text-[10px] text-slate-400 font-black uppercase">{label}</p>
+    </div>
+  )
+}
+
+function InputRow({ label, val, onChange }: any) { 
+  return (
+    <div className="flex justify-between items-center bg-slate-50 p-5 rounded-2xl border font-black">
+      <label className="text-xs italic font-black">{label}</label>
+      <input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-24 p-2 bg-white border rounded-xl text-center outline-none font-black" />
+    </div>
+  )
+}
