@@ -26,7 +26,13 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
   const monthKey = `${year}-${month}-01`;
 
-  const LINKS = { metaon: "https://metaon.metarich.co.kr", insu: "#", claim: "#", archive: "#" };
+  // 퀵링크 정의
+  const LINKS = { 
+    metaon: "https://meta-on.kr/#/login", 
+    insu: "#", 
+    claim: "#", 
+    archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
+  };
 
   useEffect(() => { 
     fetchData();
@@ -62,7 +68,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     const dates = [];
     const currentYear = selectedDate.getFullYear();
     const currentMonth = selectedDate.getMonth();
-    // 직전 3개월 날짜 키 생성
     for (let i = 1; i <= 3; i++) {
       const d = new Date(currentYear, currentMonth - i, 1);
       dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`);
@@ -127,7 +132,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         <div className="flex flex-nowrap overflow-x-auto gap-2 no-scrollbar font-black">
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" />
-          <QuickBtn label="보험금청구" url={LINKS.claim} color="bg-slate-50" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
         </div>

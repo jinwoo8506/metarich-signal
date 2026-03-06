@@ -74,15 +74,29 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="flex-1 space-y-6 font-black">
-      {/* 상단 공지 및 퀵링크 */}
+      {/* 상단 공지 탭 */}
       <div className="flex flex-col md:flex-row gap-4 items-center font-black">
         <div className="flex-1 bg-[#d4af37] p-4 rounded-3xl border-2 border-black h-14 relative flex items-center overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="absolute whitespace-nowrap animate-marquee font-black italic uppercase text-black">{globalNotice}</div>
         </div>
-        <div className="flex gap-2 relative">
-          <button onClick={() => setIsCalcOpen(true)} className="bg-black text-[#d4af37] px-6 py-4 rounded-2xl text-xs italic shadow-lg font-black">영업도구</button>
+      </div>
+
+      {/* 퀵링크 섹션 (공지탭 바로 아래) */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
+        <div className="flex items-center gap-3 ml-2">
+          <div className="w-3 h-3 bg-indigo-600 rounded-full animate-pulse" />
+          <p className="text-lg italic font-black uppercase tracking-tighter">
+            {user.name || "ADMINISTRATOR"} <span className="text-slate-400 ml-1 not-italic text-sm">관리자</span>
+          </p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2 justify-center font-black">
+          <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer" className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">Meta-On</a>
+          <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer" className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">Drive</a>
+          <button onClick={() => setIsCalcOpen(true)} className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">Calculator</button>
+          
           <div className="relative">
-            <button onClick={() => setShowExportOpt(!showExportOpt)} className="bg-white border-2 border-black px-6 py-4 rounded-2xl text-xs italic shadow-lg font-black">리포트 출력</button>
+            <button onClick={() => setShowExportOpt(!showExportOpt)} className="bg-black text-[#d4af37] px-5 py-3 rounded-2xl text-[11px] italic shadow-lg font-black uppercase">Export Report</button>
             {showExportOpt && (
               <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-2xl shadow-2xl z-50 w-36 overflow-hidden">
                 <button onClick={() => handleExport('excel')} className="w-full p-4 hover:bg-slate-50 border-b text-left text-xs font-black">EXCEL 출력</button>
