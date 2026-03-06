@@ -5,18 +5,15 @@ import { supabase } from "../../../lib/supabase"
 import CalcModal from "./CalcModal"
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
-  // 메인 탭 상태: 'input' (실적/활동), 'edu' (교육확인)
   const [mainTab, setMainTab] = useState<'input' | 'edu'>('input');
   
   const [perfInput, setPerfInput] = useState({
     call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
     contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
     edu_status: "미참여", is_approved: false,
-    // 주차별 교육 체크 상태
     edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
   });
   const [globalNotice, setGlobalNotice] = useState("");
-  // 관리자가 설정한 5개 주차별 교육 내용 상태
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
   const [isToolOpen, setIsToolOpen] = useState(false);
   
@@ -63,22 +60,26 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   async function fetchAvgData() {
     const dates = [];
+    const currentYear = selectedDate.getFullYear();
+    const currentMonth = selectedDate.getMonth();
     for (let i = 1; i <= 3; i++) {
-      const d = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - i, 1);
+      const d = new Date(currentYear, currentMonth - i, 1);
       dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`);
     }
 
     const { data } = await supabase.from("daily_perf")
-      .select("*").eq("user_id", user.id).in("date", dates);
+      .select("contract_amt, contract_cnt, call, meet, pt, intro")
+      .eq("user_id", user.id)
+      .in("date", dates);
 
     if (data && data.length > 0) {
       const sum = data.reduce((acc, curr) => ({
-        amt: acc.amt + curr.contract_amt,
-        cnt: acc.cnt + curr.contract_cnt,
-        call: acc.call + curr.call,
-        meet: acc.meet + curr.meet,
-        pt: acc.pt + curr.pt,
-        intro: acc.intro + curr.intro
+        amt: acc.amt + (curr.contract_amt || 0),
+        cnt: acc.cnt + (curr.contract_cnt || 0),
+        call: acc.call + (curr.call || 0),
+        meet: acc.meet + (curr.meet || 0),
+        pt: acc.pt + (curr.pt || 0),
+        intro: acc.intro + (curr.intro || 0)
       }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
 
       const count = data.length;
@@ -91,6 +92,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         pt: Math.round(sum.pt / count),
         intro: Math.round(sum.intro / count)
       });
+    } else {
+      setAvgData({ amt: 0, cnt: 0, perAmt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
     }
   }
 
@@ -109,7 +112,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
-      {/* 1. 상단 공지 바 */}
       <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[12px] italic shrink-0 font-black">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
@@ -117,7 +119,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 2. 프로필 및 퀵링크 */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black">
         <div className="flex items-center gap-3 shrink-0">
           <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
@@ -131,13 +132,11 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 3. 메인 탭 메뉴 */}
       <div className="flex gap-2 font-black">
         <button onClick={() => setMainTab('input')} className={`flex-1 py-4 rounded-2xl border-2 border-black italic transition-all ${mainTab === 'input' ? 'bg-black text-[#d4af37]' : 'bg-white text-black opacity-40'}`}>PERFORMANCE</button>
         <button onClick={() => setMainTab('edu')} className={`flex-1 py-4 rounded-2xl border-2 border-black italic transition-all ${mainTab === 'edu' ? 'bg-black text-[#d4af37]' : 'bg-white text-black opacity-40'}`}>EDUCATION</button>
       </div>
 
-      {/* --- 탭 A: 실적 입력 화면 --- */}
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
@@ -188,7 +187,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* --- 탭 B: 교육 확인 화면 --- */}
       {mainTab === 'edu' && (
         <div className="bg-white p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-8 animate-in slide-in-from-right-4 duration-300 font-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
