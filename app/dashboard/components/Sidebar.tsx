@@ -26,17 +26,18 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     setDailyAdminNotice(savedDaily || "해당 날짜의 전달사항이 없습니다.");
   }
 
+  // 뷰를 활용한 최적화된 평균 데이터 조회 로직 적용
   async function fetch3MonthAvg() {
-    const dates = [];
-    for (let i = 1; i <= 3; i++) {
-      const d = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - i, 1);
-      dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`);
-    }
-    const { data } = await supabase.from("daily_perf").select("contract_amt, contract_cnt").in("date", dates);
+    const { data } = await supabase.from("view_3month_avg").select("avg_3month_amt, avg_3month_cnt");
+    
     if (data && data.length > 0) {
-      const sumAmt = data.reduce((acc, curr) => acc + curr.contract_amt, 0);
-      const sumCnt = data.reduce((acc, curr) => acc + curr.contract_cnt, 0);
-      setThreeMonthAvg({ amt: Math.round(sumAmt / 3), cnt: Number((sumCnt / 3).toFixed(1)) });
+      const avgAmt = data.reduce((acc, curr) => acc + (curr.avg_3month_amt || 0), 0) / data.length;
+      const avgCnt = data.reduce((acc, curr) => acc + (curr.avg_3month_cnt || 0), 0) / data.length;
+      
+      setThreeMonthAvg({ 
+        amt: Math.round(avgAmt), 
+        cnt: Number(avgCnt.toFixed(1)) 
+      });
     }
   }
 
@@ -66,7 +67,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         />
       </div>
 
-      {/* [수정] 달력 바로 아래 3개월 평균 데이터 배치 */}
+      {/* 3개월 평균 데이터 배치 (기존 영역 수정 적용) */}
       <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl">
         <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">Team 3-Month Performance</p>
         <div className="grid grid-cols-2 gap-3 font-black">
