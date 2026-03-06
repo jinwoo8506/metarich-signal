@@ -11,7 +11,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [perfInput, setPerfInput] = useState({
     call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
     contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
-    edu_status: "미참여", is_approved: false
+    edu_status: "미참여", is_approved: false,
+    // [추가] 주차별 교육 체크 상태
+    edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
   });
   const [globalNotice, setGlobalNotice] = useState("");
   // 관리자가 설정한 5개 주차별 교육 내용 상태
@@ -52,11 +54,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     const { data: perf } = await supabase.from("daily_perf")
       .select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
 
-    if (perf) setPerfInput(perf);
+    if (perf) setPerfInput(prev => ({ ...prev, ...perf }));
     else setPerfInput({ 
       call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0, 
       contract_cnt: 0, contract_amt: 0, target_cnt: 10, target_amt: 300, 
-      edu_status: "미참여", is_approved: false 
+      edu_status: "미참여", is_approved: false,
+      edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
     });
   }
 
@@ -206,30 +209,42 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* --- 탭 B: 교육 확인 화면 (업데이트됨) --- */}
+      {/* --- 탭 B: 교육 확인 화면 (주차별 개별 체크박스 적용) --- */}
       {mainTab === 'edu' && (
         <div className="bg-white p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-8 animate-in slide-in-from-right-4 duration-300 font-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
-            <h2 className="text-3xl italic uppercase font-black">Daily Training</h2>
+            <h2 className="text-3xl italic uppercase font-black">Weekly Training</h2>
             <div className={`px-6 py-2 rounded-full font-black italic text-sm ${perfInput.edu_status === '참여' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-              STATUS: {perfInput.edu_status}
+              TOTAL: {perfInput.edu_status}
             </div>
           </div>
           
           <div className="bg-slate-50 p-6 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 font-black space-y-4">
-            <p className="text-xs text-slate-400 uppercase mb-2 tracking-widest font-black italic">Weekly Curriculum</p>
+            <p className="text-xs text-slate-400 uppercase mb-2 tracking-widest font-black italic">Weekly Curriculum (Click to check)</p>
             
             <div className="grid grid-cols-1 gap-4">
-              {[1, 2, 3, 4, 5].map((w) => (
-                <div key={w} className="flex items-center gap-4 bg-white p-5 rounded-2xl border-2 border-black shadow-sm">
-                  <div className="w-12 h-12 bg-black text-[#d4af37] rounded-xl flex items-center justify-center shrink-0 italic text-sm">
-                    {w === 5 ? "추가" : `${w}W`}
+              {[1, 2, 3, 4, 5].map((w) => {
+                const fieldName = `edu_${w}` as keyof typeof perfInput;
+                const isChecked = perfInput[fieldName];
+
+                return (
+                  <div 
+                    key={w} 
+                    onClick={() => handleSave({ [fieldName]: !isChecked })}
+                    className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99] ${isChecked ? 'bg-emerald-50 border-emerald-500' : 'bg-rose-50 border-rose-200'}`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 italic text-sm font-black transition-colors ${isChecked ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
+                      {w === 5 ? "추가" : `${w}W`}
+                    </div>
+                    <p className={`flex-1 text-lg italic font-black leading-tight transition-colors ${isChecked ? 'text-emerald-900' : 'text-rose-900'}`}>
+                      {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
+                    </p>
+                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-rose-300 text-transparent'}`}>
+                      ✓
+                    </div>
                   </div>
-                  <p className="flex-1 text-lg italic font-black leading-tight">
-                    {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <button 

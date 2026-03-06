@@ -17,7 +17,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       if (data) {
         setNotice(data.find(s => s.key === 'global_notice')?.value || "");
         const savedEdu = data.find(s => s.key === 'edu_content')?.value;
-        if (savedEdu) setEduWeeks(JSON.parse(savedEdu));
+        if (savedEdu) {
+          try {
+            setEduWeeks(JSON.parse(savedEdu));
+          } catch (e) {
+            // 기존 텍스트 형태이거나 파싱 실패 시 초기화
+            setEduWeeks({ 1: "", 2: "", 3: "", 4: "", 5: "" });
+          }
+        }
       }
     }
     load();
@@ -119,9 +126,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
             {!selectedAgent ? (
                <div className="bg-slate-50 p-10 rounded-[3rem] border-4 border-black grid grid-cols-3 gap-6 text-center shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
-                 <div><p className="text-xs text-slate-400 uppercase mb-2">총 배정 DB</p><p className="text-3xl font-black italic">{totalDB}건</p></div>
-                 <div><p className="text-xs text-slate-400 uppercase mb-2">총 반품 DB</p><p className="text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
-                 <div><p className="text-xs text-slate-400 uppercase mb-2">전체 반품율</p><p className="text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
+                  <div><p className="text-xs text-slate-400 uppercase mb-2">총 배정 DB</p><p className="text-3xl font-black italic">{totalDB}건</p></div>
+                  <div><p className="text-xs text-slate-400 uppercase mb-2">총 반품 DB</p><p className="text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
+                  <div><p className="text-xs text-slate-400 uppercase mb-2">전체 반품율</p><p className="text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
                </div>
             ) : (
               <div className="space-y-10">
@@ -198,13 +205,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
               </div>
               
               <div className="space-y-6">
-                {/* 우측 상단으로 이동한 공지사항 */}
                 <div className="space-y-2">
                   <p className="text-xs text-slate-400 uppercase font-black ml-2">Global Notice (Ticker)</p>
                   <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-6 bg-slate-50 border-4 border-black rounded-[1.5rem] outline-none font-black italic text-lg" placeholder="공지사항 입력..." />
                 </div>
                 
-                {/* 5주차 교육 커리큘럼 입력 */}
                 <div className="space-y-2">
                   <p className="text-xs text-slate-400 uppercase font-black ml-2">Weekly Education Curriculum</p>
                   {[1, 2, 3, 4, 5].map((w) => (

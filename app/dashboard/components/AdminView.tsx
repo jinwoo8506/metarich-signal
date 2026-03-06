@@ -41,7 +41,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ...u,
         performance: perfs?.find(p => p.user_id === u.id) || { 
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
-          contract_amt: 0, contract_cnt: 0, target_amt: 300, edu_status: '미참여', is_approved: false 
+          contract_amt: 0, contract_cnt: 0, target_amt: 300, edu_status: '미참여', is_approved: false,
+          edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
         }
       }));
       setAgents(mappedAgents);
@@ -111,7 +112,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 직원 리스트 (직관성 강화) */}
+      {/* 직원 리스트 */}
       <section className="bg-white p-8 rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
         <div className="space-y-6">
@@ -133,12 +134,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   </div>
                 </div>
                 
-                {/* 실적 막대 그래프 */}
                 <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
                   <div className="h-full bg-black" style={{ width: `${progress}%` }} />
                 </div>
 
-                {/* 하단 활동 건수 표기 */}
                 <div className="grid grid-cols-4 gap-2 pt-2 border-t border-dashed border-slate-300">
                   <div className="text-center"><p className="text-[9px] text-slate-400">전화</p><p className="text-sm italic">{a.performance.call}회</p></div>
                   <div className="text-center"><p className="text-[9px] text-slate-400">만남</p><p className="text-sm italic">{a.performance.meet}회</p></div>
