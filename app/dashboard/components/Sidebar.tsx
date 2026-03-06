@@ -26,9 +26,16 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     setDailyAdminNotice(savedDaily || "해당 날짜의 전달사항이 없습니다.");
   }
 
-  // 뷰를 활용한 최적화된 평균 데이터 조회 로직 적용
+  // 관리자/직원 권한에 따른 3개월 평균 실적 조회 로직
   async function fetch3MonthAvg() {
-    const { data } = await supabase.from("view_3month_avg").select("avg_3month_amt, avg_3month_cnt");
+    let query = supabase.from("view_3month_avg").select("avg_3month_amt, avg_3month_cnt");
+
+    // 직원은 본인의 ID로 데이터 필터링
+    if (!isAdmin) {
+      query = query.eq("user_id", user.id);
+    }
+
+    const { data } = await query;
     
     if (data && data.length > 0) {
       const avgAmt = data.reduce((acc, curr) => acc + (curr.avg_3month_amt || 0), 0) / data.length;
@@ -38,6 +45,8 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         amt: Math.round(avgAmt), 
         cnt: Number(avgCnt.toFixed(1)) 
       });
+    } else {
+      setThreeMonthAvg({ amt: 0, cnt: 0 });
     }
   }
 
@@ -67,9 +76,11 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         />
       </div>
 
-      {/* 3개월 평균 데이터 배치 (기존 영역 수정 적용) */}
+      {/* 3개월 평균 데이터 배치 */}
       <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl">
-        <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">Team 3-Month Performance</p>
+        <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">
+          {isAdmin ? "Team 3-Month Performance" : "My 3-Month Performance"}
+        </p>
         <div className="grid grid-cols-2 gap-3 font-black">
           <div className="text-center border-r border-white/10">
             <p className="text-[8px] text-white/40 uppercase mb-1">Avg Amount</p>
