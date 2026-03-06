@@ -17,20 +17,30 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
   useEffect(() => {
     fetchDailyData();
     fetch3MonthAvg();
+    // 개인 메모는 로컬 저장소 유지 (본인 기기용)
     const savedPrivate = localStorage.getItem(`memo_${user.id}`);
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
 
+  // 관리자 전달사항을 DB에서 불러오기
   async function fetchDailyData() {
-    const savedDaily = localStorage.getItem(`admin_daily_${dateStr}`);
-    setDailyAdminNotice(savedDaily || "해당 날짜의 전달사항이 없습니다.");
+    const { data } = await supabase
+      .from("team_settings")
+      .select("value")
+      .eq("key", `daily_instruction_${dateStr}`)
+      .maybeSingle();
+
+    if (data) {
+      setDailyAdminNotice(data.value);
+    } else {
+      setDailyAdminNotice("해당 날짜의 전달사항이 없습니다.");
+    }
   }
 
-  // 관리자/직원 권한에 따른 3개월 평균 실적 조회 로직
+  // 3개월 평균 실적 조회 로직
   async function fetch3MonthAvg() {
     let query = supabase.from("view_3month_avg").select("avg_3month_amt, avg_3month_cnt");
 
-    // 직원은 본인의 ID로 데이터 필터링
     if (!isAdmin) {
       query = query.eq("user_id", user.id);
     }
@@ -50,9 +60,14 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     }
   }
 
-  const saveDailyNotice = (val: string) => {
+  // 관리자 전달사항 저장 (DB upsert)
+  const saveDailyNotice = async (val: string) => {
     setDailyAdminNotice(val);
-    localStorage.setItem(`admin_daily_${dateStr}`, val);
+    const { error } = await supabase
+      .from("team_settings")
+      .upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
+    
+    if (error) console.error("Error saving daily notice:", error);
   };
 
   const savePrivateMemo = (val: string) => {
@@ -94,6 +109,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
       </div>
       
       <div className="flex-1 flex flex-col gap-4 font-black">
+        {/* Daily Instruction: 관리자만 편집 가능, DB 동기화 */}
         <div className="bg-blue-50 p-6 rounded-[2.5rem] border border-blue-100 flex flex-col h-48 relative">
           <p className="text-[9px] font-black text-blue-600 uppercase italic mb-3 tracking-widest flex justify-between">
             <span>Daily Instruction</span>
@@ -103,16 +119,19 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
             value={dailyAdminNotice}
             onChange={(e) => isAdmin && saveDailyNotice(e.target.value)}
             readOnly={!isAdmin}
-            className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-2 bg-white/50 rounded-xl'}`}
+            placeholder={isAdmin ? "전달사항을 입력하세요..." : "전달사항이 없습니다."}
+            className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-2 bg-white/50 rounded-xl focus:bg-white transition-all'}`}
           />
         </div>
 
+        {/* Private Memo: 개인 로컬 저장 유지 */}
         <div className="bg-amber-50 p-6 rounded-[2.5rem] border border-amber-100 flex flex-col h-48 font-black">
           <p className="text-[9px] font-black text-amber-600 uppercase italic mb-3 tracking-widest">Private Memo</p>
           <textarea 
             value={privateMemo}
             onChange={(e) => savePrivateMemo(e.target.value)}
-            className="w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none text-amber-900 leading-relaxed p-2 bg-white/50 rounded-xl"
+            placeholder="개인적인 메모를 입력하세요..."
+            className="w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none text-amber-900 leading-relaxed p-2 bg-white/50 rounded-xl focus:bg-white transition-all"
           />
         </div>
       </div>

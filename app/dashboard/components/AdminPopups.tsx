@@ -1,4 +1,5 @@
 "use client"
+
 import React, { useState, useEffect } from "react"
 import { supabase } from "../../../lib/supabase"
 
@@ -8,7 +9,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [tarIntro, setTarIntro] = useState(teamMeta.targetIntro);
   const [curIntro, setCurIntro] = useState(teamMeta.actualIntro);
   const [notice, setNotice] = useState("");
-  // 교육 내용 5개 관리 (1주차~4주차 + 추가)
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
 
   useEffect(() => {
@@ -56,13 +56,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     onClose();
   };
 
-  // 공통 계산 로직
   const totalAmt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_amt || 0), 0);
   const totalCnt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_cnt || 0), 0);
   const totalDB = agents.reduce((s:any, a:any) => s + (a.performance?.db_assigned || 0), 0);
   const totalReturn = agents.reduce((s:any, a:any) => s + (a.performance?.db_returned || 0), 0);
 
-  // 활동 관리 팝업용 전체 합계 계산
   const totalCall = agents.reduce((s:any, a:any) => s + (a.performance?.call || 0), 0);
   const totalMeet = agents.reduce((s:any, a:any) => s + (a.performance?.meet || 0), 0);
   const totalPt = agents.reduce((s:any, a:any) => s + (a.performance?.pt || 0), 0);
@@ -89,7 +87,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </button>
         )}
 
-        {/* 1. 실적 관리 섹션 */}
         {type === 'perf' && (
           <div className="space-y-10">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Team Performance</h3>
@@ -126,31 +123,27 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 2. 활동 관리 섹션 (전체 통계 및 전환율 표기 업데이트) */}
         {type === 'act' && (
           <div className="space-y-8 font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
             {!selectedAgent ? (
               <div className="space-y-12 animate-in fade-in duration-500">
-                {/* 상단 DB 요약 */}
                 <div className="bg-slate-50 p-10 rounded-[3rem] border-4 border-black grid grid-cols-3 gap-6 text-center shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
                    <div><p className="text-xs text-slate-400 uppercase mb-2">총 배정 DB</p><p className="text-3xl font-black italic">{totalDB}건</p></div>
                    <div><p className="text-xs text-slate-400 uppercase mb-2">총 반품 DB</p><p className="text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
                    <div><p className="text-xs text-slate-400 uppercase mb-2">전체 반품율</p><p className="text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
 
-                {/* 팀 전체 활동 건수 (직원 개인 화면과 동일한 레이아웃) */}
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-400 italic uppercase ml-4">Team Total Activity (Sum / Avg)</p>
+                  <p className="text-sm text-slate-400 italic uppercase ml-4">Team Total Activity</p>
                   <div className="grid grid-cols-4 gap-6">
-                    <ActivityCountBox label="전체 전화" val={`${totalCall} / ${Math.round(totalCall/agentCount)}`} />
-                    <ActivityCountBox label="전체 만남" val={`${totalMeet} / ${Math.round(totalMeet/agentCount)}`} />
-                    <ActivityCountBox label="전체 제안" val={`${totalPt} / ${Math.round(totalPt/agentCount)}`} />
-                    <ActivityCountBox label="전체 소개" val={`${totalIntro} / ${Math.round(totalIntro/agentCount)}`} />
+                    <ActivityCountBox label="전화 합계" val={`총 ${totalCall}건`} />
+                    <ActivityCountBox label="만남 합계" val={`총 ${totalMeet}건`} />
+                    <ActivityCountBox label="제안 합계" val={`총 ${totalPt}건`} />
+                    <ActivityCountBox label="소개 합계" val={`총 ${totalIntro}건`} />
                   </div>
                 </div>
 
-                {/* 팀 전체 전환율 (직원 개인 화면과 동일한 레이아웃) */}
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 italic uppercase ml-4">Team Conversion Funnel (%)</p>
                   <div className="grid grid-cols-4 gap-6">
@@ -179,13 +172,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 italic uppercase ml-4">Detailed Activity Metrics</p>
                   <div className="grid grid-cols-4 gap-6">
-                    <ActivityCountBox label="전화" val={selectedAgent.performance.call} />
-                    <ActivityCountBox label="만남" val={selectedAgent.performance.meet} />
-                    <ActivityCountBox label="제안" val={selectedAgent.performance.pt} />
-                    <ActivityCountBox label="소개" val={selectedAgent.performance.intro} />
+                    <ActivityCountBox label="전화" val={`${selectedAgent.performance.call}건`} />
+                    <ActivityCountBox label="만남" val={`${selectedAgent.performance.meet}건`} />
+                    <ActivityCountBox label="제안" val={`${selectedAgent.performance.pt}건`} />
+                    <ActivityCountBox label="소개" val={`${selectedAgent.performance.intro}건`} />
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 italic uppercase ml-4">Conversion Funnel (%)</p>
                   <div className="grid grid-cols-4 gap-6">
@@ -200,7 +192,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 3. 출석/교육 관리 섹션 */}
         {type === 'edu' && (
           <div className="space-y-10">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Daily Attendance & Training</h3>
@@ -228,9 +219,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                       </td>
                       {[1, 2, 3, 4, 5].map((w) => (
                         <td key={w} className="p-6 text-center">
-                          <div className={`w-8 h-8 mx-auto rounded-lg border-2 flex items-center justify-center font-black ${a.performance[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black' : 'bg-white text-transparent border-slate-200'}`}>
-                            ✓
-                          </div>
+                          <div className={`w-8 h-8 mx-auto rounded-lg border-2 flex items-center justify-center font-black ${a.performance[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black' : 'bg-white text-transparent border-slate-200'}`}>✓</div>
                         </td>
                       ))}
                     </tr>
@@ -241,7 +230,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 4. 시스템 설정 섹션 */}
         {type === 'sys' && (
           <div className="space-y-10 font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Admin Settings</h3>
@@ -252,13 +240,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <InputRow label="도입 인원 목표 (명)" val={tarIntro} onChange={setTarIntro} />
                 <InputRow label="실제 도입 확정 (명)" val={curIntro} onChange={setCurIntro} />
               </div>
-              
               <div className="space-y-6">
                 <div className="space-y-2">
                   <p className="text-xs text-slate-400 uppercase font-black ml-2">Global Notice (Ticker)</p>
                   <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-6 bg-slate-50 border-4 border-black rounded-[1.5rem] outline-none font-black italic text-lg" placeholder="공지사항 입력..." />
                 </div>
-                
                 <div className="space-y-2">
                   <p className="text-xs text-slate-400 uppercase font-black ml-2">Weekly Education Curriculum</p>
                   {[1, 2, 3, 4, 5].map((w) => (
