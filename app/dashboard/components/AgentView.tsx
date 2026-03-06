@@ -62,6 +62,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     const dates = [];
     const currentYear = selectedDate.getFullYear();
     const currentMonth = selectedDate.getMonth();
+    // 직전 3개월 날짜 키 생성
     for (let i = 1; i <= 3; i++) {
       const d = new Date(currentYear, currentMonth - i, 1);
       dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`);

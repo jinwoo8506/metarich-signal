@@ -62,7 +62,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const totalDB = agents.reduce((s:any, a:any) => s + (a.performance?.db_assigned || 0), 0);
   const totalReturn = agents.reduce((s:any, a:any) => s + (a.performance?.db_returned || 0), 0);
 
-  // 활동 관리 팝업용 전체 합계 및 평균 계산
+  // 활동 관리 팝업용 전체 합계 계산
   const totalCall = agents.reduce((s:any, a:any) => s + (a.performance?.call || 0), 0);
   const totalMeet = agents.reduce((s:any, a:any) => s + (a.performance?.meet || 0), 0);
   const totalPt = agents.reduce((s:any, a:any) => s + (a.performance?.pt || 0), 0);
@@ -126,21 +126,22 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 2. 활동 관리 섹션 (전체 합계 및 평균 추가) */}
+        {/* 2. 활동 관리 섹션 (전체 통계 및 전환율 표기 업데이트) */}
         {type === 'act' && (
           <div className="space-y-8 font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
             {!selectedAgent ? (
-              <div className="space-y-8">
-                {/* DB 현황 */}
+              <div className="space-y-12 animate-in fade-in duration-500">
+                {/* 상단 DB 요약 */}
                 <div className="bg-slate-50 p-10 rounded-[3rem] border-4 border-black grid grid-cols-3 gap-6 text-center shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
                    <div><p className="text-xs text-slate-400 uppercase mb-2">총 배정 DB</p><p className="text-3xl font-black italic">{totalDB}건</p></div>
                    <div><p className="text-xs text-slate-400 uppercase mb-2">총 반품 DB</p><p className="text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
                    <div><p className="text-xs text-slate-400 uppercase mb-2">전체 반품율</p><p className="text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
-                {/* [추가] 전체 직원 활동 통계 */}
+
+                {/* 팀 전체 활동 건수 (직원 개인 화면과 동일한 레이아웃) */}
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-400 italic uppercase ml-4">Team Average Activity (Total / Avg)</p>
+                  <p className="text-sm text-slate-400 italic uppercase ml-4">Team Total Activity (Sum / Avg)</p>
                   <div className="grid grid-cols-4 gap-6">
                     <ActivityCountBox label="전체 전화" val={`${totalCall} / ${Math.round(totalCall/agentCount)}`} />
                     <ActivityCountBox label="전체 만남" val={`${totalMeet} / ${Math.round(totalMeet/agentCount)}`} />
@@ -148,9 +149,20 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     <ActivityCountBox label="전체 소개" val={`${totalIntro} / ${Math.round(totalIntro/agentCount)}`} />
                   </div>
                 </div>
+
+                {/* 팀 전체 전환율 (직원 개인 화면과 동일한 레이아웃) */}
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-400 italic uppercase ml-4">Team Conversion Funnel (%)</p>
+                  <div className="grid grid-cols-4 gap-6">
+                    <FunnelBox label="전화→만남" val={getRate(totalMeet, totalCall)} />
+                    <FunnelBox label="만남→제안" val={getRate(totalPt, totalMeet)} />
+                    <FunnelBox label="제안→계약" val={getRate(totalCnt, totalPt)} />
+                    <FunnelBox label="계약→소개" val={getRate(totalIntro, totalCnt)} />
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="space-y-10">
+              <div className="space-y-10 animate-in slide-in-from-right-4 duration-300">
                 <div className="flex justify-between items-center bg-black p-8 rounded-[2rem] text-white">
                    <p className="text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Report</p>
                    <button onClick={() => handleApprove(selectedAgent.id, selectedAgent.performance.is_approved)} className={`px-10 py-4 rounded-full text-sm font-black italic shadow-xl transition-transform active:scale-95 ${selectedAgent.performance.is_approved ? 'bg-rose-600 text-white' : 'bg-[#d4af37] text-black'}`}>
@@ -188,7 +200,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 3. 출석/교육 관리 섹션 (주차별 이수 현황 추가) */}
+        {/* 3. 출석/교육 관리 섹션 */}
         {type === 'edu' && (
           <div className="space-y-10">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Daily Attendance & Training</h3>
@@ -214,7 +226,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                           {a.performance.edu_status || '출석완료'}
                         </span>
                       </td>
-                      {/* 주차별 이수 여부 (V 체크 표시) */}
                       {[1, 2, 3, 4, 5].map((w) => (
                         <td key={w} className="p-6 text-center">
                           <div className={`w-8 h-8 mx-auto rounded-lg border-2 flex items-center justify-center font-black ${a.performance[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black' : 'bg-white text-transparent border-slate-200'}`}>
