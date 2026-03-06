@@ -8,14 +8,16 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [tarIntro, setTarIntro] = useState(teamMeta.targetIntro);
   const [curIntro, setCurIntro] = useState(teamMeta.actualIntro);
   const [notice, setNotice] = useState("");
-  const [eduContent, setEduContent] = useState("");
+  // 교육 내용 5개 관리 (1주차~4주차 + 추가)
+  const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from("team_settings").select("*");
       if (data) {
         setNotice(data.find(s => s.key === 'global_notice')?.value || "");
-        setEduContent(data.find(s => s.key === 'edu_content')?.value || "");
+        const savedEdu = data.find(s => s.key === 'edu_content')?.value;
+        if (savedEdu) setEduWeeks(JSON.parse(savedEdu));
       }
     }
     load();
@@ -42,7 +44,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       { key: 'team_target_intro', value: String(tarIntro) }, 
       { key: 'actual_intro_cnt', value: String(curIntro) },
       { key: 'global_notice', value: notice }, 
-      { key: 'edu_content', value: eduContent }
+      { key: 'edu_content', value: JSON.stringify(eduWeeks) }
     ], { onConflict: 'key' });
     alert("시스템 설정이 저장되었습니다.");
     onClose();
@@ -66,6 +68,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
 
       <div className="bg-white w-full max-w-5xl rounded-[4rem] p-8 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-8 right-8 text-3xl font-black z-50">✕</button>
+
+        {/* 시스템 설정 저장 버튼 상단 배치 */}
+        {type === 'sys' && (
+          <button onClick={saveSys} className="absolute top-8 right-20 bg-black text-[#d4af37] px-6 py-2 rounded-full text-sm italic font-black uppercase hover:bg-slate-800 transition-all z-50">
+            Save Configuration
+          </button>
+        )}
 
         {/* 1. 실적 관리 섹션 */}
         {type === 'perf' && (
@@ -104,7 +113,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 2. 활동 관리 섹션 (요청하신 데이터 추가) */}
+        {/* 2. 활동 관리 섹션 */}
         {type === 'act' && (
           <div className="space-y-8 font-black">
             <h3 className="text-4xl italic border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
@@ -123,14 +132,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                    </button>
                 </div>
 
-                {/* DB 배정/반품 섹션 */}
                 <div className="grid grid-cols-3 gap-6">
                    <div className="bg-blue-50 p-8 rounded-[2rem] border-4 border-black text-center"><p className="text-xs text-blue-400 uppercase mb-2">배정 DB</p><p className="text-3xl text-blue-900 italic font-black">{selectedAgent.performance.db_assigned || 0}건</p></div>
                    <div className="bg-rose-50 p-8 rounded-[2rem] border-4 border-black text-center"><p className="text-xs text-rose-400 uppercase mb-2">반품 DB</p><p className="text-3xl text-rose-900 italic font-black">{selectedAgent.performance.db_returned || 0}건</p></div>
                    <div className="bg-slate-900 p-8 rounded-[2rem] border-4 border-black text-center"><p className="text-xs text-slate-500 uppercase mb-2">반품율</p><p className="text-3xl text-[#d4af37] italic font-black">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p></div>
                 </div>
 
-                {/* 전화, 만남, 제안, 소개 데이터 (추가됨) */}
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 italic uppercase ml-4">Detailed Activity Metrics</p>
                   <div className="grid grid-cols-4 gap-6">
@@ -141,7 +148,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                   </div>
                 </div>
 
-                {/* 각 단계별 전환율 (추가됨) */}
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 italic uppercase ml-4">Conversion Funnel (%)</p>
                   <div className="grid grid-cols-4 gap-6">
@@ -189,17 +195,27 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <InputRow label="팀 건수 목표 (건)" val={tarCnt} onChange={setTarCnt} />
                 <InputRow label="도입 인원 목표 (명)" val={tarIntro} onChange={setTarIntro} />
                 <InputRow label="실제 도입 확정 (명)" val={curIntro} onChange={setCurIntro} />
-                <div className="pt-4 space-y-2 font-black">
-                  <p className="text-xs text-slate-400 uppercase font-black ml-2 font-black">Global Notice (Ticker)</p>
+              </div>
+              
+              <div className="space-y-6">
+                {/* 우측 상단으로 이동한 공지사항 */}
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-400 uppercase font-black ml-2">Global Notice (Ticker)</p>
                   <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-6 bg-slate-50 border-4 border-black rounded-[1.5rem] outline-none font-black italic text-lg" placeholder="공지사항 입력..." />
                 </div>
-              </div>
-              <div className="flex flex-col space-y-4 font-black">
-                <p className="text-xs text-slate-400 uppercase font-black ml-2 font-black">Educational Content (Markdown)</p>
-                <textarea value={eduContent} onChange={e=>setEduContent(e.target.value)} className="w-full flex-1 min-h-[300px] p-8 bg-slate-50 border-4 border-black rounded-[2rem] outline-none text-lg italic font-black shadow-inner font-black" placeholder="교육 내용을 입력하세요..." />
+                
+                {/* 5주차 교육 커리큘럼 입력 */}
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-400 uppercase font-black ml-2">Weekly Education Curriculum</p>
+                  {[1, 2, 3, 4, 5].map((w) => (
+                    <div key={w} className="flex gap-2 mb-2">
+                       <span className="text-[10px] w-16 flex items-center justify-center bg-black text-white rounded-lg italic">{w===5 ? '추가' : w+'주차'}</span>
+                       <input type="text" value={eduWeeks[w as keyof typeof eduWeeks]} onChange={e => setEduWeeks({...eduWeeks, [w]: e.target.value})} className="flex-1 p-3 bg-slate-50 border-2 border-black rounded-xl outline-none italic" placeholder={`${w===5 ? '추가 교육' : w+'주차 교육'}`} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <button onClick={saveSys} className="w-full bg-black text-[#d4af37] py-8 rounded-[2rem] text-3xl italic shadow-[0px_10px_0px_0px_rgba(212,175,55,1)] uppercase font-black hover:translate-y-1 hover:shadow-none transition-all">Update System Configuration</button>
           </div>
         )}
       </div>
@@ -207,7 +223,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-{/* 기존 컴포넌트들 생략 없이 유지 */}
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-6 rounded-[1.5rem] border-4 border-black text-center font-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">

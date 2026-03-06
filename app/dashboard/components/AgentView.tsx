@@ -14,7 +14,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     edu_status: "미참여", is_approved: false
   });
   const [globalNotice, setGlobalNotice] = useState("");
-  const [eduSchedule, setEduSchedule] = useState("");
+  // 관리자가 설정한 5개 주차별 교육 내용 상태
+  const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
   const [isToolOpen, setIsToolOpen] = useState(false);
   
   const [avgTab, setAvgTab] = useState('perf'); 
@@ -36,8 +37,17 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   async function fetchData() {
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
-    // 관리자가 설정한 교육 내용은 'edu_content' 또는 'edu_schedule' 키를 사용합니다.
-    setEduSchedule(settings?.find(s => s.key === 'edu_content')?.value || settings?.find(s => s.key === 'edu_schedule')?.value || "등록된 교육 내용이 없습니다.");
+    
+    // 관리자가 저장한 JSON 형태의 주차별 교육 데이터 로드
+    const savedEdu = settings?.find(s => s.key === 'edu_content')?.value;
+    if (savedEdu) {
+      try {
+        setEduWeeks(JSON.parse(savedEdu));
+      } catch (e) {
+        // 기존 텍스트 방식일 경우 예외 처리
+        setEduWeeks({ 1: savedEdu, 2: "", 3: "", 4: "", 5: "" });
+      }
+    }
 
     const { data: perf } = await supabase.from("daily_perf")
       .select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
@@ -96,7 +106,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     }
   };
 
-  // 교육 체크박스 토글 함수
+  // 교육 체크박스 토글 함수 (기존 로직 유지)
   const toggleEdu = () => {
     const nextStatus = perfInput.edu_status === '참여' ? '미참여' : '참여';
     setPerfInput({ ...perfInput, edu_status: nextStatus });
@@ -127,7 +137,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 3. 메인 탭 메뉴 (실적입력 / 교육확인) */}
+      {/* 3. 메인 탭 메뉴 */}
       <div className="flex gap-2 font-black">
         <button 
           onClick={() => setMainTab('input')}
@@ -196,7 +206,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* --- 탭 B: 교육 확인 화면 --- */}
+      {/* --- 탭 B: 교육 확인 화면 (업데이트됨) --- */}
       {mainTab === 'edu' && (
         <div className="bg-white p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-8 animate-in slide-in-from-right-4 duration-300 font-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
@@ -206,18 +216,30 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
           
-          <div className="bg-slate-50 p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 font-black">
-            <p className="text-xs text-slate-400 uppercase mb-4 tracking-widest font-black italic">Training Notice</p>
-            <p className="text-xl mb-12 leading-relaxed font-black italic min-h-[100px] whitespace-pre-wrap">{eduSchedule}</p>
+          <div className="bg-slate-50 p-6 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 font-black space-y-4">
+            <p className="text-xs text-slate-400 uppercase mb-2 tracking-widest font-black italic">Weekly Curriculum</p>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {[1, 2, 3, 4, 5].map((w) => (
+                <div key={w} className="flex items-center gap-4 bg-white p-5 rounded-2xl border-2 border-black shadow-sm">
+                  <div className="w-12 h-12 bg-black text-[#d4af37] rounded-xl flex items-center justify-center shrink-0 italic text-sm">
+                    {w === 5 ? "추가" : `${w}W`}
+                  </div>
+                  <p className="flex-1 text-lg italic font-black leading-tight">
+                    {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
+                  </p>
+                </div>
+              ))}
+            </div>
             
             <button 
               onClick={toggleEdu}
-              className={`w-full flex items-center justify-center gap-6 py-8 rounded-[2rem] text-2xl transition-all shadow-xl font-black italic ${perfInput.edu_status === '참여' ? 'bg-black text-[#d4af37]' : 'bg-white border-4 border-black text-black'}`}
+              className={`w-full flex items-center justify-center gap-6 py-8 mt-6 rounded-[2rem] text-2xl transition-all shadow-xl font-black italic ${perfInput.edu_status === '참여' ? 'bg-black text-[#d4af37]' : 'bg-white border-4 border-black text-black'}`}
             >
               <div className={`w-10 h-10 rounded-xl border-4 flex items-center justify-center ${perfInput.edu_status === '참여' ? 'bg-[#d4af37] border-black text-black' : 'border-black'}`}>
                 {perfInput.edu_status === '참여' && "✓"}
               </div>
-              {perfInput.edu_status === '참여' ? "교육 참여 완료" : "교육 참여 체크하기"}
+              {perfInput.edu_status === '참여' ? "교육 참여 완료" : "오늘의 교육 참여 체크"}
             </button>
           </div>
         </div>
@@ -228,6 +250,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
+// 하단 헬퍼 컴포넌트들 (원본 유지)
 function AvgBox({ label, val }: any) { return <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 font-black"><p className="text-[10px] text-white/40 uppercase mb-1 font-black">{label}</p><p className="text-[16px] text-[#d4af37] font-black italic">{val}</p></div> }
 function QuickBtn({ label, url, onClick, color }: any) { return <button onClick={() => url && url !== "#" ? window.open(url, "_blank") : (onClick ? onClick() : null)} className={`${color} px-5 py-2.5 rounded-xl font-black text-[12px] border shadow-sm shrink-0 font-black`}>{label}</button> }
 function MetricInput({ label, val, onChange, color }: any) { return <div className="space-y-1 text-center font-black"><label className="text-[11px] text-slate-400 font-black">{label}</label><input type="number" value={val || ''} onChange={e=>onChange(Number(e.target.value))} className={`w-full p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl text-center text-[18px] font-black outline-none ${color}`} /></div> }
