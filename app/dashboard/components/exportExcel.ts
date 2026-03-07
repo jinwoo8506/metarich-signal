@@ -157,7 +157,7 @@ export function exportExcel({
 
   // 타이틀
   h(40); xr(ws1,R,1,9,X.title)
-  xc(ws1,R,1,`🏆  영업팀 실적 현황 리포트 — ${yearMonth}`,X.title)
+  xc(ws1,R,1,`🏆  메타리치 시그널 실적 현황 리포트 — ${yearMonth}`,X.title)
   xm(ws1,R,1,R,9); R++
 
   // 부제
@@ -366,7 +366,7 @@ export function exportExcel({
 
     // 이름 배너
     h2(28); xr(ws2,R2,1,8,X.memberBanner)
-    xc(ws2,R2,1,`◆  ${a.name}  |  영업사원 개인 현황`,X.memberBanner)
+    xc(ws2,R2,1,`◆  ${a.name}  |  설계사 개인 현황`,X.memberBanner)
     xm(ws2,R2,1,R2,8); R2++
 
     // 컬럼 헤더
