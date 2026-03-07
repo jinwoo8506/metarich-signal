@@ -60,28 +60,53 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   const handleExport = (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
-      const ws = XLSX.utils.json_to_sheet(agents.map(a => ({ 성명: a.name, 실적: a.performance.contract_amt, 건수: a.performance.contract_cnt })));
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Report");
-      XLSX.writeFile(wb, `Team_Report.xlsx`);
+      
+      // 1. 팀 전체 요약 데이터 시트
+      const summaryData = [{
+        구분: "팀 전체 합계",
+        전체전화: totalActivity.call,
+        전체만남: totalActivity.meet,
+        전체제안: totalActivity.pt,
+        전체소개: totalActivity.intro
+      }];
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "팀 전체 요약");
+
+      // 2. 직원별 세부 항목 시트
+      const detailData = agents.map(a => ({
+        성명: a.name,
+        목표금액: a.performance.target_amt,
+        실적금액: a.performance.contract_amt,
+        실적건수: a.performance.contract_cnt,
+        전화: a.performance.call,
+        만남: a.performance.meet,
+        제안: a.performance.pt,
+        소개: a.performance.intro
+      }));
+      const wsDetail = XLSX.utils.json_to_sheet(detailData);
+      XLSX.utils.book_append_sheet(wb, wsDetail, "직원별 세부 실적");
+
+      XLSX.writeFile(wb, `Team_Report_${monthKey}.xlsx`);
     } else {
       const doc = new jsPDF();
-      (doc as any).autoTable({ head: [['Name', 'Amt', 'Cnt']], body: agents.map(a => [a.name, a.performance.contract_amt, a.performance.contract_cnt]) });
-      doc.save("Report.pdf");
+      (doc as any).autoTable({ 
+        head: [['성명', '목표(만)', '실적(만)', '건수', '전화', '만남', '제안', '소개']], 
+        body: agents.map(a => [a.name, a.performance.target_amt, a.performance.contract_amt, a.performance.contract_cnt, a.performance.call, a.performance.meet, a.performance.pt, a.performance.intro]) 
+      });
+      doc.save(`Team_Report_${monthKey}.pdf`);
     }
     setShowExportOpt(false);
   };
 
   return (
     <div className="flex-1 space-y-6 font-black">
-      {/* 상단 공지 탭 */}
       <div className="flex flex-col md:flex-row gap-4 items-center font-black">
         <div className="flex-1 bg-[#d4af37] p-4 rounded-3xl border-2 border-black h-14 relative flex items-center overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="absolute whitespace-nowrap animate-marquee font-black italic uppercase text-black">{globalNotice}</div>
         </div>
       </div>
 
-      {/* 퀵링크 섹션 (공지탭 바로 아래) */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <div className="flex items-center gap-3 ml-2">
           <div className="w-3 h-3 bg-indigo-600 rounded-full animate-pulse" />
@@ -91,12 +116,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
         
         <div className="flex flex-wrap gap-2 justify-center font-black">
-          <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer" className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">Meta-On</a>
-          <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer" className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">Drive</a>
-          <button onClick={() => setIsCalcOpen(true)} className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">Calculator</button>
+          <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer" className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">메타온</a>
+          <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer" className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">자료실</a>
+          <button className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">업무지원</button>
+          <button onClick={() => setIsCalcOpen(true)} className="bg-white border-2 border-black px-5 py-3 rounded-2xl text-[11px] italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">계산기</button>
           
           <div className="relative">
-            <button onClick={() => setShowExportOpt(!showExportOpt)} className="bg-black text-[#d4af37] px-5 py-3 rounded-2xl text-[11px] italic shadow-lg font-black uppercase">Export Report</button>
+            <button onClick={() => setShowExportOpt(!showExportOpt)} className="bg-black text-[#d4af37] px-5 py-3 rounded-2xl text-[11px] italic shadow-lg font-black uppercase">실적 출력</button>
             {showExportOpt && (
               <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-2xl shadow-2xl z-50 w-36 overflow-hidden">
                 <button onClick={() => handleExport('excel')} className="w-full p-4 hover:bg-slate-50 border-b text-left text-xs font-black">EXCEL 출력</button>
@@ -107,7 +133,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -117,7 +142,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 탭 메뉴 */}
       <div className="grid grid-cols-4 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys'].map(t => (
           <button key={t} onClick={()=>setActiveTab(t)} className={`${activeTab === t ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black p-5 rounded-2xl text-sm italic font-black`}>
@@ -126,7 +150,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 직원 리스트 */}
       <section className="bg-white p-8 rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
         <div className="space-y-6">
