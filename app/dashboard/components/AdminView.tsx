@@ -192,17 +192,17 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                 onClick={() => { setSelectedAgent(a); setActiveTab('act'); }}
                 className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4"
               >
-                {/* 상단: 이름 및 기네스/최저 표시 (날짜 표기 포함) */}
-                <div className="flex justify-between items-center">
+                {/* 모바일 최적화: 이름과 기네스/최저 배지를 세로로 정렬 */}
+                <div className="flex flex-col gap-3">
                   <p className="text-lg md:text-xl font-black">{a.name} CA</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {a.best && (
-                      <div className="text-[10px] bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-black border border-amber-200 shadow-sm">
+                      <div className="text-[9px] md:text-[10px] bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-black border border-amber-200 shadow-sm">
                         🏆 BEST: {Number(a.best.contract_amt).toLocaleString()}만 ({formatDate(a.best.date)})
                       </div>
                     )}
                     {a.worst && (
-                      <div className="text-[10px] bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-black border border-rose-200 shadow-sm">
+                      <div className="text-[9px] md:text-[10px] bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-black border border-rose-200 shadow-sm">
                         📉 LOW: {Number(a.worst.contract_amt).toLocaleString()}만 ({formatDate(a.worst.date)})
                       </div>
                     )}

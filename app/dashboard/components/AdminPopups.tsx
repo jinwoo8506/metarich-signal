@@ -194,11 +194,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         {type === 'edu' && (
           <div className="space-y-6 md:space-y-10">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Daily Attendance & Training</h3>
-            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden font-black">
-              <table className="w-full text-left font-black">
+            {/* 모바일 가독성: 가로 스크롤 가능하도록 overflow-x-auto 추가 및 테이블 최소 너비 설정 */}
+            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-x-auto font-black scrollbar-thin scrollbar-thumb-black">
+              <table className="w-full text-left font-black min-w-[600px]">
                 <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase font-black">
                   <tr>
-                    <th className="p-4 md:p-6">Name</th>
+                    <th className="p-4 md:p-6 sticky left-0 bg-black z-10">Name</th>
                     <th className="p-4 md:p-6 text-center">Status</th>
                     <th className="p-4 md:p-6 text-center">1W</th>
                     <th className="p-4 md:p-6 text-center">2W</th>
@@ -207,10 +208,10 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     <th className="p-4 md:p-6 text-center">Plus</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y-2 divide-black">
+                <tbody className="divide-y-2 divide-black bg-white">
                   {agents.map((a:any) => (
                     <tr key={a.id} className="hover:bg-slate-50">
-                      <td className="p-4 md:p-6 font-black text-sm md:text-lg italic">{a.name} CA</td>
+                      <td className="p-4 md:p-6 font-black text-sm md:text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name} CA</td>
                       <td className="p-4 md:p-6 text-center">
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[9px] font-black uppercase">
                           {a.performance.edu_status || '출석완료'}
@@ -226,6 +227,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 </tbody>
               </table>
             </div>
+            <p className="text-[10px] text-slate-400 italic md:hidden">* 옆으로 밀어서 전체 주차 확인 가능</p>
           </div>
         )}
 
