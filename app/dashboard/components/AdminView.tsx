@@ -17,7 +17,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   const [isCalcOpen, setIsCalcOpen] = useState(false);
   const [showExportOpt, setShowExportOpt] = useState(false);
 
+  // 활동 관리 탭용 전체 합산 데이터
   const [totalActivity, setTotalActivity] = useState({ call: 0, meet: 0, pt: 0, intro: 0 });
+
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
   useEffect(() => { fetchTeamData(); }, [monthKey]);
@@ -40,11 +42,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ...u,
         performance: perfs?.find(p => p.user_id === u.id) || { 
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
-          contract_amt: 0, contract_cnt: 0, target_amt: 300, edu_status: '미참여', is_approved: false
+          contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10, edu_status: '미참여', is_approved: false
         }
       }));
       setAgents(mappedAgents);
 
+      // 전체 활동 합산 계산
       const totals = mappedAgents.reduce((acc, curr) => ({
         call: acc.call + Number(curr.performance.call || 0),
         meet: acc.meet + Number(curr.performance.meet || 0),
@@ -59,7 +62,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     if (type === 'excel') {
       const wb = XLSX.utils.book_new();
 
-      // [시트 1: 📊 팀 전체 현황]
+      // [시트 1: 📊 팀 전체 현황] - 전문가 레이아웃 적용
       const teamRows = [
         ["", "", "", "", "", "", "", "", ""],
         ["", "🏆  영업팀 실적 현황 리포트"],
@@ -67,31 +70,63 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ["", ""],
         ["", "▌ 팀 핵심 KPI"],
         ["", "목표 금액(만)", "실적 금액(만)", "목표 건수", "실적 건수", "금액 달성률"],
-        ["", teamMeta.targetAmt, agents.reduce((acc, a) => acc + Number(a.performance.contract_amt || 0), 0), 
-             teamMeta.targetCnt, agents.reduce((acc, a) => acc + Number(a.performance.contract_cnt || 0), 0),
-             ((agents.reduce((acc, a) => acc + Number(a.performance.contract_amt || 0), 0) / (teamMeta.targetAmt || 1))).toFixed(3)],
+        ["", 
+          teamMeta.targetAmt, 
+          agents.reduce((acc, a) => acc + Number(a.performance.contract_amt || 0), 0), 
+          teamMeta.targetCnt, 
+          agents.reduce((acc, a) => acc + Number(a.performance.contract_cnt || 0), 0),
+          ((agents.reduce((acc, a) => acc + Number(a.performance.contract_amt || 0), 0) / (teamMeta.targetAmt || 1))).toFixed(3)
+        ],
         ["", ""],
         ["", "▌ 팀원별 목표 vs 실적 현황"],
         ["", "이름", "목표금액(만)", "실적금액(만)", "금액달성률", "목표건수", "실적건수", "건수달성률", "초과/미달(만)"]
       ];
+
       agents.forEach(a => {
         const p = a.performance;
-        teamRows.push(["", a.name, Number(p.target_amt), Number(p.contract_amt), (Number(p.contract_amt)/Number(p.target_amt||1)).toFixed(2), Number(p.target_cnt), Number(p.contract_cnt), (Number(p.contract_cnt)/Number(p.target_cnt||1)).toFixed(2), Number(p.contract_amt) - Number(p.target_amt)]);
+        const targetAmt = Number(p.target_amt || 1);
+        const targetCnt = Number(p.target_cnt || 1);
+        const contractAmt = Number(p.contract_amt || 0);
+        const contractCnt = Number(p.contract_cnt || 0);
+
+        teamRows.push([
+          "", 
+          a.name, 
+          targetAmt, 
+          contractAmt, 
+          (contractAmt / targetAmt).toFixed(2), 
+          targetCnt, 
+          contractCnt, 
+          (contractCnt / targetCnt).toFixed(2), 
+          contractAmt - targetAmt
+        ]);
       });
+
       const ws1 = XLSX.utils.aoa_to_sheet(teamRows);
+      ws1["!cols"] = [{ wch: 3 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
       XLSX.utils.book_append_sheet(wb, ws1, "📊 팀 전체 현황");
 
       // [시트 2: 👤 개인별 상세 현황]
-      const detailRows = [["", "👤  팀원별 개인 실적 상세 리포트"]];
+      const detailRows = [
+        ["", "", "", "", "", "", "", "", ""],
+        ["", "👤  팀원별 개인 실적 상세 리포트"],
+        ["", ""],
+      ];
+
       agents.forEach(a => {
         const p = a.performance;
+        const actTotal = Number(p.call || 0) + Number(p.meet || 0) + Number(p.pt || 0) + Number(p.intro || 0);
+        
         detailRows.push(["", `◆  ${a.name}  |  영업사원 개인 현황`]);
         detailRows.push(["", "구분", "금액(만원)", "건수", "전화", "만남", "제안", "소개", "DB배정", "반품"]);
         detailRows.push(["", "목표", p.target_amt, p.target_cnt, "", "", "", "", "", ""]);
         detailRows.push(["", "실적", p.contract_amt, p.contract_cnt, p.call, p.meet, p.pt, p.intro, p.db_assigned, p.db_returned]);
-        detailRows.push([""]); 
+        detailRows.push(["", "활동합계", "", "", "", "", "", "", "", actTotal]);
+        detailRows.push(["", "", "", "", "", "", "", "", "", ""]); // 여백
       });
+
       const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
+      ws2["!cols"] = [{ wch: 3 }, { wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 10 }];
       XLSX.utils.book_append_sheet(wb, ws2, "👤 개인별 상세 현황");
 
       XLSX.writeFile(wb, `Team_Report_${monthKey}.xlsx`);
@@ -99,7 +134,16 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       const doc = new jsPDF();
       (doc as any).autoTable({ 
         head: [['성명', '목표(만)', '실적(만)', '건수', '전화', '만남', '제안', '소개']], 
-        body: agents.map(a => [a.name, a.performance.target_amt, a.performance.contract_amt, a.performance.contract_cnt, a.performance.call, a.performance.meet, a.performance.pt, a.performance.intro]) 
+        body: agents.map(a => [
+          a.name, 
+          Number(a.performance.target_amt || 0), 
+          Number(a.performance.contract_amt || 0), 
+          Number(a.performance.contract_cnt || 0), 
+          Number(a.performance.call || 0), 
+          Number(a.performance.meet || 0), 
+          Number(a.performance.pt || 0), 
+          Number(a.performance.intro || 0)
+        ]) 
       });
       doc.save(`Team_Report_${monthKey}.pdf`);
     }
@@ -108,7 +152,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6">
-      <div onClick={() => setIsNoticeExpanded(!isNoticeExpanded)} className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}>
+      <div 
+        onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
+        className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}
+      >
         <div className={`font-black italic uppercase text-black w-full text-sm md:text-base ${isNoticeExpanded ? 'whitespace-normal leading-relaxed' : 'whitespace-nowrap animate-marquee'}`}>
           {globalNotice}
         </div>
@@ -118,6 +165,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">메타온</a>
         <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">자료실</a>
         <button onClick={() => setIsCalcOpen(true)} className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">업무지원(계산기)</button>
+        
         <div className="relative">
           <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">실적 출력</button>
           {showExportOpt && (
@@ -166,9 +214,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                     </div>
                   </div>
                 </div>
+                
                 <div className="w-full h-2 md:h-3 bg-slate-200 rounded-full overflow-hidden">
                   <div className="h-full bg-black transition-all duration-500" style={{ width: `${progress}%` }} />
                 </div>
+
                 <div className="grid grid-cols-4 gap-1 md:gap-2 pt-2 border-t border-dashed border-slate-300">
                   <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">전화</p><p className="text-[11px] md:text-sm italic">{a.performance.call}회</p></div>
                   <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">만남</p><p className="text-[11px] md:text-sm italic">{a.performance.meet}회</p></div>
