@@ -62,8 +62,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     if (type === 'excel') {
       const wb = XLSX.utils.book_new();
 
-      // [시트 1: 📊 팀 전체 현황] - 전문가 레이아웃 적용
-      const teamRows = [
+      // [시트 1: 📊 팀 전체 현황]
+      const teamRows: any[][] = [
         ["", "", "", "", "", "", "", "", ""],
         ["", "🏆  영업팀 실적 현황 리포트"],
         ["", "※ 본 리포트는 팀 전체 목표 대비 실적 현황을 요약합니다."],
@@ -107,7 +107,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       XLSX.utils.book_append_sheet(wb, ws1, "📊 팀 전체 현황");
 
       // [시트 2: 👤 개인별 상세 현황]
-      const detailRows = [
+      const detailRows: any[][] = [
         ["", "", "", "", "", "", "", "", ""],
         ["", "👤  팀원별 개인 실적 상세 리포트"],
         ["", ""],
@@ -121,8 +121,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         detailRows.push(["", "구분", "금액(만원)", "건수", "전화", "만남", "제안", "소개", "DB배정", "반품"]);
         detailRows.push(["", "목표", p.target_amt, p.target_cnt, "", "", "", "", "", ""]);
         detailRows.push(["", "실적", p.contract_amt, p.contract_cnt, p.call, p.meet, p.pt, p.intro, p.db_assigned, p.db_returned]);
-        detailRows.push(["", "활동합계", "", "", "", "", "", "", "", actTotal]);
-        detailRows.push(["", "", "", "", "", "", "", "", "", ""]); // 여백
+        // actTotal을 문자열로 변환하여 타입 에러 해결
+        detailRows.push(["", "활동합계", "", "", "", "", "", "", "", String(actTotal)]);
+        detailRows.push(["", "", "", "", "", "", "", "", "", ""]); 
       });
 
       const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
