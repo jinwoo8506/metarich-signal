@@ -313,11 +313,11 @@ export function exportExcel({
   R++
 
   h(26);
-  const mc1 = tCall>0?(tMeet/tCall*100).toFixed(1):"0.0"
-  const pc1 = tMeet>0?(tPt/tMeet*100).toFixed(1):"0.0"
-  const rr  = tDb>0?(tRet/tDb*100).toFixed(1):"0.0"
-  [`${mc1}%`,`${pc1}%`,`${tIntro}건`,`${tDb}건`,`${tRet}건`,`${rr}%`]
-    .forEach((v,i) => xc(ws1,R,2+i,v, i===5&&Number(rr)>10?X.totalRed:X.totalRow))
+  const mc1: string = tCall>0?(tMeet/tCall*100).toFixed(1):"0.0"
+  const pc1: string = tMeet>0?(tPt/tMeet*100).toFixed(1):"0.0"
+  const retRatePct: string = tDb>0?(tRet/tDb*100).toFixed(1):"0.0"
+  ;[`${mc1}%`,`${pc1}%`,`${tIntro}건`,`${tDb}건`,`${tRet}건`,`${retRatePct}%`]
+    .forEach((v,i) => xc(ws1,R,2+i,v, i===5&&Number(retRatePct)>10?X.totalRed:X.totalRow))
   R++
 
   ws1["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:R+1,c:10}})
@@ -359,8 +359,8 @@ export function exportExcel({
     const cRate = tCnt>0 ? cCnt/tCnt : 0
     const actTot= Number(p.call||0)+Number(p.meet||0)+Number(p.pt||0)
                  +Number(p.intro||0)+Number(p.db_assigned||0)+Number(p.db_returned||0)
-    const mc = Number(p.call||0)>0 ? (Number(p.meet||0)/Number(p.call||1)*100).toFixed(1) : "0.0"
-    const pc = Number(p.meet||0)>0 ? (Number(p.pt||0)/Number(p.meet||1)*100).toFixed(1)   : "0.0"
+    const mc: string = Number(p.call||0)>0 ? (Number(p.meet||0)/Number(p.call||1)*100).toFixed(1) : "0.0"
+    const pc: string = Number(p.meet||0)>0 ? (Number(p.pt||0)/Number(p.meet||1)*100).toFixed(1)   : "0.0"
 
     h2(10); R2++ // 구분 간격
 
