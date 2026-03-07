@@ -150,7 +150,7 @@ export function exportExcel({
   ]
 
   let R = 0
-  const h = (px: number) => { ws1["!rows"][R] = { hpx: px } }
+  const h = (px: number): void => { ws1["!rows"][R] = { hpx: px } }
 
   // 상단 여백
   h(10); R++
@@ -172,7 +172,7 @@ export function exportExcel({
   xc(ws1,R,1,"▌ 팀 핵심 KPI",X.secHead); xm(ws1,R,1,R,9); R++
 
   // KPI 라벨 행
-  h(22)
+  h(22);
   const kpiSpans  = [[1,2],[3,4],[5,6],[7,8],[9,9]]
   const kpiLabels = ["목표 금액","실적 금액","목표 건수","실적 건수","금액 달성률"]
   const kpiLSt    = [
@@ -188,7 +188,7 @@ export function exportExcel({
   }); R++
 
   // KPI 값 행
-  h(36)
+  h(36);
   const kpiVals = [
     `${teamMeta.targetAmt.toLocaleString()}만원`,
     `${totalActAmt.toLocaleString()}만원`,
@@ -214,13 +214,13 @@ export function exportExcel({
   h(24); xr(ws1,R,1,9,X.secHead)
   xc(ws1,R,1,"▌ 팀원별 목표 vs 실적 현황",X.secHead); xm(ws1,R,1,R,9); R++
 
-  h(22)
+  h(22);
   ["이름","목표금액(만)","실적금액(만)","금액달성률","목표건수","실적건수","건수달성률","초과/미달(만)","초과/미달(건)"]
     .forEach((v,i) => xc(ws1,R,1+i,v,X.colHead))
   R++
 
   agents.forEach((a,ri) => {
-    h(22)
+    h(22);
     const p     = a.performance
     const tAmt  = Number(p.target_amt   || 1)
     const cAmt  = Number(p.contract_amt || 0)
@@ -245,7 +245,7 @@ export function exportExcel({
   })
 
   // 팀 합계 행
-  h(24)
+  h(24);
   const dA=totalActAmt-teamMeta.targetAmt, dC=totalActCnt-teamMeta.targetCnt
   xc(ws1,R,1,"팀 합계",          X.totalHead)
   xc(ws1,R,2,teamMeta.targetAmt, X.totalRow,"#,##0")
@@ -265,13 +265,13 @@ export function exportExcel({
   xc(ws1,R,1,"▌ 팀 전체 활동 현황 (전화 / 만남 / 제안 / 소개 / DB배정 / 반품)",X.secHead)
   xm(ws1,R,1,R,8); R++
 
-  h(22)
+  h(22);
   ["이름","전화","만남","제안","소개","DB배정","반품","활동합계"]
     .forEach((v,i) => xc(ws1,R,1+i,v,X.colHead))
   R++
 
   agents.forEach((a,ri) => {
-    h(22)
+    h(22);
     const p   = a.performance
     const ev  = ri%2===0
     const bg  = ev?X.dataEven:X.dataOdd
@@ -289,7 +289,7 @@ export function exportExcel({
   })
 
   // 활동 합계 행
-  h(24)
+  h(24);
   const gAct=tCall+tMeet+tPt+tIntro+tDb+tRet
   xc(ws1,R,1,"팀 합계",X.totalHead)
   xc(ws1,R,2,tCall,    X.totalRow)
@@ -307,12 +307,12 @@ export function exportExcel({
   h(24); xr(ws1,R,1,8,X.secHead)
   xc(ws1,R,1,"▌ 팀 전체 활동 전환율 분석",X.secHead); xm(ws1,R,1,R,8); R++
 
-  h(22)
+  h(22);
   ["전화→만남 전환율","만남→제안 전환율","소개 건수","DB 배정","DB 반품","반품률"]
     .forEach((v,i) => xc(ws1,R,2+i,v,X.colHead))
   R++
 
-  h(26)
+  h(26);
   const mc1 = tCall>0?(tMeet/tCall*100).toFixed(1):"0.0"
   const pc1 = tMeet>0?(tPt/tMeet*100).toFixed(1):"0.0"
   const rr  = tDb>0?(tRet/tDb*100).toFixed(1):"0.0"
@@ -333,7 +333,7 @@ export function exportExcel({
   ]
 
   let R2 = 0
-  const h2 = (px: number) => { ws2["!rows"][R2] = { hpx: px } }
+  const h2 = (px: number): void => { ws2["!rows"][R2] = { hpx: px } }
 
   // 상단 여백
   h2(10); R2++
@@ -370,7 +370,7 @@ export function exportExcel({
     xm(ws2,R2,1,R2,8); R2++
 
     // 컬럼 헤더
-    h2(22)
+    h2(22);
     xc(ws2,R2,1,"구분",        X.metaGoalLbl); xm(ws2,R2,1,R2,2)
     xc(ws2,R2,3,"금액 (만원)", X.metaGoalLbl); xm(ws2,R2,3,R2,4)
     xc(ws2,R2,5,"건수",        X.metaGoalLbl); xm(ws2,R2,5,R2,6)
@@ -378,7 +378,7 @@ export function exportExcel({
     R2++
 
     // 목표 행
-    h2(24)
+    h2(24);
     xc(ws2,R2,1,"목표",X.metaGoalLbl);         xm(ws2,R2,1,R2,2)
     xc(ws2,R2,3,tAmt,  X.metaVal,"#,##0");     xm(ws2,R2,3,R2,4)
     xc(ws2,R2,5,tCnt,  X.metaVal);             xm(ws2,R2,5,R2,6)
@@ -386,7 +386,7 @@ export function exportExcel({
     R2++
 
     // 실적 행
-    h2(24)
+    h2(24);
     xc(ws2,R2,1,"실적",X.metaActLbl);          xm(ws2,R2,1,R2,2)
     xc(ws2,R2,3,cAmt,  X.metaVal,"#,##0");     xm(ws2,R2,3,R2,4)
     xc(ws2,R2,5,cCnt,  X.metaVal);             xm(ws2,R2,5,R2,6)
@@ -394,7 +394,7 @@ export function exportExcel({
     R2++
 
     // 달성률 행
-    h2(24)
+    h2(24);
     const rLbl = aRate>=1 ? X.metaRGreenLbl : X.metaRRedLbl
     xc(ws2,R2,1,"달성률",                    rLbl);                      xm(ws2,R2,1,R2,2)
     xc(ws2,R2,3,`${(aRate*100).toFixed(1)}%`,aRate>=1?X.metaRGreen:X.metaRRed); xm(ws2,R2,3,R2,4)
@@ -403,14 +403,14 @@ export function exportExcel({
     R2++
 
     // 활동 헤더
-    h2(22)
+    h2(22);
     ["전화","만남","제안","소개","DB배정","반품","활동합계"]
       .forEach((v,i) => xc(ws2,R2,1+i,v,X.colHeadSm))
     xc(ws2,R2,8,"",X.colHeadSm)
     R2++
 
     // 활동 데이터
-    h2(24)
+    h2(24);
     [Number(p.call||0),Number(p.meet||0),Number(p.pt||0),
      Number(p.intro||0),Number(p.db_assigned||0),Number(p.db_returned||0),actTot
     ].forEach((v,i) => {
@@ -423,7 +423,7 @@ export function exportExcel({
     R2++
 
     // 전환율 행
-    h2(22)
+    h2(22);
     xc(ws2,R2,1,`전화→만남 전환율: ${mc}%`,X.convBlue);   xm(ws2,R2,1,R2,4)
     xc(ws2,R2,5,`만남→제안 전환율: ${pc}%`,X.convOrange); xm(ws2,R2,5,R2,8)
     R2++
