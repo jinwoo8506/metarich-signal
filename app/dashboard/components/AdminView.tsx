@@ -11,7 +11,7 @@ import AdminPopups from "./AdminPopups"
 import CalcModal from "./CalcModal"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
-import { exportExcel } from "./exportExcel"   // ← 엑셀 출력은 여기서 가져옴
+import { exportExcel } from "./exportExcel"
 
 export default function AdminView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -54,16 +54,15 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           edu_status: '미참여', is_approved: false,
         };
 
-        // 기네스 및 최저 매출액 산출
-        const validAmounts = userHistory.map(h => Number(h.contract_amt) || 0);
-        const bestAmt = validAmounts.length > 0 ? Math.max(...validAmounts) : 0;
-        const worstAmt = validAmounts.length > 0 ? Math.min(...validAmounts) : 0;
-
+        // 기네스/최저 데이터 산출 (매출액 0 초과 기준)
+        const validHistory = userHistory.filter(h => Number(h.contract_amt) > 0);
+        const sorted = [...validHistory].sort((a, b) => Number(b.contract_amt) - Number(a.contract_amt));
+        
         return {
           ...u,
           performance: currentPerf,
-          bestAmt,
-          worstAmt
+          best: sorted[0] || null,
+          worst: sorted[sorted.length - 1] || null
         };
       });
       setAgents(mappedAgents);
@@ -101,6 +100,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       doc.save(`Team_Report_${monthKey}.pdf`);
     }
     setShowExportOpt(false);
+  };
+
+  // 날짜 변환 함수 (YYYY-MM-DD -> YY.MM)
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   };
 
   return (
@@ -151,7 +156,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 합산 데이터 (활동 관리 탭 클릭 시 표시) */}
+      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -173,12 +178,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 팀 모니터링 섹션 (이 부분만 요청하신 디자인으로 집중 수정) */}
+      {/* 팀 모니터링 섹션 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
         <div className="space-y-4 md:space-y-6">
           {agents.map(a => {
-            // 달성률 계산
             const amtRate = Math.min(((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100, 100);
             const cntRate = Math.min(((Number(a.performance.contract_cnt) || 0) / (Number(a.performance.target_cnt) || 1)) * 100, 100);
 
@@ -188,18 +192,25 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                 onClick={() => { setSelectedAgent(a); setActiveTab('act'); }}
                 className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4"
               >
-                {/* 상단: 이름 및 기네스/최저 표시 */}
+                {/* 상단: 이름 및 기네스/최저 표시 (날짜 표기 포함) */}
                 <div className="flex justify-between items-center">
                   <p className="text-lg md:text-xl font-black">{a.name} CA</p>
                   <div className="flex gap-2">
-                    <div className="text-[10px] bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-black border border-amber-200 shadow-sm">🏆 BEST: {a.bestAmt.toLocaleString()}만</div>
-                    <div className="text-[10px] bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-black border border-rose-200 shadow-sm">📉 LOW: {a.worstAmt.toLocaleString()}만</div>
+                    {a.best && (
+                      <div className="text-[10px] bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-black border border-amber-200 shadow-sm">
+                        🏆 BEST: {Number(a.best.contract_amt).toLocaleString()}만 ({formatDate(a.best.date)})
+                      </div>
+                    )}
+                    {a.worst && (
+                      <div className="text-[10px] bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-black border border-rose-200 shadow-sm">
+                        📉 LOW: {Number(a.worst.contract_amt).toLocaleString()}만 ({formatDate(a.worst.date)})
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* 중앙: 실적 및 목표 가로 막대 그래프 (전화/만남 등은 삭제) */}
+                {/* 중앙: 실적 및 목표 가로 막대 그래프 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 매출 그래프 */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-[10px] italic">
                       <span className="text-slate-500 uppercase font-black">매출 달성률 ({amtRate.toFixed(0)}%)</span>
@@ -210,7 +221,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                     </div>
                   </div>
                   
-                  {/* 건수 그래프 */}
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-[10px] italic">
                       <span className="text-slate-500 uppercase font-black">건수 달성률 ({cntRate.toFixed(0)}%)</span>
@@ -227,7 +237,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 및 모달 모듈 유지 */}
+      {/* 팝업 및 모달 모듈 */}
       {activeTab && (
         <AdminPopups
           type={activeTab}
