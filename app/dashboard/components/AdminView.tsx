@@ -1,401 +1,207 @@
-/**
- * exportExcel.ts
- * AdminView 의 "EXCEL 출력" 버튼에서 호출되는 함수
- *
- * 사용 방법:
- *   import { exportExcel } from "./exportExcel"
- *   exportExcel({ agents, teamMeta, totalActivity, monthKey })
- *
- * 의존 패키지: xlsx  (이미 설치되어 있음)
- * npm install xlsx  ← 미설치 시
- */
+"use client"
+import React, { useEffect, useState } from "react"
+import { supabase } from "../../../lib/supabase"
+import AdminPopups from "./AdminPopups"
+import CalcModal from "./CalcModal"
+import * as XLSX from 'xlsx'
+import { jsPDF } from "jspdf"
+import "jspdf-autotable"
 
-import * as XLSX from "xlsx"
+export default function AdminView({ user, selectedDate }: { user: any, selectedDate: Date }) {
+  const [agents, setAgents] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<any | null>(null);
+  const [globalNotice, setGlobalNotice] = useState("");
+  const [isNoticeExpanded, setIsNoticeExpanded] = useState(false); // 공지사항 확장 상태
+  const [teamMeta, setTeamMeta] = useState({ targetAmt: 3000, targetCnt: 100, targetIntro: 10, actualIntro: 0 });
+  const [isCalcOpen, setIsCalcOpen] = useState(false);
+  const [showExportOpt, setShowExportOpt] = useState(false);
 
-// ─── 타입 ────────────────────────────────────────────────────────────────────
-interface Performance {
-  call: number
-  meet: number
-  pt: number
-  intro: number
-  db_assigned: number
-  db_returned: number
-  contract_amt: number
-  contract_cnt: number
-  target_amt: number
-  edu_status: string
-  is_approved: boolean
-}
+  // 활동 관리 탭용 전체 합산 데이터
+  const [totalActivity, setTotalActivity] = useState({ call: 0, meet: 0, pt: 0, intro: 0 });
 
-interface Agent {
-  id: string
-  name: string
-  performance: Performance
-}
+  const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
-interface TeamMeta {
-  targetAmt: number
-  targetCnt: number
-  targetIntro: number
-  actualIntro: number
-}
+  useEffect(() => { fetchTeamData(); }, [monthKey]);
 
-interface TotalActivity {
-  call: number
-  meet: number
-  pt: number
-  intro: number
-}
+  async function fetchTeamData() {
+    const { data: settings } = await supabase.from("team_settings").select("*");
+    setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
+    setTeamMeta({
+      targetAmt: Number(settings?.find(s => s.key === 'target_amt')?.value) || 3000,
+      targetCnt: Number(settings?.find(s => s.key === 'target_cnt')?.value) || 100,
+      targetIntro: Number(settings?.find(s => s.key === 'team_target_intro')?.value) || 10,
+      actualIntro: Number(settings?.find(s => s.key === 'actual_intro_cnt')?.value) || 0
+    });
 
-interface ExportParams {
-  agents: Agent[]
-  teamMeta: TeamMeta
-  totalActivity: TotalActivity
-  monthKey: string  // "2025-06-01" 형식
-}
+    const { data: users } = await supabase.from("users").select("*").eq("role", "agent");
+    const { data: perfs } = await supabase.from("daily_perf").select("*").eq("date", monthKey);
+    
+    if (users) {
+      const mappedAgents = users.map(u => ({
+        ...u,
+        performance: perfs?.find(p => p.user_id === u.id) || { 
+          call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
+          contract_amt: 0, contract_cnt: 0, target_amt: 300, edu_status: '미참여', is_approved: false,
+          edu_1: false, edu_2: false, edu_3: false, edu_4: false, edu_5: false
+        }
+      }));
+      setAgents(mappedAgents);
 
-// ─── 스타일 헬퍼 ─────────────────────────────────────────────────────────────
-function s(
-  bold = false,
-  bgColor?: string,
-  fontColor = "FF000000",
-  sz = 10,
-  hz: XLSX.Style["alignment"] = { horizontal: "center", vertical: "center", wrapText: true }
-): XLSX.Style {
-  const style: XLSX.Style = {
-    font: { name: "맑은 고딕", sz, bold, color: { rgb: fontColor } },
-    alignment: hz,
-    border: {
-      top:    { style: "thin", color: { rgb: "FFAAAAAA" } },
-      bottom: { style: "thin", color: { rgb: "FFAAAAAA" } },
-      left:   { style: "thin", color: { rgb: "FFAAAAAA" } },
-      right:  { style: "thin", color: { rgb: "FFAAAAAA" } },
-    },
+      // 전체 활동 합산 계산
+      const totals = mappedAgents.reduce((acc, curr) => ({
+        call: acc.call + (curr.performance.call || 0),
+        meet: acc.meet + (curr.performance.meet || 0),
+        pt: acc.pt + (curr.performance.pt || 0),
+        intro: acc.intro + (curr.performance.intro || 0)
+      }), { call: 0, meet: 0, pt: 0, intro: 0 });
+      setTotalActivity(totals);
+    }
   }
-  if (bgColor) style.fill = { fgColor: { rgb: bgColor }, patternType: "solid" }
-  return style
+
+  const handleExport = (type: 'excel' | 'pdf') => {
+    if (type === 'excel') {
+      const wb = XLSX.utils.book_new();
+      
+      // 1. 팀 전체 요약 데이터 시트
+      const summaryData = [{
+        구분: "팀 전체 합계",
+        전체전화: totalActivity.call,
+        전체만남: totalActivity.meet,
+        전체제안: totalActivity.pt,
+        전체소개: totalActivity.intro,
+        팀목표금액: teamMeta.targetAmt,
+        팀목표건수: teamMeta.targetCnt
+      }];
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "팀 전체 요약");
+
+      // 2. 직원별 세부 항목 시트
+      const detailData = agents.map(a => ({
+        성명: a.name,
+        목표금액: a.performance.target_amt,
+        실적금액: a.performance.contract_amt,
+        실적건수: a.performance.contract_cnt,
+        전화: a.performance.call,
+        만남: a.performance.meet,
+        제안: a.performance.pt,
+        소개: a.performance.intro,
+        교육이수: a.performance.edu_status
+      }));
+      const wsDetail = XLSX.utils.json_to_sheet(detailData);
+      XLSX.utils.book_append_sheet(wb, wsDetail, "직원별 세부 실적");
+
+      XLSX.writeFile(wb, `Team_Report_${monthKey}.xlsx`);
+    } else {
+      const doc = new jsPDF();
+      (doc as any).autoTable({ 
+        head: [['성명', '목표(만)', '실적(만)', '건수', '전화', '만남', '제안', '소개']], 
+        body: agents.map(a => [a.name, a.performance.target_amt, a.performance.contract_amt, a.performance.contract_cnt, a.performance.call, a.performance.meet, a.performance.pt, a.performance.intro]) 
+      });
+      doc.save(`Team_Report_${monthKey}.pdf`);
+    }
+    setShowExportOpt(false);
+  };
+
+  return (
+    <div className="flex-1 space-y-6 font-black p-4 md:p-6">
+      {/* 상단 공지사항: 클릭 시 아래로 확장되어 전체 내용 확인 가능 */}
+      <div 
+        onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
+        className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}
+      >
+        <div className={`font-black italic uppercase text-black w-full text-sm md:text-base ${isNoticeExpanded ? 'whitespace-normal leading-relaxed' : 'whitespace-nowrap animate-marquee'}`}>
+          {globalNotice}
+        </div>
+      </div>
+
+      {/* 퀵링크 섹션: 총 4개 버튼 (메타온, 자료실, 업무지원(계산기), 실적 출력) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
+        <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">메타온</a>
+        <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">자료실</a>
+        <button onClick={() => setIsCalcOpen(true)} className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">업무지원(계산기)</button>
+        
+        <div className="relative">
+          <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">실적 출력</button>
+          {showExportOpt && (
+            <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-2xl shadow-2xl z-50 w-full overflow-hidden">
+              <button onClick={() => handleExport('excel')} className="w-full p-4 hover:bg-slate-50 border-b text-left text-[11px] font-black">EXCEL 출력</button>
+              <button onClick={() => handleExport('pdf')} className="w-full p-4 hover:bg-slate-50 text-left text-[11px] font-black">PDF 출력</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
+      {activeTab === 'act' && !selectedAgent && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
+          <TotalBox label="전체 전화" val={totalActivity.call} />
+          <TotalBox label="전체 만남" val={totalActivity.meet} sub={`전환율 ${totalActivity.call > 0 ? ((totalActivity.meet/totalActivity.call)*100).toFixed(1) : 0}%`} />
+          <TotalBox label="전체 제안" val={totalActivity.pt} sub={`전환율 ${totalActivity.meet > 0 ? ((totalActivity.pt/totalActivity.meet)*100).toFixed(1) : 0}%`} />
+          <TotalBox label="전체 소개" val={totalActivity.intro} />
+        </div>
+      )}
+
+      {/* 메인 탭 메뉴 (모바일 가독성 최적화) */}
+      <div className="grid grid-cols-4 gap-2 font-black">
+        {['perf', 'act', 'edu', 'sys'].map(t => (
+          <button key={t} onClick={()=>setActiveTab(t)} className={`${activeTab === t ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black py-4 px-1 rounded-2xl text-[10px] md:text-sm italic font-black text-center transition-all`}>
+            {t==='perf'?'실적 관리':t==='act'?'활동 관리':t==='edu'?'교육 관리':'시스템 설정'}
+          </button>
+        ))}
+      </div>
+
+      {/* 팀 모니터링 섹션 (직원 리스트) */}
+      <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
+        <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
+        <div className="space-y-4 md:space-y-6">
+          {agents.map(a => {
+            const progress = Math.min(((a.performance.contract_amt || 0) / (a.performance.target_amt || 1)) * 100, 100);
+            return (
+              <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4">
+                <div className="flex justify-between items-end">
+                  <p className="text-lg md:text-xl font-black">{a.name} CA</p>
+                  <div className="flex gap-4 md:gap-10 text-right">
+                    <div className="font-black">
+                      <p className="text-[8px] md:text-[10px] text-slate-400 uppercase">Goal</p>
+                      <p className="text-[12px] md:text-[15px] italic">{(a.performance.target_amt || 0).toLocaleString()}만</p>
+                    </div>
+                    <div className="font-black">
+                      <p className="text-[8px] md:text-[10px] text-indigo-500 uppercase font-black">Actual</p>
+                      <p className="text-[14px] md:text-[18px] text-indigo-600 italic">{(a.performance.contract_amt || 0).toLocaleString()}만</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="w-full h-2 md:h-3 bg-slate-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-black transition-all duration-500" style={{ width: `${progress}%` }} />
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 md:gap-2 pt-2 border-t border-dashed border-slate-300">
+                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">전화</p><p className="text-[11px] md:text-sm italic">{a.performance.call}회</p></div>
+                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">만남</p><p className="text-[11px] md:text-sm italic">{a.performance.meet}회</p></div>
+                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">제안</p><p className="text-[11px] md:text-sm italic">{a.performance.pt}회</p></div>
+                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">소개</p><p className="text-[11px] md:text-sm italic">{a.performance.intro}회</p></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 팝업 및 모달 모듈 */}
+      {activeTab && <AdminPopups type={activeTab} agents={agents} selectedAgent={selectedAgent} teamMeta={teamMeta} onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }} />}
+      {isCalcOpen && <CalcModal onClose={() => setIsCalcOpen(false)} />}
+    </div>
+  )
 }
 
-// 자주 쓰는 스타일 모음
-const ST = {
-  titleDark:   s(true,  "FF1F3864", "FFFFFFFF", 16, { horizontal: "center", vertical: "center" }),
-  sectionHead: s(true,  "FF2E5FA3", "FFFFFFFF", 11, { horizontal: "left",   vertical: "center", indent: 1 }),
-  colHead:     s(true,  "FF4472C4", "FFFFFFFF", 10),
-  kpiLabel:    s(true,  "FF4472C4", "FFFFFFFF",  9),
-  kpiValue:    s(true,  "FFF0F4FF", "FF2E5FA3", 14),
-  kpiGreen:    s(true,  "FFF0F4FF", "FF70AD47", 14),
-  kpiOrange:   s(true,  "FFF0F4FF", "FFED7D31", 14),
-  dataEven:    s(false, "FFDDEEFF", "FF1F2937", 10),
-  dataOdd:     s(false, "FFFFFFFF", "FF1F2937", 10),
-  totalRow:    s(true,  "FFFFF2CC", "FF1F2937", 10),
-  nameCell:    s(true,  "FFDDEEFF", "FF1F3864", 10),
-  green:       s(true,  undefined,  "FF70AD47", 10),
-  red:         s(true,  undefined,  "FFFF0000", 10),
-  subTitle:    s(false, "FF1F3864", "FF888888",  9, { horizontal: "right",  vertical: "center" }),
-  memberBanner:s(true,  "FFED7D31", "FFFFFFFF", 12, { horizontal: "left",   vertical: "center", indent: 2 }),
-  metaLabel:   s(true,  "FF4472C4", "FFFFFFFF", 10),
-  metaGoal:    s(false, "FFF5F5F5", "FF1F2937", 11),
-  metaActGreen:s(true,  "FFF5F5F5", "FF70AD47", 11),
-  metaActOrange:s(true, "FFF5F5F5", "FFED7D31", 11),
-  metaRateGreen:s(true, "FFF5F5F5", "FF70AD47", 11),
-  metaRateRed: s(true,  "FFF5F5F5", "FFFF0000", 11),
-  actHead:     s(true,  "FF2E5FA3", "FFFFFFFF",  9),
-  actEven:     s(false, "FFDDEEFF", "FF1F2937", 10),
-  actTotal:    s(true,  "FFFFF2CC", "FF1F2937", 10),
-  actRed:      s(false, "FFDDEEFF", "FFFF0000", 10),
-}
-
-// ─── 셀 쓰기 헬퍼 ────────────────────────────────────────────────────────────
-function cell(
-  ws: XLSX.WorkSheet,
-  r: number, c: number,
-  v: string | number,
-  style: XLSX.Style,
-  fmt?: string
-) {
-  const addr = XLSX.utils.encode_cell({ r, c })
-  ws[addr] = { v, t: typeof v === "number" ? "n" : "s", s: style }
-  if (fmt) ws[addr].z = fmt
-}
-
-function mergeCell(
-  ws: XLSX.WorkSheet,
-  r: number, c: number, re: number, ce: number,
-  v: string | number,
-  style: XLSX.Style,
-  fmt?: string
-) {
-  cell(ws, r, c, v, style, fmt)
-  if (!ws["!merges"]) ws["!merges"] = []
-  ws["!merges"].push({ s: { r, c }, e: { r: re, c: ce } })
-}
-
-// ─── 메인 export 함수 ────────────────────────────────────────────────────────
-export function exportExcel({ agents, teamMeta, totalActivity, monthKey }: ExportParams) {
-
-  // xlsx-js-style 가 있을 때만 스타일 적용 가능.
-  // 일반 xlsx 패키지는 스타일 미지원 → 구조만 생성
-  // (실무에서는 npm i xlsx-js-style 후 import * as XLSX from "xlsx-js-style" 로 교체 권장)
-
-  const wb = XLSX.utils.book_new()
-
-  /* ══════════════════════════════════════════════════════════════════════════
-     TAB 1 : 📊 팀 전체 현황
-  ══════════════════════════════════════════════════════════════════════════ */
-  const ws1: XLSX.WorkSheet = {}
-  ws1["!ref"] = "A1:M200"
-
-  // 열 너비
-  ws1["!cols"] = [
-    { wch: 2  },  // A  여백
-    { wch: 16 },  // B
-    { wch: 13 },  // C
-    { wch: 13 },  // D
-    { wch: 13 },  // E
-    { wch: 13 },  // F
-    { wch: 13 },  // G
-    { wch: 13 },  // H
-    { wch: 13 },  // I
-    { wch: 13 },  // J
-    { wch: 13 },  // K
-    { wch: 2  },  // L 여백
-  ]
-
-  // 행 높이
-  ws1["!rows"] = Array.from({ length: 200 }, (_, i) => {
-    if (i === 0) return { hpx: 10 }   // A1 상단 여백
-    if (i === 1) return { hpx: 38 }   // 타이틀
-    if (i === 2) return { hpx: 16 }   // 부제
-    return { hpx: 22 }
-  })
-
-  // ── 타이틀 ─────────────────────────────────────────────────────────────────
-  const yearMonth = monthKey.slice(0, 7).replace("-", "년 ") + "월"
-  mergeCell(ws1, 1, 1, 1, 10, `🏆  영업팀 실적 현황 리포트 — ${yearMonth}`, ST.titleDark)
-  mergeCell(ws1, 2, 1, 2, 10, "※ 팀 전체 목표 대비 실적 현황 요약 리포트입니다.", ST.subTitle)
-
-  // ── 섹션1: KPI 카드 ────────────────────────────────────────────────────────
-  const totalGoalAmt    = teamMeta.targetAmt
-  const totalActualAmt  = agents.reduce((s, a) => s + (a.performance.contract_amt || 0), 0)
-  const totalGoalCnt    = teamMeta.targetCnt
-  const totalActualCnt  = agents.reduce((s, a) => s + (a.performance.contract_cnt || 0), 0)
-  const amtRate         = totalGoalAmt  > 0 ? totalActualAmt  / totalGoalAmt  : 0
-  const cntRate         = totalGoalCnt  > 0 ? totalActualCnt  / totalGoalCnt  : 0
-
-  const SEC1 = 4   // row index (0-based)
-  mergeCell(ws1, SEC1, 1, SEC1, 10, "▌ 팀 핵심 KPI", ST.sectionHead)
-
-  const kpiItems = [
-    { label: "목표 금액",   val: `${totalGoalAmt.toLocaleString()}만원`,   vSt: ST.kpiValue  },
-    { label: "실적 금액",   val: `${totalActualAmt.toLocaleString()}만원`, vSt: amtRate >= 1 ? ST.kpiGreen : ST.kpiOrange },
-    { label: "목표 건수",   val: `${totalGoalCnt}건`,                       vSt: ST.kpiValue  },
-    { label: "실적 건수",   val: `${totalActualCnt}건`,                     vSt: cntRate >= 1 ? ST.kpiGreen : ST.kpiOrange },
-    { label: "금액 달성률", val: `${(amtRate * 100).toFixed(1)}%`,          vSt: amtRate >= 1 ? ST.kpiGreen : ST.kpiOrange },
-  ]
-  const kpiCols = [1, 3, 5, 7, 9]
-  kpiItems.forEach(({ label, val, vSt }, i) => {
-    const c = kpiCols[i]
-    mergeCell(ws1, SEC1 + 1, c, SEC1 + 1, c + 1, label, ST.kpiLabel)
-    ws1["!rows"]![SEC1 + 2] = { hpx: 30 }
-    mergeCell(ws1, SEC1 + 2, c, SEC1 + 2, c + 1, val, vSt)
-  })
-
-  // ── 섹션2: 팀원별 목표 vs 실적 테이블 ─────────────────────────────────────
-  const SEC2 = SEC1 + 5
-  mergeCell(ws1, SEC2, 1, SEC2, 10, "▌ 팀원별 목표 vs 실적 현황", ST.sectionHead)
-
-  const COL_HEADS_PERF = ["이름", "목표금액(만)", "실적금액(만)", "금액달성률",
-                           "목표건수", "실적건수", "건수달성률", "초과/미달(만)", "초과/미달(건)"]
-  COL_HEADS_PERF.forEach((h, i) => cell(ws1, SEC2 + 1, i + 1, h, ST.colHead))
-
-  agents.forEach((a, ri) => {
-    const row  = SEC2 + 2 + ri
-    const p    = a.performance
-    const aRate = (p.target_amt || 0) > 0 ? (p.contract_amt || 0) / (p.target_amt || 1) : 0
-    const cRate = totalGoalCnt > 0 ? (p.contract_cnt || 0) / (totalGoalCnt / agents.length || 1) : 0
-    const diffA = (p.contract_amt || 0) - (p.target_amt || 0)
-    const diffC = (p.contract_cnt || 0) - Math.round(totalGoalCnt / agents.length)
-    const bg    = ri % 2 === 0 ? ST.dataEven : ST.dataOdd
-
-    cell(ws1, row, 1, a.name,                                   { ...ST.nameCell })
-    cell(ws1, row, 2, p.target_amt   || 0,                      bg, "#,##0")
-    cell(ws1, row, 3, p.contract_amt || 0,                      bg, "#,##0")
-    cell(ws1, row, 4, `${(aRate * 100).toFixed(1)}%`,           aRate >= 1 ? { ...ST.green, fill: bg.fill } : { ...ST.red, fill: bg.fill })
-    cell(ws1, row, 5, Math.round(totalGoalCnt / agents.length), bg)
-    cell(ws1, row, 6, p.contract_cnt || 0,                      bg)
-    cell(ws1, row, 7, `${(cRate * 100).toFixed(1)}%`,           cRate >= 1 ? { ...ST.green, fill: bg.fill } : { ...ST.red, fill: bg.fill })
-    cell(ws1, row, 8, diffA,                                    diffA >= 0 ? { ...ST.green, fill: bg.fill } : { ...ST.red, fill: bg.fill }, "#,##0;-#,##0")
-    cell(ws1, row, 9, diffC,                                    diffC >= 0 ? { ...ST.green, fill: bg.fill } : { ...ST.red, fill: bg.fill })
-  })
-
-  // 합계 행
-  const totRow1 = SEC2 + 2 + agents.length
-  cell(ws1, totRow1, 1, "팀 합계", s(true, "FF1F3864", "FFFFFFFF", 10))
-  cell(ws1, totRow1, 2, totalGoalAmt,   ST.totalRow, "#,##0")
-  cell(ws1, totRow1, 3, totalActualAmt, ST.totalRow, "#,##0")
-  cell(ws1, totRow1, 4, `${(amtRate * 100).toFixed(1)}%`, amtRate >= 1 ? { ...ST.green, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } } : { ...ST.red, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } })
-  cell(ws1, totRow1, 5, totalGoalCnt,   ST.totalRow)
-  cell(ws1, totRow1, 6, totalActualCnt, ST.totalRow)
-  cell(ws1, totRow1, 7, `${(cntRate * 100).toFixed(1)}%`, cntRate >= 1 ? { ...ST.green, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } } : { ...ST.red, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } })
-  cell(ws1, totRow1, 8, totalActualAmt - totalGoalAmt, (totalActualAmt - totalGoalAmt) >= 0 ? { ...ST.green, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } } : { ...ST.red, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } }, "#,##0;-#,##0")
-  cell(ws1, totRow1, 9, totalActualCnt - totalGoalCnt, (totalActualCnt - totalGoalCnt) >= 0 ? { ...ST.green, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } } : { ...ST.red, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } })
-
-  // ── 섹션3: 활동 현황 테이블 ────────────────────────────────────────────────
-  const SEC3 = totRow1 + 3
-  mergeCell(ws1, SEC3, 1, SEC3, 10, "▌ 팀 전체 활동 현황 (전화 / 만남 / 제안 / 소개 / DB배정 / 반품)", ST.sectionHead)
-
-  const COL_HEADS_ACT = ["이름", "전화", "만남", "제안", "소개", "DB배정", "반품", "활동합계"]
-  COL_HEADS_ACT.forEach((h, i) => cell(ws1, SEC3 + 1, i + 1, h, ST.actHead))
-
-  let totAct = { call: 0, meet: 0, pt: 0, intro: 0, db: 0, ret: 0 }
-  agents.forEach((a, ri) => {
-    const row = SEC3 + 2 + ri
-    const p   = a.performance
-    const total = (p.call||0)+(p.meet||0)+(p.pt||0)+(p.intro||0)+(p.db_assigned||0)+(p.db_returned||0)
-    const bg  = ri % 2 === 0 ? ST.actEven : ST.dataOdd
-
-    totAct.call += p.call || 0
-    totAct.meet += p.meet || 0
-    totAct.pt   += p.pt   || 0
-    totAct.intro+= p.intro|| 0
-    totAct.db   += p.db_assigned || 0
-    totAct.ret  += p.db_returned || 0
-
-    cell(ws1, row, 1, a.name,             { ...ST.nameCell })
-    cell(ws1, row, 2, p.call        || 0, bg)
-    cell(ws1, row, 3, p.meet        || 0, bg)
-    cell(ws1, row, 4, p.pt          || 0, bg)
-    cell(ws1, row, 5, p.intro       || 0, bg)
-    cell(ws1, row, 6, p.db_assigned || 0, bg)
-    cell(ws1, row, 7, p.db_returned || 0, (p.db_returned || 0) > 0 ? { ...ST.actRed } : bg)
-    cell(ws1, row, 8, total,              { ...s(true, ri%2===0 ? "FFDDEEFF" : "FFFFFFFF", "FF2E5FA3", 10) })
-  })
-
-  const totRow2 = SEC3 + 2 + agents.length
-  const grandTotal = totAct.call + totAct.meet + totAct.pt + totAct.intro + totAct.db + totAct.ret
-  cell(ws1, totRow2, 1, "팀 합계",   s(true, "FF1F3864", "FFFFFFFF", 10))
-  ;[totAct.call, totAct.meet, totAct.pt, totAct.intro, totAct.db, totAct.ret, grandTotal].forEach((v, i) => {
-    const st = (i === 5 && v > 0) ? { ...ST.red, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } } : ST.actTotal
-    cell(ws1, totRow2, 2 + i, v, st)
-  })
-
-  // ── 섹션4: 활동 전환율 요약 ────────────────────────────────────────────────
-  const SEC4 = totRow2 + 3
-  mergeCell(ws1, SEC4, 1, SEC4, 10, "▌ 팀 전체 활동 전환율 분석", ST.sectionHead)
-
-  const convHeaders = ["전화 → 만남", "만남 → 제안", "소개 건수", "DB 배정", "DB 반품", "반품률"]
-  convHeaders.forEach((h, i) => cell(ws1, SEC4 + 1, i + 2, h, ST.colHead))
-
-  const meetConv = totAct.call  > 0 ? totAct.meet / totAct.call  : 0
-  const ptConv   = totAct.meet  > 0 ? totAct.pt   / totAct.meet  : 0
-  const retRate  = totAct.db    > 0 ? totAct.ret  / totAct.db    : 0
-
-  const convVals = [
-    `${(meetConv * 100).toFixed(1)}%`,
-    `${(ptConv   * 100).toFixed(1)}%`,
-    `${totAct.intro}건`,
-    `${totAct.db}건`,
-    `${totAct.ret}건`,
-    `${(retRate  * 100).toFixed(1)}%`,
-  ]
-  convVals.forEach((v, i) => {
-    const isBad = (i === 5 && retRate > 0.1)
-    cell(ws1, SEC4 + 2, i + 2, v, isBad ? { ...ST.red, fill: { fgColor: { rgb: "FFFFF2CC" }, patternType: "solid" } } : ST.totalRow)
-  })
-
-  XLSX.utils.book_append_sheet(wb, ws1, "📊 팀 전체 현황")
-
-  /* ══════════════════════════════════════════════════════════════════════════
-     TAB 2 : 👤 개인별 상세 현황
-  ══════════════════════════════════════════════════════════════════════════ */
-  const ws2: XLSX.WorkSheet = {}
-  ws2["!ref"]  = "A1:M500"
-  ws2["!merges"] = []
-  ws2["!cols"]   = ws1["!cols"]
-  ws2["!rows"]   = Array.from({ length: 500 }, () => ({ hpx: 22 }))
-
-  ws2["!rows"]![0] = { hpx: 10 }
-  ws2["!rows"]![1] = { hpx: 38 }
-
-  mergeCell(ws2, 1, 1, 1, 10, `👤  팀원별 개인 실적 상세 리포트 — ${yearMonth}`, ST.titleDark)
-
-  let CUR = 3
-
-  agents.forEach((a) => {
-    const p = a.performance
-    const aRate = (p.target_amt || 0) > 0 ? (p.contract_amt || 0) / (p.target_amt || 1) : 0
-    const perGoalCnt = agents.length > 0 ? Math.round(totalGoalCnt / agents.length) : 0
-    const cRate = perGoalCnt > 0 ? (p.contract_cnt || 0) / perGoalCnt : 0
-
-    ws2["!rows"]![CUR - 1] = { hpx: 8 }
-    ws2["!rows"]![CUR]     = { hpx: 28 }
-
-    // 이름 배너
-    mergeCell(ws2, CUR, 1, CUR, 10, `◆  ${a.name}  |  영업사원 개인 현황`, ST.memberBanner)
-    CUR++
-
-    // 목표/실적 헤더
-    ;["구분", "금액 (만원)", "건수"].forEach((h, i) => {
-      mergeCell(ws2, CUR, 1 + i * 2, CUR, 2 + i * 2, h, ST.colHead)
-    })
-    CUR++
-
-    // 목표 행
-    ws2["!rows"]![CUR] = { hpx: 24 }
-    mergeCell(ws2, CUR, 1, CUR, 2, "목표",         ST.metaLabel)
-    mergeCell(ws2, CUR, 3, CUR, 4, p.target_amt   || 0, ST.metaGoal,   "#,##0")
-    mergeCell(ws2, CUR, 5, CUR, 6, perGoalCnt,     ST.metaGoal)
-    CUR++
-
-    // 실적 행
-    ws2["!rows"]![CUR] = { hpx: 24 }
-    mergeCell(ws2, CUR, 1, CUR, 2, "실적",         { ...ST.metaLabel, fill: { fgColor: { rgb: "FFED7D31" }, patternType: "solid" } })
-    mergeCell(ws2, CUR, 3, CUR, 4, p.contract_amt || 0, ST.metaGoal, "#,##0")
-    mergeCell(ws2, CUR, 5, CUR, 6, p.contract_cnt || 0, ST.metaGoal)
-    CUR++
-
-    // 달성률 행
-    ws2["!rows"]![CUR] = { hpx: 24 }
-    const rateSt = aRate >= 1
-      ? { ...ST.metaLabel, fill: { fgColor: { rgb: "FF70AD47" }, patternType: "solid" } }
-      : { ...ST.metaLabel, fill: { fgColor: { rgb: "FFFF0000" }, patternType: "solid" } }
-    mergeCell(ws2, CUR, 1, CUR, 2, "달성률", rateSt)
-    mergeCell(ws2, CUR, 3, CUR, 4, `${(aRate * 100).toFixed(1)}%`, aRate >= 1 ? ST.metaRateGreen : ST.metaRateRed)
-    mergeCell(ws2, CUR, 5, CUR, 6, `${(cRate * 100).toFixed(1)}%`, cRate >= 1 ? ST.metaRateGreen : ST.metaRateRed)
-    CUR++
-
-    // 활동 현황 헤더
-    const ACT_COLS = ["전화", "만남", "제안", "소개", "DB배정", "반품", "활동합계"]
-    ACT_COLS.forEach((h, i) => cell(ws2, CUR, 1 + i, h, ST.actHead))
-    CUR++
-
-    // 활동 데이터
-    const total = (p.call||0)+(p.meet||0)+(p.pt||0)+(p.intro||0)+(p.db_assigned||0)+(p.db_returned||0)
-    ;[p.call||0, p.meet||0, p.pt||0, p.intro||0, p.db_assigned||0, p.db_returned||0, total].forEach((v, i) => {
-      const st = (i === 5 && v > 0)
-        ? { ...ST.actRed, fill: { fgColor: { rgb: "FFDDEEFF" }, patternType: "solid" } }
-        : i === 6
-          ? s(true, "FFDDEEFF", "FF2E5FA3", 10)
-          : ST.actEven
-      cell(ws2, CUR, 1 + i, v, st)
-    })
-    CUR++
-
-    // 전환율 행
-    const mc = (p.call||0) > 0 ? ((p.meet||0)/(p.call||1)*100).toFixed(1) : "0.0"
-    const pc = (p.meet||0) > 0 ? ((p.pt||0)/(p.meet||1)*100).toFixed(1)   : "0.0"
-    mergeCell(ws2, CUR, 1, CUR, 3, `전화→만남 전환율: ${mc}%`,   s(false, "FFF5F5F5", "FF2E5FA3", 9))
-    mergeCell(ws2, CUR, 4, CUR, 7, `만남→제안 전환율: ${pc}%`,   s(false, "FFF5F5F5", "FFED7D31", 9))
-    CUR += 3  // 구역 간격
-  })
-
-  XLSX.utils.book_append_sheet(wb, ws2, "👤 개인별 상세 현황")
-
-  // ── 파일 저장 ───────────────────────────────────────────────────────────────
-  const bookType = "xlsx"
-  XLSX.writeFile(wb, `영업팀_실적리포트_${monthKey.slice(0, 7)}.xlsx`, {
-    bookType,
-    bookSST: false,
-    type: "binary",
-  })
+function TotalBox({ label, val, sub }: any) {
+  return (
+    <div className="bg-black p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] text-center font-black">
+      <p className="text-[#d4af37] text-[8px] md:text-[10px] uppercase mb-1">{label}</p>
+      <p className="text-white text-lg md:text-xl italic">{val}건</p>
+      {sub && <p className="text-[#d4af37] text-[8px] md:text-[9px] mt-1 opacity-80">{sub}</p>}
+    </div>
+  )
 }
