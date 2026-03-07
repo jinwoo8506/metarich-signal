@@ -41,17 +41,31 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     });
 
     const { data: users } = await supabase.from("users").select("*").eq("role", "agent");
-    const { data: perfs } = await supabase.from("daily_perf").select("*").eq("date", monthKey);
+    const { data: allPerfs } = await supabase.from("daily_perf").select("*");
 
     if (users) {
-      const mappedAgents = users.map(u => ({
-        ...u,
-        performance: perfs?.find(p => p.user_id === u.id) || {
+      const mappedAgents = users.map(u => {
+        // 해당 직원의 전체 히스토리
+        const userHistory = allPerfs?.filter(p => p.user_id === u.id) || [];
+        // 현재 선택된 달의 실적
+        const currentPerf = userHistory.find(p => p.date === monthKey) || {
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
           contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
           edu_status: '미참여', is_approved: false,
-        },
-      }));
+        };
+
+        // 기네스 및 최저 매출액 산출
+        const validAmounts = userHistory.map(h => Number(h.contract_amt) || 0);
+        const bestAmt = validAmounts.length > 0 ? Math.max(...validAmounts) : 0;
+        const worstAmt = validAmounts.length > 0 ? Math.min(...validAmounts) : 0;
+
+        return {
+          ...u,
+          performance: currentPerf,
+          bestAmt,
+          worstAmt
+        };
+      });
       setAgents(mappedAgents);
 
       // 전체 활동 합산 계산
@@ -66,13 +80,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   }
 
   // ── 출력 핸들러 ──────────────────────────────────────────────────
-  // 엑셀: exportExcel.ts 의 함수 호출 (스타일/내용 수정은 그 파일에서)
-  // PDF:  기존 로직 그대로 유지
   const handleExport = (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
-
       exportExcel({ agents, teamMeta, monthKey })
-
     } else {
       const doc = new jsPDF();
       (doc as any).autoTable({
@@ -93,11 +103,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     setShowExportOpt(false);
   };
 
-  // ── JSX ──────────────────────────────────────────────────────────
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6">
 
-      {/* 상단 공지사항: 클릭 시 아래로 확장되어 전체 내용 확인 가능 */}
+      {/* 상단 공지사항 */}
       <div
         onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
         className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}
@@ -107,7 +116,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션: 총 4개 버튼 (메타온, 자료실, 업무지원(계산기), 실적 출력) */}
+      {/* 퀵링크 섹션: 총 4개 버튼 유지 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer"
           className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
@@ -142,7 +151,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
+      {/* 활동 합산 데이터 (활동 관리 탭 클릭 시 표시) */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -154,7 +163,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 메인 탭 메뉴 (모바일 가독성 최적화) */}
+      {/* 메인 탭 메뉴 */}
       <div className="grid grid-cols-4 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys'].map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -164,44 +173,53 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 팀 모니터링 섹션 (직원 리스트) */}
+      {/* 팀 모니터링 섹션 (이 부분만 요청하신 디자인으로 집중 수정) */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
         <div className="space-y-4 md:space-y-6">
           {agents.map(a => {
-            const progress = Math.min(
-              ((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100,
-              100
-            );
+            // 달성률 계산
+            const amtRate = Math.min(((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100, 100);
+            const cntRate = Math.min(((Number(a.performance.contract_cnt) || 0) / (Number(a.performance.target_cnt) || 1)) * 100, 100);
+
             return (
               <div
                 key={a.id}
                 onClick={() => { setSelectedAgent(a); setActiveTab('act'); }}
                 className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4"
               >
-                <div className="flex justify-between items-end">
+                {/* 상단: 이름 및 기네스/최저 표시 */}
+                <div className="flex justify-between items-center">
                   <p className="text-lg md:text-xl font-black">{a.name} CA</p>
-                  <div className="flex gap-4 md:gap-10 text-right">
-                    <div className="font-black">
-                      <p className="text-[8px] md:text-[10px] text-slate-400 uppercase">Goal</p>
-                      <p className="text-[12px] md:text-[15px] italic">{(Number(a.performance.target_amt) || 0).toLocaleString()}만</p>
-                    </div>
-                    <div className="font-black">
-                      <p className="text-[8px] md:text-[10px] text-indigo-500 uppercase font-black">Actual</p>
-                      <p className="text-[14px] md:text-[18px] text-indigo-600 italic">{(Number(a.performance.contract_amt) || 0).toLocaleString()}만</p>
-                    </div>
+                  <div className="flex gap-2">
+                    <div className="text-[10px] bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-black border border-amber-200 shadow-sm">🏆 BEST: {a.bestAmt.toLocaleString()}만</div>
+                    <div className="text-[10px] bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-black border border-rose-200 shadow-sm">📉 LOW: {a.worstAmt.toLocaleString()}만</div>
                   </div>
                 </div>
 
-                <div className="w-full h-2 md:h-3 bg-slate-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-black transition-all duration-500" style={{ width: `${progress}%` }} />
-                </div>
-
-                <div className="grid grid-cols-4 gap-1 md:gap-2 pt-2 border-t border-dashed border-slate-300">
-                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">전화</p><p className="text-[11px] md:text-sm italic">{a.performance.call}회</p></div>
-                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">만남</p><p className="text-[11px] md:text-sm italic">{a.performance.meet}회</p></div>
-                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">제안</p><p className="text-[11px] md:text-sm italic">{a.performance.pt}회</p></div>
-                  <div className="text-center"><p className="text-[8px] md:text-[9px] text-slate-400">소개</p><p className="text-[11px] md:text-sm italic">{a.performance.intro}회</p></div>
+                {/* 중앙: 실적 및 목표 가로 막대 그래프 (전화/만남 등은 삭제) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 매출 그래프 */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] italic">
+                      <span className="text-slate-500 uppercase font-black">매출 달성률 ({amtRate.toFixed(0)}%)</span>
+                      <span className="font-black text-indigo-600">{(Number(a.performance.contract_amt)||0).toLocaleString()} / {(Number(a.performance.target_amt)||0).toLocaleString()} 만</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                      <div className="h-full bg-indigo-500 transition-all duration-700 ease-out" style={{ width: `${amtRate}%` }} />
+                    </div>
+                  </div>
+                  
+                  {/* 건수 그래프 */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] italic">
+                      <span className="text-slate-500 uppercase font-black">건수 달성률 ({cntRate.toFixed(0)}%)</span>
+                      <span className="font-black text-emerald-600">{(Number(a.performance.contract_cnt)||0)} / {(Number(a.performance.target_cnt)||0)} 건</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                      <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${cntRate}%` }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -209,7 +227,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 및 모달 모듈 */}
+      {/* 팝업 및 모달 모듈 유지 */}
       {activeTab && (
         <AdminPopups
           type={activeTab}
