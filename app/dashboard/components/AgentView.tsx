@@ -25,7 +25,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   const LINKS = { 
     metaon: "https://meta-on.kr/#/login", 
-    insu: "#", 
+    insu: "https://xn--on3bi2e18htop.com/", 
     claim: "#", 
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
   };
@@ -58,18 +58,18 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   async function fetchHistoryData() {
     const d = new Date(selectedDate);
-    const dates = [];
-    for (let i = 1; i <= 3; i++) {
-      const prev = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      const y = prev.getFullYear();
-      const m = String(prev.getMonth() + 1).padStart(2, '0');
-      dates.push(`${y}-${m}-01`);
-    }
+    // 3개월 전 1일부터 현재 달 1일까지의 데이터를 범위로 조회
+    const startOfRange = new Date(d.getFullYear(), d.getMonth() - 3, 1);
+    const endOfRange = new Date(d.getFullYear(), d.getMonth(), 1);
+
+    const startStr = startOfRange.toISOString().split('T')[0];
+    const endStr = endOfRange.toISOString().split('T')[0];
 
     const { data, error } = await supabase.from("daily_perf")
       .select("contract_amt, contract_cnt, call, meet, pt, intro, db_assigned")
       .eq("user_id", user.id)
-      .in("date", dates);
+      .gte("date", startStr)
+      .lt("date", endStr);
     
     if (data) setHistoryData(data);
     if (error) console.error("History fetch error:", error);
@@ -78,7 +78,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const avgData = useMemo(() => {
     if (!historyData || historyData.length === 0) return { amt: 0, cnt: 0, perAmt: 0, call: 0, meet: 0, pt: 0, intro: 0 };
     
-    const count = historyData.length;
+    // 범위 데이터를 가져왔으므로 3개월 평균 산출을 위해 3으로 나눔
+    const months = 3;
     const sum = historyData.reduce((acc, curr) => ({
       amt: acc.amt + (Number(curr.contract_amt) || 0),
       cnt: acc.cnt + (Number(curr.contract_cnt) || 0),
@@ -89,20 +90,19 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
 
     return {
-      amt: Math.round(sum.amt / count),
-      cnt: Number((sum.cnt / count).toFixed(1)),
+      amt: Math.round(sum.amt / months),
+      cnt: Number((sum.cnt / months).toFixed(1)),
       perAmt: sum.cnt > 0 ? Math.round(sum.amt / sum.cnt) : 0,
-      call: Math.round(sum.call / count),
-      meet: Math.round(sum.meet / count),
-      pt: Math.round(sum.pt / count),
-      intro: Math.round(sum.intro / count)
+      call: Math.round(sum.call / months),
+      meet: Math.round(sum.meet / months),
+      pt: Math.round(sum.pt / months),
+      intro: Math.round(sum.intro / months)
     };
   }, [historyData]);
 
   const handleSave = async (customField?: object) => {
     const rawPayload = customField ? { ...perfInput, ...customField } : perfInput;
     
-    // 데이터 저장 시 숫자 필드들이 문자열로 저장되지 않도록 확실하게 Number() 처리를 수행합니다.
     const payload = {
       ...rawPayload,
       call: Number(rawPayload.call || 0),
@@ -145,8 +145,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
         </div>
         <div className="flex flex-nowrap overflow-x-auto gap-2 no-scrollbar font-black w-full md:w-auto justify-center">
-          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" />
-          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" />
+          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" className="hidden md:block" />
+          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
         </div>
@@ -160,7 +160,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* 목표 및 실적 입력 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
             <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액(만)</p>
@@ -178,7 +177,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          {/* 활동 지표 입력 */}
           <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3">
             <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
             <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
@@ -188,7 +186,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
-          {/* 3개월 평균 데이터 섹션 */}
           <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl">
             <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
               <button onClick={()=>setAvgTab('perf')} className={`text-[14px] italic font-black transition-all ${avgTab==='perf' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 실적</button>
@@ -242,7 +239,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 영업도구(계산기) 모달 */}
       {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
     </div>
   )
@@ -257,8 +253,23 @@ function AvgBox({ label, val }: any) {
   ) 
 }
 
-function QuickBtn({ label, url, onClick, color }: any) { 
-  return <button onClick={() => url && url !== "#" ? window.open(url, "_blank") : (onClick ? onClick() : null)} className={`${color} px-4 md:px-5 py-2.5 rounded-xl font-black text-[11px] md:text-[12px] border shadow-sm shrink-0 transition-transform active:scale-95`}>{label}</button> 
+function QuickBtn({ label, url, onClick, color, className }: any) { 
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (url && url !== "#") {
+      window.open(url, "_blank");
+    }
+  };
+
+  return (
+    <button 
+      onClick={handleClick} 
+      className={`${color} ${className || ""} px-4 md:px-5 py-2.5 rounded-xl font-black text-[11px] md:text-[12px] border shadow-sm shrink-0 transition-transform active:scale-95`}
+    >
+      {label}
+    </button> 
+  )
 }
 
 function MetricInput({ label, val, onChange, color }: any) { 

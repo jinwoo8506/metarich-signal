@@ -17,12 +17,10 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
   useEffect(() => {
     fetchDailyData();
     fetch3MonthAvg();
-    // 개인 메모는 로컬 저장소 유지 (본인 기기용)
     const savedPrivate = localStorage.getItem(`memo_${user.id}`);
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
 
-  // 관리자 전달사항을 DB에서 불러오기
   async function fetchDailyData() {
     const { data } = await supabase
       .from("team_settings")
@@ -37,30 +35,39 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     }
   }
 
-  // 3개월 평균 실적 조회 로직
+  // 3개월 평균 실적 조회 로직 수정
   async function fetch3MonthAvg() {
-    let query = supabase.from("view_3month_avg").select("avg_3month_amt, avg_3month_cnt");
+    const d = new Date(selectedDate);
+    // 3개월 전 1일부터 현재 달 1일까지 설정
+    const startOfRange = new Date(d.getFullYear(), d.getMonth() - 3, 1).toISOString().split('T')[0];
+    const endOfRange = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+
+    let query = supabase
+      .from("daily_perf")
+      .select("contract_amt, contract_cnt, user_id")
+      .gte("date", startOfRange)
+      .lt("date", endOfRange);
 
     if (!isAdmin) {
       query = query.eq("user_id", user.id);
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
     
     if (data && data.length > 0) {
-      const avgAmt = data.reduce((acc, curr) => acc + (curr.avg_3month_amt || 0), 0) / data.length;
-      const avgCnt = data.reduce((acc, curr) => acc + (curr.avg_3month_cnt || 0), 0) / data.length;
+      const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
+      const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
       
+      // 3개월 평균이므로 합계를 3으로 나눔
       setThreeMonthAvg({ 
-        amt: Math.round(avgAmt), 
-        cnt: Number(avgCnt.toFixed(1)) 
+        amt: Math.round(totalAmt / 3), 
+        cnt: Number((totalCnt / 3).toFixed(1)) 
       });
     } else {
       setThreeMonthAvg({ amt: 0, cnt: 0 });
     }
   }
 
-  // 관리자 전달사항 저장 (DB upsert)
   const saveDailyNotice = async (val: string) => {
     setDailyAdminNotice(val);
     const { error } = await supabase
@@ -91,7 +98,6 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         />
       </div>
 
-      {/* 3개월 평균 데이터 배치 */}
       <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl">
         <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">
           {isAdmin ? "Team 3-Month Performance" : "My 3-Month Performance"}
@@ -99,7 +105,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         <div className="grid grid-cols-2 gap-3 font-black">
           <div className="text-center border-r border-white/10">
             <p className="text-[8px] text-white/40 uppercase mb-1">Avg Amount</p>
-            <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt}만</p>
+            <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
           </div>
           <div className="text-center">
             <p className="text-[8px] text-white/40 uppercase mb-1">Avg Count</p>
@@ -109,7 +115,6 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
       </div>
       
       <div className="flex-1 flex flex-col gap-4 font-black">
-        {/* Daily Instruction: 관리자만 편집 가능, DB 동기화 */}
         <div className="bg-blue-50 p-6 rounded-[2.5rem] border border-blue-100 flex flex-col h-48 relative">
           <p className="text-[9px] font-black text-blue-600 uppercase italic mb-3 tracking-widest flex justify-between">
             <span>Daily Instruction</span>
@@ -124,7 +129,6 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
           />
         </div>
 
-        {/* Private Memo: 개인 로컬 저장 유지 */}
         <div className="bg-amber-50 p-6 rounded-[2.5rem] border border-amber-100 flex flex-col h-48 font-black">
           <p className="text-[9px] font-black text-amber-600 uppercase italic mb-3 tracking-widest">Private Memo</p>
           <textarea 
