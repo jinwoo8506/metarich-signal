@@ -13,6 +13,7 @@ export default function CalcModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex items-center justify-center p-0 md:p-6 animate-in fade-in font-black">
       <div className="bg-white w-full h-full md:h-auto md:max-w-5xl md:rounded-[4rem] relative overflow-y-auto flex flex-col shadow-2xl border-4 border-black">
         
+        {/* 헤더 */}
         <div className="sticky top-0 bg-white px-8 py-6 flex justify-between items-center border-b-4 border-black z-20 font-black">
           <div className="flex items-center gap-3">
             <div className="w-3 h-8 bg-[#d4af37]"></div>
@@ -21,18 +22,21 @@ export default function CalcModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="text-3xl font-black p-2 hover:rotate-90 transition-all text-black">✕</button>
         </div>
 
+        {/* 탭 버튼 */}
         <div className="flex bg-black p-2 gap-2 mx-6 mt-8 rounded-[2rem] font-black">
           <TabBtn label="보험 vs 적금·예금" active={activeTab === 'compare'} onClick={() => setActiveTab('compare')} />
           <TabBtn label="돈의 가치(인플레)" active={activeTab === 'inflation'} onClick={() => setActiveTab('inflation')} />
           <TabBtn label="복리 마법(일시납)" active={activeTab === 'compound'} onClick={() => setActiveTab('compound')} />
         </div>
 
+        {/* 계산기 컨텐츠 영역 */}
         <div className="p-6 md:p-12 flex-1">
           {activeTab === 'compare' && <CompareCalc format={formatNum} />}
           {activeTab === 'inflation' && <InflationCalc format={formatNum} />}
           {activeTab === 'compound' && <CompoundCalc format={formatNum} />}
         </div>
 
+        {/* 푸터 및 주의사항 */}
         <div className="px-10 pb-10 font-black">
           <div className="text-[11px] text-slate-400 mb-6 space-y-1 font-black">
             <p>* 적금 이자는 납입회차별 경과기간을 반영한 실질 수익률로 계산되었습니다.</p>
@@ -46,30 +50,23 @@ export default function CalcModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-/** 1. 보험 vs 적금·예금 비교 (실질이율 및 16.5% 세금 적용) **/
+/** 1. 보험 vs 적금·예금 비교 **/
 function CompareCalc({ format }: any) {
   const [monthly, setMonthly] = useState(500000)
-  const [payYears, setPayYears] = useState(5)      
-  const [holdYears, setHoldYears] = useState(5)     
-  const [savingRate, setSavingRate] = useState(3.0)   
-  const [depositRate, setDepositRate] = useState(3.5)  
-  const [insuRate, setInsuRate] = useState(124)     
+  const [payYears, setPayYears] = useState(5)
+  const [holdYears, setHoldYears] = useState(5)
+  const [savingRate, setSavingRate] = useState(3.0)
+  const [depositRate, setDepositRate] = useState(3.5)
+  const [insuRate, setInsuRate] = useState(124)
 
-  // [수정] 적금 실질 이자 계산 (평균 잔액 원리 적용)
   const totalMonths = payYears * 12
   const totalPrincipal = monthly * totalMonths
-  // 적금 이자 = 월납입금 * {n(n+1)/2} * (연이율/12)
   const savingInterest = Math.floor((monthly * totalMonths * (totalMonths + 1) / 2) * (savingRate / 100 / 12))
-  
-  // [수정] 예금 거치 이자
   const savingAfterPrincipal = totalPrincipal + savingInterest
   const depositInterest = Math.floor(savingAfterPrincipal * (depositRate / 100) * holdYears)
-  
-  // [수정] 세금 16.5% 적용
   const totalInterest = savingInterest + depositInterest
   const tax = Math.floor(totalInterest * 0.165)
   const bankFinal = totalPrincipal + totalInterest - tax
-  
   const insuFinal = Math.floor(totalPrincipal * (insuRate / 100))
   const diff = insuFinal - bankFinal
 
@@ -86,19 +83,11 @@ function CompareCalc({ format }: any) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4 font-black">
         <div className="bg-slate-50 p-8 rounded-[3rem] border-2 border-slate-100">
-          <p className="text-[11px] font-black text-slate-400 mb-6 flex items-center gap-2 uppercase">
-            <span className="w-2 h-2 bg-slate-400 rounded-full"></span> Bank (Actual Return)
-          </p>
+          <p className="text-[11px] font-black text-slate-400 mb-6 flex items-center gap-2 uppercase">Bank (Actual Return)</p>
           <div className="space-y-3">
             <div className="flex justify-between text-sm"><span>총 납입 원금</span><span>{format(totalPrincipal)}원</span></div>
-            <div className="flex justify-between text-sm text-indigo-600 font-black">
-              <span>세전 이자합계 (실질반영)</span>
-              <span>+{format(totalInterest)}원</span>
-            </div>
-            <div className="flex justify-between text-sm text-rose-500 font-black">
-              <span>이자소득세(16.5%)</span>
-              <span>-{format(tax)}원</span>
-            </div>
+            <div className="flex justify-between text-sm text-indigo-600 font-black"><span>세전 이자합계</span><span>+{format(totalInterest)}원</span></div>
+            <div className="flex justify-between text-sm text-rose-500 font-black"><span>이자소득세(16.5%)</span><span>-{format(tax)}원</span></div>
             <div className="pt-6 border-t-2 border-dashed border-slate-200 mt-4 flex justify-between items-end">
               <span className="text-sm">최종 세후 만기금</span>
               <span className="text-3xl font-black italic">{format(bankFinal)}원</span>
@@ -108,9 +97,7 @@ function CompareCalc({ format }: any) {
 
         <div className="bg-black text-[#d4af37] p-8 rounded-[3rem] shadow-2xl flex flex-col justify-between">
           <div>
-            <p className="text-[11px] font-black mb-6 flex items-center gap-2 text-white/50 uppercase">
-              <span className="w-2 h-2 bg-[#d4af37] rounded-full"></span> Insurance (Final)
-            </p>
+            <p className="text-[11px] font-black mb-6 flex items-center gap-2 text-white/50 uppercase">Insurance (Final)</p>
             <div className="flex justify-between items-end mb-8">
               <span className="text-sm text-white font-black">보험사 예상 환급금</span>
               <span className="text-4xl font-black italic">{format(insuFinal)}원</span>
@@ -128,13 +115,12 @@ function CompareCalc({ format }: any) {
   )
 }
 
-/** 2. 돈의 가치 하락 (물가상승 복리 할인 적용) **/
+/** 2. 돈의 가치 하락 **/
 function InflationCalc({ format }: any) {
   const [amount, setAmount] = useState(100000000)
   const [years, setYears] = useState(10)
   const [inflation, setInflation] = useState(3.0)
 
-  // [수정] 물가상승에 따른 현재가치 할인 공식: PV = FV / (1 + r)^n
   const futureValue = Math.floor(amount / Math.pow(1 + (inflation / 100), years))
   const lostValue = amount - futureValue
 
@@ -147,8 +133,7 @@ function InflationCalc({ format }: any) {
       </div>
       <div className="bg-rose-50 border-4 border-rose-100 p-10 rounded-[3.5rem] text-center font-black">
         <p className="text-rose-400 text-[11px] font-black uppercase tracking-widest mb-4">Buying Power Warning</p>
-        <p className="text-xl md:text-2xl font-black mb-2">{years}년 후 {format(amount)}원의,</p>
-        <p className="text-2xl md:text-3xl font-black mb-6">현재 기준 실제 구매력은?</p>
+        <p className="text-2xl md:text-3xl font-black mb-6">현재 기준 실제 구매력</p>
         <p className="text-5xl md:text-7xl font-black italic text-rose-600 mb-6">{format(futureValue)}원</p>
         <p className="text-sm text-rose-400 font-black italic">물가 상승으로 인해 화폐가치가 약 {format(lostValue)}원 하락했습니다.</p>
       </div>
@@ -156,24 +141,17 @@ function InflationCalc({ format }: any) {
   )
 }
 
-/** 3. 복리 계산기 (16.5% 세후 결과 반영) **/
+/** 3. 복리 계산기 **/
 function CompoundCalc({ format }: any) {
   const [principal, setPrincipal] = useState(50000000)
   const [years, setYears] = useState(10)
   const [simpleRate, setSimpleRate] = useState(3.0)
   const [compoundRate, setCompoundRate] = useState(3.0)
 
-  // 단리 계산
-  const simpleInterest = principal * (simpleRate / 100) * years
-  const simpleTax = simpleInterest * 0.165
-  const simpleFinal = Math.floor(principal + simpleInterest - simpleTax)
-
-  // 복리 계산
+  const simpleFinal = Math.floor(principal + (principal * (simpleRate / 100) * years) * (1 - 0.165))
   const compoundTotalPreTax = principal * Math.pow(1 + (compoundRate / 100), years)
   const compoundInterest = compoundTotalPreTax - principal
-  const compoundTax = compoundInterest * 0.165
-  const compoundFinal = Math.floor(principal + compoundInterest - compoundTax)
-  
+  const compoundFinal = Math.floor(principal + compoundInterest * (1 - 0.165))
   const diff = compoundFinal - simpleFinal
 
   return (
@@ -188,7 +166,6 @@ function CompoundCalc({ format }: any) {
         <div className="bg-slate-100 p-8 rounded-[2.5rem] border-2 border-slate-200">
             <p className="text-[11px] text-slate-400 font-black mb-4 uppercase">Bank Simple (After Tax 16.5%)</p>
             <p className="text-3xl font-black italic">{format(simpleFinal)}원</p>
-            <p className="text-[11px] mt-2 text-slate-400 font-black">매년 원금에 대해서만 이자가 발생합니다.</p>
         </div>
         <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl">
             <p className="text-indigo-200 text-[11px] font-black mb-4 uppercase">Insurance Compound (After Tax 16.5%)</p>

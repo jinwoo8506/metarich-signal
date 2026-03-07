@@ -12,7 +12,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null);
   const [globalNotice, setGlobalNotice] = useState("");
-  const [isNoticeExpanded, setIsNoticeExpanded] = useState(false); // 공지사항 확장 상태
+  const [isNoticeExpanded, setIsNoticeExpanded] = useState(false); 
   const [teamMeta, setTeamMeta] = useState({ targetAmt: 3000, targetCnt: 100, targetIntro: 10, actualIntro: 0 });
   const [isCalcOpen, setIsCalcOpen] = useState(false);
   const [showExportOpt, setShowExportOpt] = useState(false);
@@ -48,12 +48,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       }));
       setAgents(mappedAgents);
 
-      // 전체 활동 합산 계산
+      // 전체 활동 합산 계산 (숫자로 확실하게 변환)
       const totals = mappedAgents.reduce((acc, curr) => ({
-        call: acc.call + (curr.performance.call || 0),
-        meet: acc.meet + (curr.performance.meet || 0),
-        pt: acc.pt + (curr.performance.pt || 0),
-        intro: acc.intro + (curr.performance.intro || 0)
+        call: acc.call + Number(curr.performance.call || 0),
+        meet: acc.meet + Number(curr.performance.meet || 0),
+        pt: acc.pt + Number(curr.performance.pt || 0),
+        intro: acc.intro + Number(curr.performance.intro || 0)
       }), { call: 0, meet: 0, pt: 0, intro: 0 });
       setTotalActivity(totals);
     }
@@ -63,7 +63,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     if (type === 'excel') {
       const wb = XLSX.utils.book_new();
       
-      // 1. 팀 전체 요약 데이터 시트
       const summaryData = [{
         구분: "팀 전체 합계",
         전체전화: totalActivity.call,
@@ -76,16 +75,15 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       const wsSummary = XLSX.utils.json_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, wsSummary, "팀 전체 요약");
 
-      // 2. 직원별 세부 항목 시트
       const detailData = agents.map(a => ({
         성명: a.name,
-        목표금액: a.performance.target_amt,
-        실적금액: a.performance.contract_amt,
-        실적건수: a.performance.contract_cnt,
-        전화: a.performance.call,
-        만남: a.performance.meet,
-        제안: a.performance.pt,
-        소개: a.performance.intro,
+        목표금액: Number(a.performance.target_amt || 0),
+        실적금액: Number(a.performance.contract_amt || 0),
+        실적건수: Number(a.performance.contract_cnt || 0),
+        전화: Number(a.performance.call || 0),
+        만남: Number(a.performance.meet || 0),
+        제안: Number(a.performance.pt || 0),
+        소개: Number(a.performance.intro || 0),
         교육이수: a.performance.edu_status
       }));
       const wsDetail = XLSX.utils.json_to_sheet(detailData);
@@ -96,7 +94,16 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       const doc = new jsPDF();
       (doc as any).autoTable({ 
         head: [['성명', '목표(만)', '실적(만)', '건수', '전화', '만남', '제안', '소개']], 
-        body: agents.map(a => [a.name, a.performance.target_amt, a.performance.contract_amt, a.performance.contract_cnt, a.performance.call, a.performance.meet, a.performance.pt, a.performance.intro]) 
+        body: agents.map(a => [
+          a.name, 
+          Number(a.performance.target_amt || 0), 
+          Number(a.performance.contract_amt || 0), 
+          Number(a.performance.contract_cnt || 0), 
+          Number(a.performance.call || 0), 
+          Number(a.performance.meet || 0), 
+          Number(a.performance.pt || 0), 
+          Number(a.performance.intro || 0)
+        ]) 
       });
       doc.save(`Team_Report_${monthKey}.pdf`);
     }
@@ -105,7 +112,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6">
-      {/* 상단 공지사항: 클릭 시 아래로 확장되어 전체 내용 확인 가능 */}
       <div 
         onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
         className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}
@@ -115,7 +121,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션: 총 4개 버튼 (메타온, 자료실, 업무지원(계산기), 실적 출력) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">메타온</a>
         <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">자료실</a>
@@ -132,7 +137,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -142,7 +146,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 메인 탭 메뉴 (모바일 가독성 최적화) */}
       <div className="grid grid-cols-4 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys'].map(t => (
           <button key={t} onClick={()=>setActiveTab(t)} className={`${activeTab === t ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black py-4 px-1 rounded-2xl text-[10px] md:text-sm italic font-black text-center transition-all`}>
@@ -151,12 +154,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 팀 모니터링 섹션 (직원 리스트) */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
         <div className="space-y-4 md:space-y-6">
           {agents.map(a => {
-            const progress = Math.min(((a.performance.contract_amt || 0) / (a.performance.target_amt || 1)) * 100, 100);
+            const progress = Math.min(((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100, 100);
             return (
               <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4">
                 <div className="flex justify-between items-end">
@@ -164,11 +166,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="flex gap-4 md:gap-10 text-right">
                     <div className="font-black">
                       <p className="text-[8px] md:text-[10px] text-slate-400 uppercase">Goal</p>
-                      <p className="text-[12px] md:text-[15px] italic">{(a.performance.target_amt || 0).toLocaleString()}만</p>
+                      <p className="text-[12px] md:text-[15px] italic">{(Number(a.performance.target_amt) || 0).toLocaleString()}만</p>
                     </div>
                     <div className="font-black">
                       <p className="text-[8px] md:text-[10px] text-indigo-500 uppercase font-black">Actual</p>
-                      <p className="text-[14px] md:text-[18px] text-indigo-600 italic">{(a.performance.contract_amt || 0).toLocaleString()}만</p>
+                      <p className="text-[14px] md:text-[18px] text-indigo-600 italic">{(Number(a.performance.contract_amt) || 0).toLocaleString()}만</p>
                     </div>
                   </div>
                 </div>
@@ -189,7 +191,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 및 모달 모듈 */}
       {activeTab && <AdminPopups type={activeTab} agents={agents} selectedAgent={selectedAgent} teamMeta={teamMeta} onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }} />}
       {isCalcOpen && <CalcModal onClose={() => setIsCalcOpen(false)} />}
     </div>
