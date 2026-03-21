@@ -17,7 +17,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
   const [isToolOpen, setIsToolOpen] = useState(false);
-  const [isCustOpen, setIsCustOpen] = useState(false); // [추가] 고객관리 모달 상태
+  const [isCustOpen, setIsCustOpen] = useState(false); 
   const [avgTab, setAvgTab] = useState('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [viewDetail, setViewDetail] = useState<any>(null);
@@ -33,18 +33,37 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
   };
 
-  // [추가] 구글 시트 실제 전송 로직
-  const handleGoogleSync = async (data: any[]) => {
+  // [수정] 구글 시트 이미지 레이아웃 순서에 맞게 데이터 매핑하여 전송
+  const handleGoogleSync = async (customers: any[]) => {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
-    if (data.length === 0) return alert("전송할 데이터가 없습니다.");
+    
+    if (customers.length === 0) return alert("전송할 데이터가 없습니다.");
+
+    // 이미지의 엑셀 컬럼 순서대로 데이터 재구성
+    const mappedData = customers.map(c => ({
+      name: c.name || "",            // 성함
+      phone: c.phone || "",          // 연락처
+      contract_date: c.contract_date || "", // 계약일자
+      payment_day: c.payment_day || "",   // 수금날짜
+      birth: c.birth || "",          // 생년월일
+      family: c.family || "",        // 가족
+      etc1: "",                      // (공란 - 이미지상 4차 등)
+      relation: "",                  // 관계
+      status: c.status || "유지",     // 상태
+      monthly_pay: c.monthly_pay || 0, // 월납
+      insu_company: c.insu_company || "", // 보험사
+      gift: c.gift || "",            // 증권 및 선물 증정
+      contract_type: c.contract_type || "체결" // 체결여부
+    }));
+
     try {
       await fetch(GAS_URL, {
         method: "POST",
         mode: "no-cors", 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(mappedData),
       });
-      alert(`🚀 성공! ${data.length}명의 데이터를 구글 시트로 보냈습니다.`);
+      alert(`🚀 성공! ${customers.length}명의 고객 데이터를 구글 시트에 기록했습니다.`);
       setIsCustOpen(false);
     } catch (error) {
       console.error("Sync Error:", error);
@@ -152,7 +171,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
-          {/* [추가] 고객관리 버튼 */}
           <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
         </div>
@@ -166,9 +184,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* 매출/건수 입력 필드 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black text-black">
-            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black text-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액(만)</p>
               <div className="flex gap-2 font-black">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
@@ -184,7 +201,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          {/* 활동 지표 입력 필드 */}
           <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 text-black">
             <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
             <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
@@ -194,7 +210,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
-          {/* 블랙 섹션: 평균 및 기록 분석 (원본 유지) */}
+          {/* 블랙 섹션 (원본 보존) */}
           <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl space-y-8">
             <div>
               <div className="flex gap-4 mb-6 border-b border-white/10 pb-4 font-black">
@@ -202,13 +218,13 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                 <button onClick={()=>setAvgTab('act')} className={`text-[14px] italic font-black transition-all ${avgTab==='act' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 활동</button>
               </div>
               {avgTab === 'perf' ? (
-                <div className="grid grid-cols-3 gap-3 md:gap-4 font-black">
+                <div className="grid grid-cols-3 gap-3 md:gap-4 font-black text-center">
                   <AvgBox label="평균 매출" val={`${avgData.amt.toLocaleString()}만`} />
                   <AvgBox label="평균 건수" val={`${avgData.cnt}건`} />
                   <AvgBox label="건당 매출" val={`${avgData.perAmt.toLocaleString()}만`} />
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 font-black">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 font-black text-center">
                   <AvgBox label="전화" val={`${avgData.call}회`} />
                   <AvgBox label="만남" val={`${avgData.meet}회`} />
                   <AvgBox label="제안" val={`${avgData.pt}회`} />
@@ -232,7 +248,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                 </div>
               </div>
 
-              {/* 상세 분석 브리핑 (원본 유지) */}
               {viewDetail && (
                 <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300 font-black">
                   <div className="flex justify-between items-center mb-6">
@@ -263,7 +278,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 교육 탭 (원본 유지) */}
       {mainTab === 'edu' && (
         <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 font-black text-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
@@ -292,7 +306,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       )}
 
       {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
-      {/* [추가] 고객관리 모달 연결 */}
       {isCustOpen && (
         <CustomerManagerModal 
           onClose={() => setIsCustOpen(false)} 
@@ -303,7 +316,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-// 상세 분석 전용 박스
 function DetailBox({ label, val, color = "text-white" }: any) {
   return (
     <div className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
@@ -313,7 +325,6 @@ function DetailBox({ label, val, color = "text-white" }: any) {
   )
 }
 
-// 평균 정보 박스
 function AvgBox({ label, val }: any) { 
   return (
     <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 font-black flex flex-col justify-center items-center min-h-[80px]">
@@ -323,7 +334,6 @@ function AvgBox({ label, val }: any) {
   ) 
 }
 
-// 퀵버튼 공용 컴포넌트 (스타일 수정)
 function QuickBtn({ label, url, onClick, color, className }: any) { 
   const handleClick = () => { if (onClick) onClick(); else if (url && url !== "#") window.open(url, "_blank"); };
   return (
@@ -333,7 +343,6 @@ function QuickBtn({ label, url, onClick, color, className }: any) {
   )
 }
 
-// 수치 입력 필드 공용 컴포넌트
 function MetricInput({ label, val, onChange, color }: any) { 
   return (
     <div className="space-y-1 text-center font-black">
