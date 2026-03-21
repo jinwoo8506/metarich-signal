@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
 import CalcModal from "./CalcModal"
+import CustomerManagerModal from "./CustomerManagerModal"
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [mainTab, setMainTab] = useState<'input' | 'edu'>('input');
@@ -16,10 +17,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
   const [isToolOpen, setIsToolOpen] = useState(false);
+  const [isCustOpen, setIsCustOpen] = useState(false); // 🌟 고객관리 모달 상태 추가
   const [avgTab, setAvgTab] = useState('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
   
-  // 상세 분석 대상 데이터 상태
   const [viewDetail, setViewDetail] = useState<any>(null);
 
   const year = selectedDate.getFullYear();
@@ -69,9 +70,16 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     if (error) console.error("History fetch error:", error);
   }
 
+  // 🌟 구글 시트 동기화 핸들러 추가
+  const handleGoogleSync = async (data: any[]) => {
+    console.log("Syncing to Google:", data);
+    // 향후 Google Sheets API 연동 로직이 들어갈 자리입니다.
+    alert(`${data.length}명의 고객 데이터가 성공적으로 분석되었습니다. 구글 시트 전송 기능을 준비 중입니다.`);
+    setIsCustOpen(false);
+  };
+
   const avgData = useMemo(() => {
     const d = new Date(selectedDate);
-    // 현재 선택된 달을 포함하여 최근 3개월의 데이터를 계산하도록 범위를 조정합니다.
     const startRange = new Date(d.getFullYear(), d.getMonth() - 2, 1); 
     const endRange = new Date(d.getFullYear(), d.getMonth() + 1, 1);
 
@@ -91,7 +99,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       intro: acc.intro + (Number(curr.intro) || 0)
     }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
 
-    // 데이터가 있는 개월 수만큼 나누어 평균을 구합니다 (최대 3개월)
     const divisor = filtered.length > 0 ? filtered.length : 3;
 
     return {
@@ -137,7 +144,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     if (error) alert("저장 실패: " + error.message);
     else { 
       if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`); 
-      // 🌟 순차적으로 데이터를 다시 불러와서 상태를 동기화합니다.
       await fetchData(); 
       await fetchAllHistory();
     }
@@ -154,7 +160,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       </div>
 
       {/* 헤더/퀵링크 */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black shadow-sm">
         <div className="flex items-center gap-3 shrink-0">
           <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
         </div>
@@ -162,6 +168,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
+          {/* 🌟 고객관리 버튼 추가 */}
+          <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none shadow-md" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
         </div>
       </div>
@@ -174,7 +182,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* 매출/건수 입력 필드 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
             <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액(만)</p>
@@ -192,8 +199,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          {/* 활동 지표 입력 필드 */}
-          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 shadow-sm">
             <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
             <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
             <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
@@ -202,9 +208,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
-          {/* 블랙 섹션: 평균 및 기록 분석 */}
           <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl space-y-8">
-            {/* 평균 데이터 영역 */}
             <div>
               <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
                 <button onClick={()=>setAvgTab('perf')} className={`text-[14px] italic font-black transition-all ${avgTab==='perf' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 실적</button>
@@ -226,7 +230,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               )}
             </div>
 
-            {/* 기록(기네스/워스트) 영역 */}
             <div className="pt-4 border-t border-white/10">
               <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest">Personal Records</p>
               <div className="grid grid-cols-2 gap-4">
@@ -257,7 +260,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                 </div>
               </div>
 
-              {/* [확장됨] 8가지 모든 지표가 포함된 상세 분석 브리핑 */}
               {viewDetail && (
                 <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300">
                   <div className="flex justify-between items-center mb-6">
@@ -268,15 +270,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {/* 실적 지표 */}
                     <DetailBox label="매출액" val={`${viewDetail.contract_amt.toLocaleString()}만`} color="text-[#d4af37]" />
                     <DetailBox label="계약건" val={`${viewDetail.contract_cnt}건`} color="text-[#d4af37]" />
-                    {/* 활동 지표 */}
                     <DetailBox label="전화" val={`${viewDetail.call}회`} />
                     <DetailBox label="만남" val={`${viewDetail.meet}회`} />
                     <DetailBox label="제안" val={`${viewDetail.pt}회`} />
                     <DetailBox label="소개" val={`${viewDetail.intro}회`} />
-                    {/* DB 지표 */}
                     <DetailBox label="DB배정" val={`${viewDetail.db_assigned}개`} color="text-blue-400" />
                     <DetailBox label="DB반품" val={`${viewDetail.db_returned}개`} color="text-rose-400" />
                   </div>
@@ -297,7 +296,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 교육 탭 */}
       {mainTab === 'edu' && (
         <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 font-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
@@ -327,11 +325,18 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       )}
 
       {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
+      
+      {/* 🌟 고객관리 모달 연결 */}
+      {isCustOpen && (
+        <CustomerManagerModal 
+          onClose={() => setIsCustOpen(false)} 
+          onSaveToGoogle={handleGoogleSync} 
+        />
+      )}
     </div>
   )
 }
 
-// 상세 수치 박스 컴포넌트
 function DetailBox({ label, val, color = "text-white" }: any) {
   return (
     <div className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
@@ -341,7 +346,6 @@ function DetailBox({ label, val, color = "text-white" }: any) {
   )
 }
 
-// 기타 서브 컴포넌트들
 function AvgBox({ label, val }: any) { 
   return (
     <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 font-black flex flex-col justify-center items-center min-h-[80px]">
