@@ -71,8 +71,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   const avgData = useMemo(() => {
     const d = new Date(selectedDate);
-    const startRange = new Date(d.getFullYear(), d.getMonth() - 3, 1);
-    const endRange = new Date(d.getFullYear(), d.getMonth(), 1);
+    // 현재 선택된 달을 포함하여 최근 3개월의 데이터를 계산하도록 범위를 조정합니다.
+    const startRange = new Date(d.getFullYear(), d.getMonth() - 2, 1); 
+    const endRange = new Date(d.getFullYear(), d.getMonth() + 1, 1);
 
     const filtered = historyData.filter(item => {
       const itemDate = new Date(item.date);
@@ -90,14 +91,17 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       intro: acc.intro + (Number(curr.intro) || 0)
     }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
 
+    // 데이터가 있는 개월 수만큼 나누어 평균을 구합니다 (최대 3개월)
+    const divisor = filtered.length > 0 ? filtered.length : 3;
+
     return {
-      amt: Math.round(sum.amt / 3),
-      cnt: Number((sum.cnt / 3).toFixed(1)),
+      amt: Math.round(sum.amt / divisor),
+      cnt: Number((sum.cnt / divisor).toFixed(1)),
       perAmt: sum.cnt > 0 ? Math.round(sum.amt / sum.cnt) : 0,
-      call: Math.round(sum.call / 3),
-      meet: Math.round(sum.meet / 3),
-      pt: Math.round(sum.pt / 3),
-      intro: Math.round(sum.intro / 3)
+      call: Math.round(sum.call / divisor),
+      meet: Math.round(sum.meet / divisor),
+      pt: Math.round(sum.pt / divisor),
+      intro: Math.round(sum.intro / divisor)
     };
   }, [historyData, selectedDate]);
 
@@ -133,8 +137,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     if (error) alert("저장 실패: " + error.message);
     else { 
       if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`); 
-      fetchData(); 
-      fetchAllHistory();
+      // 🌟 순차적으로 데이터를 다시 불러와서 상태를 동기화합니다.
+      await fetchData(); 
+      await fetchAllHistory();
     }
   };
 
