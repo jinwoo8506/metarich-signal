@@ -38,13 +38,15 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
   // 3개월 평균 실적 조회 로직 수정
   async function fetch3MonthAvg() {
     const d = new Date(selectedDate);
-    // 3개월 전 1일부터 현재 달 1일까지 설정
-    const startOfRange = new Date(d.getFullYear(), d.getMonth() - 3, 1).toISOString().split('T')[0];
-    const endOfRange = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+    // 🌟 수정: 현재 선택된 달(이번 달)을 포함하여 3개월 데이터를 가져오기 위해 범위를 조정합니다.
+    // 시작일: 현재 달 기준 2개월 전 1일 (총 3개월분: 전전달, 전달, 이번달)
+    const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
+    // 종료일: 현재 달의 다음 달 1일 미만 (즉, 현재 달 말일까지 포함)
+    const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
 
     let query = supabase
       .from("daily_perf")
-      .select("contract_amt, contract_cnt, user_id")
+      .select("contract_amt, contract_cnt, user_id, date")
       .gte("date", startOfRange)
       .lt("date", endOfRange);
 
@@ -58,10 +60,14 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
       const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
       
-      // 3개월 평균이므로 합계를 3으로 나눔
+      // 🌟 데이터가 존재하는 개월 수를 체크하여 더 정확한 평균을 산출합니다.
+      // (데이터가 1개월치만 있으면 1로 나누고, 3개월치가 다 있으면 3으로 나눕니다.)
+      const uniqueMonths = new Set(data.map(item => item.date.substring(0, 7))).size;
+      const divisor = uniqueMonths > 0 ? uniqueMonths : 3;
+
       setThreeMonthAvg({ 
-        amt: Math.round(totalAmt / 3), 
-        cnt: Number((totalCnt / 3).toFixed(1)) 
+        amt: Math.round(totalAmt / divisor), 
+        cnt: Number((totalCnt / divisor).toFixed(1)) 
       });
     } else {
       setThreeMonthAvg({ amt: 0, cnt: 0 });
