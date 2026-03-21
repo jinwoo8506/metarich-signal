@@ -17,10 +17,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
   const [isToolOpen, setIsToolOpen] = useState(false);
-  const [isCustOpen, setIsCustOpen] = useState(false); 
+  const [isCustOpen, setIsCustOpen] = useState(false); // [추가] 고객관리 모달 상태
   const [avgTab, setAvgTab] = useState('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
-  
   const [viewDetail, setViewDetail] = useState<any>(null);
 
   const year = selectedDate.getFullYear();
@@ -34,6 +33,25 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
   };
 
+  // [추가] 구글 시트 실제 전송 로직
+  const handleGoogleSync = async (data: any[]) => {
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
+    if (data.length === 0) return alert("전송할 데이터가 없습니다.");
+    try {
+      await fetch(GAS_URL, {
+        method: "POST",
+        mode: "no-cors", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      alert(`🚀 성공! ${data.length}명의 데이터를 구글 시트로 보냈습니다.`);
+      setIsCustOpen(false);
+    } catch (error) {
+      console.error("Sync Error:", error);
+      alert("전송 중 오류가 발생했습니다.");
+    }
+  };
+
   useEffect(() => { 
     fetchData();
     fetchAllHistory();
@@ -42,15 +60,11 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   async function fetchData() {
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
-    
     const savedEdu = settings?.find(s => s.key === 'edu_content')?.value;
     if (savedEdu) {
       try { setEduWeeks(JSON.parse(savedEdu)); } catch (e) { setEduWeeks({ 1: savedEdu, 2: "", 3: "", 4: "", 5: "" }); }
     }
-
-    const { data: perf } = await supabase.from("daily_perf")
-      .select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
-
+    const { data: perf } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).eq("date", monthKey).maybeSingle();
     if (perf) setPerfInput(prev => ({ ...prev, ...perf }));
     else setPerfInput({ 
       call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0, 
@@ -61,48 +75,20 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   }
 
   async function fetchAllHistory() {
-    const { data, error } = await supabase.from("daily_perf")
-      .select("*")
-      .eq("user_id", user.id)
-      .order('date', { ascending: false });
-    
+    const { data, error } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).order('date', { ascending: false });
     if (data) setHistoryData(data);
     if (error) console.error("History fetch error:", error);
   }
-
-  // 🌟 구글 시트 실제 연동 함수 (전송 로직 구현)
-  const handleGoogleSync = async (data: any[]) => {
-    const GAS_URL = "https://script.google.com/macros/s/AKfycby0gLqlk1uoNDaFj9ckHSvuhbMFpiqkBL0il4nRwgvVeohw_JPqKfWEE4lssFmPXKjfYA/exec";
-
-    try {
-      // 전송 중임을 알리기 위해 모달은 유지하거나 로딩 표시를 할 수 있습니다.
-      const response = await fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors", // GAS 특성상 no-cors 설정이 필요할 수 있습니다.
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      alert(`🚀 ${data.length}명의 고객 데이터가 구글 시트로 전송되었습니다.\n(시트를 확인해 보세요!)`);
-      setIsCustOpen(false);
-    } catch (error) {
-      console.error("Google Sync Error:", error);
-      alert("전송 중 오류가 발생했습니다. 네트워크 상태나 스크립트 설정을 확인해 주세요.");
-    }
-  };
 
   const avgData = useMemo(() => {
     const d = new Date(selectedDate);
     const startRange = new Date(d.getFullYear(), d.getMonth() - 2, 1); 
     const endRange = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-
     const filtered = historyData.filter(item => {
       const itemDate = new Date(item.date);
       return itemDate >= startRange && itemDate < endRange;
     });
-
     if (filtered.length === 0) return { amt: 0, cnt: 0, perAmt: 0, call: 0, meet: 0, pt: 0, intro: 0 };
-    
     const sum = filtered.reduce((acc, curr) => ({
       amt: acc.amt + (Number(curr.contract_amt) || 0),
       cnt: acc.cnt + (Number(curr.contract_cnt) || 0),
@@ -111,9 +97,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       pt: acc.pt + (Number(curr.pt) || 0),
       intro: acc.intro + (Number(curr.intro) || 0)
     }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
-
     const divisor = filtered.length > 0 ? filtered.length : 3;
-
     return {
       amt: Math.round(sum.amt / divisor),
       cnt: Number((sum.cnt / divisor).toFixed(1)),
@@ -128,44 +112,31 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const records = useMemo(() => {
     if (historyData.length === 0) return { best: null, worst: null };
     const sorted = [...historyData].sort((a, b) => (Number(b.contract_amt) || 0) - (Number(a.contract_amt) || 0));
-    return {
-      best: sorted[0],
-      worst: sorted[sorted.length - 1]
-    };
+    return { best: sorted[0], worst: sorted[sorted.length - 1] };
   }, [historyData]);
 
   const handleSave = async (customField?: object) => {
     const rawPayload = customField ? { ...perfInput, ...customField } : perfInput;
     const payload = {
       ...rawPayload,
-      call: Number(rawPayload.call || 0),
-      meet: Number(rawPayload.meet || 0),
-      pt: Number(rawPayload.pt || 0),
-      intro: Number(rawPayload.intro || 0),
-      db_assigned: Number(rawPayload.db_assigned || 0),
-      db_returned: Number(rawPayload.db_returned || 0),
-      contract_cnt: Number(rawPayload.contract_cnt || 0),
-      contract_amt: Number(rawPayload.contract_amt || 0),
-      target_cnt: Number(rawPayload.target_cnt || 0),
-      target_amt: Number(rawPayload.target_amt || 0)
+      call: Number(rawPayload.call || 0), meet: Number(rawPayload.meet || 0),
+      pt: Number(rawPayload.pt || 0), intro: Number(rawPayload.intro || 0),
+      db_assigned: Number(rawPayload.db_assigned || 0), db_returned: Number(rawPayload.db_returned || 0),
+      contract_cnt: Number(rawPayload.contract_cnt || 0), contract_amt: Number(rawPayload.contract_amt || 0),
+      target_cnt: Number(rawPayload.target_cnt || 0), target_amt: Number(rawPayload.target_amt || 0)
     };
-
-    const { error } = await supabase.from("daily_perf").upsert({ 
-      ...payload, user_id: user.id, date: monthKey
-    }, { onConflict: 'user_id, date' });
-    
+    const { error } = await supabase.from("daily_perf").upsert({ ...payload, user_id: user.id, date: monthKey }, { onConflict: 'user_id, date' });
     if (error) alert("저장 실패: " + error.message);
     else { 
       if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`); 
-      await fetchData(); 
-      await fetchAllHistory();
+      await fetchData(); await fetchAllHistory();
     }
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black text-black">
+    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
       {/* 상단 공지 */}
-      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black shadow-sm">
+      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[12px] italic shrink-0 font-black">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
           <div className="absolute whitespace-nowrap animate-marquee text-[14px] text-black italic font-black">{globalNotice}</div>
@@ -173,7 +144,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       </div>
 
       {/* 헤더/퀵링크 */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border-2 border-black font-black shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black">
         <div className="flex items-center gap-3 shrink-0">
           <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
         </div>
@@ -181,7 +152,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
-          <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none shadow-md" />
+          {/* [추가] 고객관리 버튼 */}
+          <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
         </div>
       </div>
@@ -194,15 +166,16 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
-            <div className="bg-white p-6 rounded-[2.5rem] border-2 border-black shadow-sm space-y-4 font-black">
+          {/* 매출/건수 입력 필드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black text-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액(만)</p>
               <div className="flex gap-2 font-black">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
                 <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100 outline-none" />
               </div>
             </div>
-            <div className="bg-white p-6 rounded-[2.5rem] border-2 border-black shadow-sm space-y-4 font-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black text-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적건</p>
               <div className="flex gap-2 font-black">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
@@ -211,7 +184,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-black font-black grid grid-cols-3 md:grid-cols-6 gap-3 shadow-sm">
+          {/* 활동 지표 입력 필드 */}
+          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 text-black">
             <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
             <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
             <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
@@ -220,9 +194,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
+          {/* 블랙 섹션: 평균 및 기록 분석 (원본 유지) */}
           <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl space-y-8">
             <div>
-              <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
+              <div className="flex gap-4 mb-6 border-b border-white/10 pb-4 font-black">
                 <button onClick={()=>setAvgTab('perf')} className={`text-[14px] italic font-black transition-all ${avgTab==='perf' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 실적</button>
                 <button onClick={()=>setAvgTab('act')} className={`text-[14px] italic font-black transition-all ${avgTab==='act' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 활동</button>
               </div>
@@ -242,23 +217,24 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               )}
             </div>
 
-            <div className="pt-4 border-t border-white/10">
-              <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest">Personal Records</p>
+            <div className="pt-4 border-t border-white/10 font-black">
+              <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest font-black">Personal Records</p>
               <div className="grid grid-cols-2 gap-4">
                 <div onClick={() => setViewDetail(records.best)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.best?.date ? 'bg-[#d4af37] border-white' : 'bg-white/5 border-white/10'}`}>
-                  <p className={`text-[10px] mb-1 uppercase ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-[#d4af37]'}`}>🏆 GUINNESS</p>
+                  <p className={`text-[10px] mb-1 uppercase font-black ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-[#d4af37]'}`}>🏆 GUINNESS</p>
                   <p className={`text-[18px] font-black italic ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${new Date(records.best.date).getMonth() + 1}월` : '-'}</p>
-                  <p className={`text-[12px] opacity-60 ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
+                  <p className={`text-[12px] opacity-60 font-black ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
                 <div onClick={() => setViewDetail(records.worst)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.worst?.date ? 'bg-rose-500 border-white' : 'bg-white/5 border-white/10'}`}>
-                  <p className={`text-[10px] mb-1 uppercase ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-rose-400'}`}>📉 LOWEST</p>
+                  <p className={`text-[10px] mb-1 uppercase font-black ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-rose-400'}`}>📉 LOWEST</p>
                   <p className={`text-[18px] font-black italic ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${new Date(records.worst.date).getMonth() + 1}월` : '-'}</p>
-                  <p className={`text-[12px] opacity-60 ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
+                  <p className={`text-[12px] opacity-60 font-black ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
               </div>
 
+              {/* 상세 분석 브리핑 (원본 유지) */}
               {viewDetail && (
-                <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300">
+                <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300 font-black">
                   <div className="flex justify-between items-center mb-6">
                     <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">{new Date(viewDetail.date).getMonth() + 1}월 정밀 활동 레포트</p>
                     <button onClick={() => setViewDetail(null)} className="text-[10px] opacity-40 uppercase bg-black px-3 py-1 rounded-full border border-white/20">Close</button>
@@ -273,22 +249,27 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                     <DetailBox label="DB배정" val={`${viewDetail.db_assigned}개`} color="text-blue-400" />
                     <DetailBox label="DB반품" val={`${viewDetail.db_returned}개`} color="text-rose-400" />
                   </div>
+                  <div className="mt-6 p-4 bg-black/40 rounded-2xl border border-white/5">
+                    <p className="text-[11px] text-white/70 leading-relaxed italic break-keep font-black">
+                      💡 {new Date(viewDetail.date).getMonth() + 1}월의 복기: <br/>
+                      이 달은 <span className="text-white font-black">{viewDetail.call}회의 콜</span>과 <span className="text-white font-black">{viewDetail.meet}번의 미팅</span>을 통해 <span className="text-[#d4af37] font-black">{viewDetail.contract_amt.toLocaleString()}만원</span>을 달성했습니다. 
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
-
-          <button onClick={() => handleSave()} className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-[20px] shadow-2xl italic uppercase hover:bg-slate-800 transition-colors border-2 border-black">Save & Update Record</button>
+          <button onClick={() => handleSave()} className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-[20px] shadow-2xl italic uppercase hover:bg-slate-800 transition-colors">Save & Update Record</button>
         </div>
       )}
 
+      {/* 교육 탭 (원본 유지) */}
       {mainTab === 'edu' && (
         <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 font-black text-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
             <h2 className="text-2xl md:text-3xl italic uppercase font-black">Weekly Training</h2>
           </div>
           <div className="bg-slate-50 p-4 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 font-black space-y-4">
-            <p className="text-[10px] md:text-xs text-slate-400 uppercase mb-2 tracking-widest font-black italic">Weekly Curriculum</p>
             <div className="grid grid-cols-1 gap-3 md:gap-4">
               {[1, 2, 3, 4, 5].map((w) => {
                 const fieldName = `edu_${w}` as keyof typeof perfInput;
@@ -311,7 +292,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       )}
 
       {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
-      
+      {/* [추가] 고객관리 모달 연결 */}
       {isCustOpen && (
         <CustomerManagerModal 
           onClose={() => setIsCustOpen(false)} 
@@ -322,6 +303,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
+// 상세 분석 전용 박스
 function DetailBox({ label, val, color = "text-white" }: any) {
   return (
     <div className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
@@ -331,6 +313,7 @@ function DetailBox({ label, val, color = "text-white" }: any) {
   )
 }
 
+// 평균 정보 박스
 function AvgBox({ label, val }: any) { 
   return (
     <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 font-black flex flex-col justify-center items-center min-h-[80px]">
@@ -340,6 +323,7 @@ function AvgBox({ label, val }: any) {
   ) 
 }
 
+// 퀵버튼 공용 컴포넌트 (스타일 수정)
 function QuickBtn({ label, url, onClick, color, className }: any) { 
   const handleClick = () => { if (onClick) onClick(); else if (url && url !== "#") window.open(url, "_blank"); };
   return (
@@ -349,18 +333,12 @@ function QuickBtn({ label, url, onClick, color, className }: any) {
   )
 }
 
+// 수치 입력 필드 공용 컴포넌트
 function MetricInput({ label, val, onChange, color }: any) { 
   return (
     <div className="space-y-1 text-center font-black">
       <label className="text-[11px] text-slate-400 font-black">{label}</label>
-      <input 
-        type="number" 
-        inputMode="numeric"
-        value={val === 0 ? '' : val} 
-        placeholder="0"
-        onChange={e=>onChange(Number(e.target.value))} 
-        className={`w-full p-3 md:p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl text-center text-[16px] md:text-[18px] font-black outline-none transition-all ${color}`} 
-      />
+      <input type="number" inputMode="numeric" value={val === 0 ? '' : val} placeholder="0" onChange={e=>onChange(Number(e.target.value))} className={`w-full p-3 md:p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl text-center text-[16px] md:text-[18px] font-black outline-none transition-all ${color}`} />
     </div>
   ) 
 }
