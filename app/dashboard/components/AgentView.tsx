@@ -17,7 +17,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
   const [isToolOpen, setIsToolOpen] = useState(false);
-  const [isCustOpen, setIsCustOpen] = useState(false); // 🌟 고객관리 모달 상태 추가
+  const [isCustOpen, setIsCustOpen] = useState(false); 
   const [avgTab, setAvgTab] = useState('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
   
@@ -70,12 +70,25 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     if (error) console.error("History fetch error:", error);
   }
 
-  // 🌟 구글 시트 동기화 핸들러 추가
+  // 🌟 구글 시트 실제 연동 함수 (전송 로직 구현)
   const handleGoogleSync = async (data: any[]) => {
-    console.log("Syncing to Google:", data);
-    // 향후 Google Sheets API 연동 로직이 들어갈 자리입니다.
-    alert(`${data.length}명의 고객 데이터가 성공적으로 분석되었습니다. 구글 시트 전송 기능을 준비 중입니다.`);
-    setIsCustOpen(false);
+    const GAS_URL = "https://script.google.com/macros/s/AKfycby0gLqlk1uoNDaFj9ckHSvuhbMFpiqkBL0il4nRwgvVeohw_JPqKfWEE4lssFmPXKjfYA/exec";
+
+    try {
+      // 전송 중임을 알리기 위해 모달은 유지하거나 로딩 표시를 할 수 있습니다.
+      const response = await fetch(GAS_URL, {
+        method: "POST",
+        mode: "no-cors", // GAS 특성상 no-cors 설정이 필요할 수 있습니다.
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      alert(`🚀 ${data.length}명의 고객 데이터가 구글 시트로 전송되었습니다.\n(시트를 확인해 보세요!)`);
+      setIsCustOpen(false);
+    } catch (error) {
+      console.error("Google Sync Error:", error);
+      alert("전송 중 오류가 발생했습니다. 네트워크 상태나 스크립트 설정을 확인해 주세요.");
+    }
   };
 
   const avgData = useMemo(() => {
@@ -150,9 +163,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
+    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black text-black">
       {/* 상단 공지 */}
-      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black">
+      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black shadow-sm">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[12px] italic shrink-0 font-black">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
           <div className="absolute whitespace-nowrap animate-marquee text-[14px] text-black italic font-black">{globalNotice}</div>
@@ -160,7 +173,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       </div>
 
       {/* 헤더/퀵링크 */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border-2 border-black font-black shadow-sm">
         <div className="flex items-center gap-3 shrink-0">
           <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
         </div>
@@ -168,7 +181,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" className="hidden md:block" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
-          {/* 🌟 고객관리 버튼 추가 */}
           <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none shadow-md" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
         </div>
@@ -183,23 +195,23 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
-            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border-2 border-black shadow-sm space-y-4 font-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액(만)</p>
               <div className="flex gap-2 font-black">
-                <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black" />
-                <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100" />
+                <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
+                <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100 outline-none" />
               </div>
             </div>
-            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border-2 border-black shadow-sm space-y-4 font-black">
               <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적건</p>
               <div className="flex gap-2 font-black">
-                <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black" />
-                <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center text-[18px] font-black border border-emerald-100" />
+                <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
+                <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center text-[18px] font-black border border-emerald-100 outline-none" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 shadow-sm">
+          <div className="bg-white p-8 rounded-[2.5rem] border-2 border-black font-black grid grid-cols-3 md:grid-cols-6 gap-3 shadow-sm">
             <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
             <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
             <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
@@ -233,42 +245,24 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <div className="pt-4 border-t border-white/10">
               <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest">Personal Records</p>
               <div className="grid grid-cols-2 gap-4">
-                <div 
-                  onClick={() => setViewDetail(records.best)}
-                  className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.best?.date ? 'bg-[#d4af37] border-white' : 'bg-white/5 border-white/10'}`}
-                >
+                <div onClick={() => setViewDetail(records.best)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.best?.date ? 'bg-[#d4af37] border-white' : 'bg-white/5 border-white/10'}`}>
                   <p className={`text-[10px] mb-1 uppercase ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-[#d4af37]'}`}>🏆 GUINNESS</p>
-                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>
-                    {records.best ? `${new Date(records.best.date).getMonth() + 1}월` : '-'}
-                  </p>
-                  <p className={`text-[12px] opacity-60 ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>
-                    {records.best ? `${records.best.contract_amt.toLocaleString()}만` : '데이터 없음'}
-                  </p>
+                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${new Date(records.best.date).getMonth() + 1}월` : '-'}</p>
+                  <p className={`text-[12px] opacity-60 ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
-
-                <div 
-                  onClick={() => setViewDetail(records.worst)}
-                  className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.worst?.date ? 'bg-rose-500 border-white' : 'bg-white/5 border-white/10'}`}
-                >
+                <div onClick={() => setViewDetail(records.worst)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.worst?.date ? 'bg-rose-500 border-white' : 'bg-white/5 border-white/10'}`}>
                   <p className={`text-[10px] mb-1 uppercase ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-rose-400'}`}>📉 LOWEST</p>
-                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>
-                    {records.worst ? `${new Date(records.worst.date).getMonth() + 1}월` : '-'}
-                  </p>
-                  <p className={`text-[12px] opacity-60 ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>
-                    {records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : '데이터 없음'}
-                  </p>
+                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${new Date(records.worst.date).getMonth() + 1}월` : '-'}</p>
+                  <p className={`text-[12px] opacity-60 ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
               </div>
 
               {viewDetail && (
                 <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300">
                   <div className="flex justify-between items-center mb-6">
-                    <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">
-                      {new Date(viewDetail.date).getMonth() + 1}월 정밀 활동 레포트
-                    </p>
+                    <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">{new Date(viewDetail.date).getMonth() + 1}월 정밀 활동 레포트</p>
                     <button onClick={() => setViewDetail(null)} className="text-[10px] opacity-40 uppercase bg-black px-3 py-1 rounded-full border border-white/20">Close</button>
                   </div>
-                  
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <DetailBox label="매출액" val={`${viewDetail.contract_amt.toLocaleString()}만`} color="text-[#d4af37]" />
                     <DetailBox label="계약건" val={`${viewDetail.contract_cnt}건`} color="text-[#d4af37]" />
@@ -279,25 +273,17 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                     <DetailBox label="DB배정" val={`${viewDetail.db_assigned}개`} color="text-blue-400" />
                     <DetailBox label="DB반품" val={`${viewDetail.db_returned}개`} color="text-rose-400" />
                   </div>
-
-                  <div className="mt-6 p-4 bg-black/40 rounded-2xl border border-white/5">
-                    <p className="text-[11px] text-white/70 leading-relaxed italic break-keep">
-                      💡 {new Date(viewDetail.date).getMonth() + 1}월의 복기: <br/>
-                      이 달은 <span className="text-white font-black">{viewDetail.call}회의 콜</span>과 <span className="text-white font-black">{viewDetail.meet}번의 미팅</span>을 통해 <span className="text-[#d4af37] font-black">{viewDetail.contract_amt.toLocaleString()}만원</span>을 달성했습니다. 
-                      당시의 DB 활용도(<span className="text-blue-400">{viewDetail.db_assigned}개</span>)를 참고하여 다음 전략을 세워보세요.
-                    </p>
-                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          <button onClick={() => handleSave()} className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-[20px] shadow-2xl italic uppercase hover:bg-slate-800 transition-colors">Save & Update Record</button>
+          <button onClick={() => handleSave()} className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-[20px] shadow-2xl italic uppercase hover:bg-slate-800 transition-colors border-2 border-black">Save & Update Record</button>
         </div>
       )}
 
       {mainTab === 'edu' && (
-        <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 font-black">
+        <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 font-black text-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
             <h2 className="text-2xl md:text-3xl italic uppercase font-black">Weekly Training</h2>
           </div>
@@ -326,7 +312,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
       
-      {/* 🌟 고객관리 모달 연결 */}
       {isCustOpen && (
         <CustomerManagerModal 
           onClose={() => setIsCustOpen(false)} 
@@ -358,7 +343,7 @@ function AvgBox({ label, val }: any) {
 function QuickBtn({ label, url, onClick, color, className }: any) { 
   const handleClick = () => { if (onClick) onClick(); else if (url && url !== "#") window.open(url, "_blank"); };
   return (
-    <button onClick={handleClick} className={`${color} ${className || ""} px-4 md:px-5 py-2.5 rounded-xl font-black text-[11px] md:text-[12px] border shadow-sm shrink-0 transition-transform active:scale-95`}>
+    <button onClick={handleClick} className={`${color} ${className || ""} px-4 md:px-5 py-2.5 rounded-xl font-black text-[11px] md:text-[12px] border-2 border-black shadow-sm shrink-0 transition-transform active:scale-95`}>
       {label}
     </button> 
   )
