@@ -24,13 +24,13 @@
   --radius-sm:9px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-html{font-size:16px;}
+html{font-size:20px;}
 body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t1);min-height:100vh;}
 
 /* ─── HEADER ──────────────────────────────── */
 .hdr{
   background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);
-  height:58px;display:flex;align-items:center;justify-content:space-between;
+  height:66px;display:flex;align-items:center;justify-content:space-between;
   padding:0 24px;position:sticky;top:0;z-index:50;
   box-shadow:0 2px 20px rgba(0,0,0,.35);
   border-bottom:1px solid rgba(255,255,255,.07);
@@ -43,8 +43,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
   border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;
   box-shadow:0 2px 8px rgba(200,164,90,.4);
 }
-.hdr-title{font-family:'Noto Serif KR',serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:-.3px;}
-.hdr-sub{font-size:10px;color:var(--gold2);letter-spacing:1.5px;text-transform:uppercase;opacity:.8;margin-top:1px;}
+.hdr-title{font-family:'Noto Serif KR',serif;font-size:19px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.hdr-sub{font-size:11px;color:var(--gold2);letter-spacing:1.5px;text-transform:uppercase;opacity:.8;margin-top:1px;}
 .hdr-btns{display:flex;gap:8px;align-items:center;}
 .hbtn{
   padding:7px 16px;border-radius:7px;font-size:13px;font-weight:700;
@@ -60,7 +60,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 /* 메인 페이지 (입력) */
 .main-page{
   display:flex;flex-direction:column;
-  height:calc(100vh - 58px);
+  height:calc(100vh - 66px);
   overflow:hidden;
 }
 
@@ -85,10 +85,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 .edu-btn-ins{background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 2px 8px rgba(200,164,90,.3);}
 .edu-btn-fp{background:linear-gradient(135deg,var(--navy),var(--navy2));}
 .edu-btn-left{display:flex;align-items:center;gap:7px;}
-.edu-btn-t1{font-size:12px;font-weight:700;}
+.edu-btn-t1{font-size:14px;font-weight:700;}
 .edu-btn-ins .edu-btn-t1{color:var(--navy);}
 .edu-btn-fp .edu-btn-t1{color:#fff;}
-.edu-btn-t2{font-size:9px;}
+.edu-btn-t2{font-size:11px;}
 .edu-btn-ins .edu-btn-t2{color:rgba(11,31,58,.6);}
 .edu-btn-fp .edu-btn-t2{color:rgba(255,255,255,.6);}
 .top-mode{flex-shrink:0;}
@@ -98,24 +98,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 /* 모드 버튼 */
 .mode-row{display:flex;gap:5px;}
 .mode-btn{
-  flex:1;padding:6px 8px;border:2px solid var(--border);border-radius:9px;
+  flex:1;padding:8px 10px;border:2px solid var(--border);border-radius:9px;
   text-align:center;cursor:pointer;transition:all .22s;background:var(--slate);
   position:relative;opacity:.5;min-width:68px;
 }
 .mode-btn.on{border-color:var(--gold);background:var(--gold3);opacity:1;box-shadow:0 2px 8px rgba(200,164,90,.2);}
 .mode-tick{position:absolute;top:4px;right:6px;font-size:10px;display:none;}
 .mode-btn.on .mode-tick{display:block;}
-.mode-ico{font-size:16px;margin-bottom:2px;}
-.mode-name{font-size:11px;font-weight:700;color:var(--t2);}
+.mode-ico{font-size:20px;margin-bottom:2px;}
+.mode-name{font-size:13px;font-weight:700;color:var(--t2);}
 .mode-btn.on .mode-name{color:var(--navy);}
 .mode-desc{font-size:9px;color:var(--t3);}
-.mode-lbl{font-size:9px;font-weight:700;color:var(--t3);letter-spacing:1px;margin-bottom:4px;}
+.mode-lbl{font-size:11px;font-weight:700;color:var(--t3);letter-spacing:1px;margin-bottom:4px;}
 
 /* 간단설계 버튼 */
-.quick-title{font-size:9px;font-weight:700;color:var(--teal);letter-spacing:1px;margin-bottom:4px;}
+.quick-title{font-size:11px;font-weight:700;color:var(--teal);letter-spacing:1px;margin-bottom:4px;}
 .quick-btn{
-  padding:4px 7px;border:1.5px solid rgba(10,107,107,.3);border-radius:5px;
-  font-size:10px;font-weight:700;cursor:pointer;background:rgba(10,107,107,.08);
+  padding:5px 10px;border:1.5px solid rgba(10,107,107,.3);border-radius:5px;
+  font-size:12px;font-weight:700;cursor:pointer;background:rgba(10,107,107,.08);
   color:var(--teal);font-family:'Noto Sans KR',sans-serif;transition:all .18s;
 }
 .quick-btn:hover{background:var(--teal);color:#fff;border-color:var(--teal);}
@@ -133,18 +133,18 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 .input-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
 
 /* 입력 그룹 행 */
-.input-row-1{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;}
+.input-row-1{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:10px;}
 .input-row-2{margin-bottom:10px;}
 .analyze-row{padding:4px 0 10px;}
 
 /* 입력 그룹 카드 */
 .input-group-card{
-  background:var(--white);border-radius:10px;padding:10px 12px;
+  background:var(--white);border-radius:10px;padding:16px 18px;
   box-shadow:0 1px 8px rgba(11,31,58,.06);border:1px solid var(--border);
 }
 .input-group-card.full-width{width:100%;}
 .ig-title{
-  font-size:10px;font-weight:700;color:var(--gold);letter-spacing:1.2px;
+  font-size:14px;font-weight:700;color:var(--gold);letter-spacing:1.0px;
   text-transform:uppercase;margin-bottom:7px;padding-bottom:4px;
   border-bottom:1.5px solid var(--border);
 }
@@ -155,7 +155,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 .ig-row.r4{grid-template-columns:1fr 1fr 1fr 1fr;}
 
 /* 보험 그리드 (10칸) */
-.ins-grid-new{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;}
+.ins-grid-new{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;}
 
 /* 결과 페이지 */
 .results-page{min-height:calc(100vh - 58px);background:var(--slate);overflow-y:auto;}
@@ -219,10 +219,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 .r6{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
 .r7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
 .fg{display:flex;flex-direction:column;gap:3px;margin-bottom:0;}
-.fg label{font-size:10px;font-weight:500;color:var(--t2);margin-bottom:2px;}
+.fg label{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:4px;}
 .fc{
-  padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;
-  font-size:12px;font-family:'Noto Sans KR',sans-serif;color:var(--t1);
+  padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:14px;font-family:'Noto Sans KR',sans-serif;color:var(--t1);
   background:var(--slate);transition:border-color .2s, background .2s;width:100%;
 }
 .fc:focus{outline:none;border-color:var(--gold);background:#fff;box-shadow:0 0 0 3px rgba(200,164,90,.12);}
@@ -237,8 +237,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 }
 .rb.on{border-color:var(--gold);background:var(--gold3);color:var(--navy);font-weight:700;}
 .fc-ta{
-  padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;
-  font-size:11px;font-family:'Noto Sans KR',sans-serif;color:var(--t1);
+  padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;
+  font-size:13px;font-family:'Noto Sans KR',sans-serif;color:var(--t1);
   background:var(--slate);width:100%;resize:vertical;min-height:60px;
 }
 .fc-ta:focus{outline:none;border-color:var(--gold);background:#fff;}
@@ -246,20 +246,20 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 /* ─── INSURANCE GRID ──────────────────────── */
 .ins-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;}
 .ins-card{
-  padding:5px 6px;background:var(--slate);border-radius:7px;
+  padding:10px 12px;background:var(--slate);border-radius:8px;
   border:1.5px solid var(--border);
 }
 .ins-card.ci-card{border-color:var(--orange);background:var(--orange2);}
 .ins-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-.ins-name{font-size:10px;font-weight:700;color:var(--t1);}
+.ins-name{font-size:12px;font-weight:700;color:var(--t1);}
 .ins-tgl{display:flex;gap:3px;}
 .ins-tgl button{
-  padding:3px 6px;border-radius:6px;font-size:10px;font-weight:700;
+  padding:5px 9px;border-radius:6px;font-size:10px;font-weight:700;
   cursor:pointer;border:1.5px solid var(--border);color:var(--t3);
   background:#fff;transition:all .18s;font-family:'Noto Sans KR',sans-serif;
 }
 .ins-tgl button.on{background:var(--navy);color:#fff;border-color:var(--navy);}
-.ins-sub{display:flex;flex-direction:column;gap:4px;}
+.ins-sub{display:flex;flex-direction:column;gap:5px;}
 .ins-sub select,.ins-sub input{
   padding:3px 5px;border:1.5px solid var(--border);border-radius:5px;
   font-size:10px;font-family:'Noto Sans KR',sans-serif;background:#fff;
@@ -271,7 +271,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 .ins-cb span{font-size:9px;color:var(--t2);}
 .ci-warn{font-size:10px;color:var(--orange);margin-top:4px;padding:3px 6px;background:#fff;border-radius:4px;line-height:1.4;}
 .brain-check{display:flex;flex-direction:column;gap:2px;margin-top:3px;}
-.brain-check label{display:flex;align-items:center;gap:3px;font-size:9px;cursor:pointer;}
+.brain-check label{display:flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;}
 .brain-check input[type=checkbox]{width:11px;height:11px;cursor:pointer;accent-color:var(--navy);}
 .age-risk-box{
   display:none;margin-bottom:9px;padding:9px 11px;
@@ -281,9 +281,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 
 /* ─── ANALYZE BUTTON ──────────────────────── */
 .analyze-btn{
-  width:100%;padding:14px;
+  width:100%;padding:17px;
   background:linear-gradient(135deg,var(--navy),var(--navy2));
-  color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;
+  color:#fff;border:none;border-radius:12px;font-size:18px;font-weight:700;
   cursor:pointer;font-family:'Noto Sans KR',sans-serif;
   transition:all .3s;margin-top:8px;letter-spacing:.5px;
 }
