@@ -14,7 +14,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
 
   const isAdmin = user.role === 'admin' || user.role === 'master';
 
-  // ✅ 핵심: 주소창에 쳤던 그 주소를 호출하는 함수입니다.
+  // 링크 오픈 함수
   const handleOpenLink = (url: string) => {
     window.open(url, "_blank");
   };
@@ -89,7 +89,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
       <h2 className="text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter text-center font-black">History</h2>
       
-      {/* 1. 달력 */}
+      {/* 1. 달력 영역 */}
       <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
         <Calendar 
           onChange={(d: any) => onDateChange(d)} 
@@ -102,7 +102,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         />
       </div>
 
-      {/* 2. 실적 섹션 */}
+      {/* 2. 3개월 평균 실적 */}
       <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
         <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">
           {isAdmin ? "Team 3-Month Performance" : "My 3-Month Performance"}
@@ -119,19 +119,30 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         </div>
       </div>
       
-      {/* 3. 단일 퀵 링크 버튼 (여기가 핵심 연결 포인트입니다!) */}
-      <div className="px-1">
-        <p className="text-[9px] text-slate-400 uppercase italic mb-3 tracking-widest font-black">Special Analysis</p>
+      {/* 3. 퀵 링크 버튼 섹션 */}
+      <div className="px-1 space-y-3">
+        <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Community & Tools</p>
+        
+        {/* 재무/보장분석 도구 (기존) */}
         <button 
           onClick={() => handleOpenLink("/financial_planner.html")}
-          className="w-full flex items-center justify-center gap-3 py-4 bg-[#f8fafc] border-2 border-black rounded-[1.5rem] hover:bg-black hover:text-[#d4af37] transition-all group shadow-sm active:scale-95"
+          className="w-full flex items-center justify-center gap-3 py-3.5 bg-[#f8fafc] border-2 border-black rounded-[1.5rem] hover:bg-black hover:text-[#d4af37] transition-all group shadow-sm active:scale-95"
         >
           <span className="text-xl">📊</span>
-          <span className="text-[13px] font-black tracking-tight">재무 / 보장분석 도구</span>
+          <span className="text-[12px] font-black tracking-tight">재무 / 보장분석 도구</span>
+        </button>
+
+        {/* ✅ 성장연구소 카페 버튼 (신규 추가) */}
+        <button 
+          onClick={() => handleOpenLink("https://cafe.naver.com/signal1035")}
+          className="w-full flex items-center justify-center gap-3 py-3.5 bg-white border-2 border-[#2db400] text-[#2db400] rounded-[1.5rem] hover:bg-[#2db400] hover:text-white transition-all group shadow-sm active:scale-95"
+        >
+          <span className="text-xl">☕</span>
+          <span className="text-[12px] font-black tracking-tight">성장연구소 카페</span>
         </button>
       </div>
 
-      {/* 4. 메모 및 공지 */}
+      {/* 4. 메모 및 공지 영역 */}
       <div className="flex flex-col gap-4">
         <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-44">
           <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Daily Instruction</p>
