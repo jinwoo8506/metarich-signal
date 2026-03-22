@@ -604,6 +604,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   @page{size:A4 landscape;margin:7mm 10mm;}
 
+  /* ── 모드별 출력 제어 ── */
+  .print-hide{display:none!important;}
+  .print-show{display:flex!important;}
   /* ── 숨김 ── */
   .hdr,.sidebar-toggle,.edu-overlay,.info-overlay,.top-bar,.input-area,
   .tabs,.screen-only,.contact-box,.hdr-btns,.main-page,.inp-panel,
@@ -894,7 +897,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
   <div class="hdr-btns">
     <button class="hbtn hbtn-ghost" id="btnHome" style="display:none;" onclick="goHome()">🏠 처음화면</button>
     <button class="hbtn hbtn-ghost" onclick="resetAll()">🔄 초기화</button>
-    <button class="hbtn hbtn-gold" id="printBtn" onclick="smartPrint()">🖨️ PDF 출력</button>
+    
   </div>
 </header>
 
@@ -1850,6 +1853,13 @@ function runAnalysis(){
   });
   window.scrollTo({top:0,behavior:'smooth'});
   var rp=gi('resultsPage'); if(rp) rp.scrollTo({top:0,behavior:'smooth'});
+
+  // 출력 버튼 라벨 모드별 업데이트 (setTimeout으로 DOM 삽입 후 실행)
+  setTimeout(function(){
+    var printLabel = (modes.fp && modes.pa) ? '🖨️ 전체 출력' : modes.fp ? '🖨️ 재무설계 출력' : '🖨️ 보장분석 출력';
+    var btn = document.getElementById('printBtnResult');
+    if(btn) btn.textContent = printLabel;
+  }, 100);
 }
 
 function gBar(name, val, unit, cls){
@@ -1914,8 +1924,7 @@ function buildTabsHTML(d){
     +'<div class="tabs" style="flex:1;">'+tabs.map(function(t,i){
       return '<button class="tab'+(i===0?' on':'')+'" data-tc="tc-'+t.id+'">'+t.ico+' '+t.lbl+'</button>';
     }).join('')+'</div>'
-    +'<button class="hbtn hbtn-ghost" style="background:var(--navy);color:#fff;font-size:12px;padding:8px 14px;" onclick="goHome()">← 입력화면</button>'
-    +'</div>';
+    +'<div style="display:flex;gap:6px;">'    +'<button class="hbtn hbtn-ghost" style="background:var(--navy);color:#fff;font-size:12px;padding:8px 14px;" onclick="goHome()">← 입력화면</button>'    +'<button class="hbtn hbtn-gold" id="printBtnResult" style="font-size:12px;padding:8px 16px;" onclick="smartPrint()">🖨️ 출력</button>'    +'</div>'    +'</div>';
   return topbar
   +'<div id="tc-overview" class="tc on" data-mode="both"></div>'
   +'<div id="tc-retire" class="tc" data-mode="fp"></div>'
@@ -3702,14 +3711,46 @@ function getFileName(){
 }
 function smartPrint(){
   var fileName = getFileName();
-  // 파일명 힌트 표시
-  var hint = document.getElementById('printFileNameHint');
-  if(hint) hint.textContent = '📁 저장 파일명: ' + fileName;
-  // title 변경 → PDF 기본 파일명
   var origTitle = document.title;
   document.title = fileName;
+
+  // 모드에 따라 출력할 탭 결정
+  var isFP = modes.fp;
+  var isPA = modes.pa;
+
+  // 출력 대상 탭 ID 결정
+  // 재무설계: overview + retire + action
+  // 보장분석: protection + insurance + action
+  // 둘 다: 전체
+  var printFP  = ['tc-overview','tc-retire','tc-action'];
+  var printPA  = ['tc-protection','tc-insurance','tc-action'];
+  var printAll = ['tc-overview','tc-retire','tc-protection','tc-insurance','tc-action'];
+
+  var targets = isFP && isPA ? printAll : isFP ? printFP : isPA ? printPA : printAll;
+
+  // 출력할 탭만 print-show 클래스, 나머지는 print-hide
+  ['tc-overview','tc-retire','tc-protection','tc-insurance','tc-action'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    if(targets.indexOf(id) !== -1){
+      el.classList.add('print-show');
+      el.classList.remove('print-hide');
+    } else {
+      el.classList.add('print-hide');
+      el.classList.remove('print-show');
+    }
+  });
+
   window.print();
-  setTimeout(function(){ document.title = origTitle; }, 3000);
+
+  // 복원
+  setTimeout(function(){
+    document.title = origTitle;
+    ['tc-overview','tc-retire','tc-protection','tc-insurance','tc-action'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el){ el.classList.remove('print-show','print-hide'); }
+    });
+  }, 2000);
 }
 // 분석 완료 후 파일명 힌트 자동 업데이트
 function updateFileNameHint(){

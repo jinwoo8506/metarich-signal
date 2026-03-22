@@ -14,7 +14,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
 
   const isAdmin = user.role === 'admin' || user.role === 'master';
 
-  // 링크 오픈 함수
+  // ✅ 핵심: 주소창에 쳤던 그 주소를 호출하는 함수입니다.
   const handleOpenLink = (url: string) => {
     window.open(url, "_blank");
   };
@@ -89,7 +89,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
       <h2 className="text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter text-center font-black">History</h2>
       
-      {/* 1. 달력 영역 */}
+      {/* 1. 달력 */}
       <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
         <Calendar 
           onChange={(d: any) => onDateChange(d)} 
@@ -102,7 +102,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         />
       </div>
 
-      {/* 2. 3개월 평균 실적 */}
+      {/* 2. 실적 섹션 */}
       <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
         <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">
           {isAdmin ? "Team 3-Month Performance" : "My 3-Month Performance"}
@@ -119,7 +119,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         </div>
       </div>
       
-      {/* 3. 단일 퀵 링크 버튼 (재무/보장분석 전용) */}
+      {/* 3. 단일 퀵 링크 버튼 (여기가 핵심 연결 포인트입니다!) */}
       <div className="px-1">
         <p className="text-[9px] text-slate-400 uppercase italic mb-3 tracking-widest font-black">Special Analysis</p>
         <button 
@@ -131,7 +131,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         </button>
       </div>
 
-      {/* 4. 메모 및 공지 영역 */}
+      {/* 4. 메모 및 공지 */}
       <div className="flex flex-col gap-4">
         <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-44">
           <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Daily Instruction</p>
