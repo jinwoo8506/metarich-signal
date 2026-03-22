@@ -14,7 +14,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
 
   const isAdmin = user.role === 'admin' || user.role === 'master';
 
-  // 링크 오픈 함수 (public 폴더 내 HTML 및 외부 링크 대응)
+  // 링크 오픈 함수
   const handleOpenLink = (url: string) => {
     window.open(url, "_blank");
   };
@@ -86,7 +86,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
   };
 
   return (
-    <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-5 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
+    <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
       <h2 className="text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter text-center font-black">History</h2>
       
       {/* 1. 달력 영역 */}
@@ -102,54 +102,38 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         />
       </div>
 
-      {/* 2. 3개월 평균 실적 대시보드 */}
-      <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl">
+      {/* 2. 3개월 평균 실적 */}
+      <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
         <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">
           {isAdmin ? "Team 3-Month Performance" : "My 3-Month Performance"}
         </p>
-        <div className="grid grid-cols-2 gap-3 font-black text-white text-center">
+        <div className="grid grid-cols-2 gap-3 text-center">
           <div className="border-r border-white/10">
-            <p className="text-[8px] opacity-40 uppercase mb-1">Avg Amount</p>
+            <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Amount</p>
             <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
           </div>
           <div>
-            <p className="text-[8px] opacity-40 uppercase mb-1">Avg Count</p>
+            <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Count</p>
             <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
           </div>
         </div>
       </div>
       
-      {/* 3. 퀵 링크 버튼 (연결 도구) */}
-      <div className="space-y-2">
-        <p className="text-[9px] text-slate-400 uppercase italic mb-2 tracking-widest px-1 font-black">Quick Tools</p>
-        <div className="grid grid-cols-2 gap-2">
-          {/* 재무 설계기 연결 (public/financial_planner.html) */}
-          <SidebarQuickBtn 
-            label="재무 설계기" 
-            icon="📊" 
-            onClick={() => handleOpenLink("/financial_planner.html")} 
-          />
-          <SidebarQuickBtn 
-            label="보험전산" 
-            icon="🌐" 
-            onClick={() => handleOpenLink("https://xn--on3bi2e18htop.com/")} 
-          />
-          <SidebarQuickBtn 
-            label="자료실" 
-            icon="📂" 
-            onClick={() => handleOpenLink("https://drive.google.com/...")} 
-          />
-          <SidebarQuickBtn 
-            label="약관조회" 
-            icon="📄" 
-            onClick={() => handleOpenLink("/terms.html")} 
-          />
-        </div>
+      {/* 3. 단일 퀵 링크 버튼 (재무/보장분석 전용) */}
+      <div className="px-1">
+        <p className="text-[9px] text-slate-400 uppercase italic mb-3 tracking-widest font-black">Special Analysis</p>
+        <button 
+          onClick={() => handleOpenLink("/financial_planner.html")}
+          className="w-full flex items-center justify-center gap-3 py-4 bg-[#f8fafc] border-2 border-black rounded-[1.5rem] hover:bg-black hover:text-[#d4af37] transition-all group shadow-sm active:scale-95"
+        >
+          <span className="text-xl">📊</span>
+          <span className="text-[13px] font-black tracking-tight">재무 / 보장분석 도구</span>
+        </button>
       </div>
 
       {/* 4. 메모 및 공지 영역 */}
       <div className="flex flex-col gap-4">
-        <div className="bg-blue-50 p-5 rounded-[2rem] border border-blue-100 flex flex-col h-40">
+        <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-44">
           <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Daily Instruction</p>
           <textarea 
             value={dailyAdminNotice}
@@ -159,7 +143,7 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
           />
         </div>
 
-        <div className="bg-amber-50 p-5 rounded-[2rem] border border-amber-100 flex flex-col h-40 font-black">
+        <div className="bg-amber-50 p-5 rounded-[2.5rem] border border-amber-100 flex flex-col h-44 font-black">
           <p className="text-[9px] font-black text-amber-600 uppercase italic mb-2 tracking-widest">Private Memo</p>
           <textarea 
             value={privateMemo}
@@ -177,7 +161,6 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         Logout System
       </button>
       
-      {/* 달력 스타일 커스텀 */}
       <style jsx global>{`
         .react-calendar { border: none !important; width: 100% !important; font-family: inherit !important; }
         .react-calendar__navigation button { font-weight: 900; font-style: italic; font-size: 14px; }
@@ -189,18 +172,5 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
         abbr[title] { text-decoration: none; }
       `}</style>
     </aside>
-  );
-}
-
-// 사이드바 버튼 내부 컴포넌트
-function SidebarQuickBtn({ label, icon, onClick }: { label: string, icon: string, onClick: () => void }) {
-  return (
-    <button 
-      onClick={onClick}
-      className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-black hover:text-[#d4af37] transition-all group"
-    >
-      <span className="text-sm">{icon}</span>
-      <span className="text-[10px] font-black truncate">{label}</span>
-    </button>
   );
 }
