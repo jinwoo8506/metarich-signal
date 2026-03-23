@@ -10,111 +10,138 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
+  
+  // ✅ 사이드바 버튼 활성화 상태 관리
+  const [menuStatus, setMenuStatus] = useState({
+    show_finance: true,
+    show_insu: true,
+    show_cafe: true
+  });
+  const [isEditMode, setIsEditMode] = useState(false); // 마스터 전용 편집 모드
+
   const dateStr = selectedDate.toLocaleDateString('en-CA');
-
   const isAdmin = user.role === 'admin' || user.role === 'master';
-
-  // 링크 오픈 함수
-  const handleOpenLink = (url: string) => {
-    window.open(url, "_blank");
-  };
+  const isMaster = user.role === 'master';
 
   useEffect(() => {
     fetchDailyData();
     fetch3MonthAvg();
+    fetchMenuSettings(); // 메뉴 설정 불러오기
     const savedPrivate = localStorage.getItem(`memo_${user.id}`);
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
 
-  async function fetchDailyData() {
+  // 1. 메뉴 활성화 상태 불러오기 (Supabase)
+  async function fetchMenuSettings() {
     const { data } = await supabase
       .from("team_settings")
-      .select("value")
-      .eq("key", `daily_instruction_${dateStr}`)
-      .maybeSingle();
+      .select("key, value")
+      .in("key", ["show_finance", "show_insu", "show_cafe"]);
 
     if (data) {
-      setDailyAdminNotice(data.value);
-    } else {
-      setDailyAdminNotice("해당 날짜의 전달사항이 없습니다.");
+      const settings = data.reduce((acc: any, curr: any) => {
+        acc[curr.key] = curr.value === "true";
+        return acc;
+      }, {});
+      setMenuStatus(prev => ({ ...prev, ...settings }));
     }
+  }
+
+  // 2. 마스터가 메뉴 상태 변경 시 DB 저장
+  const toggleMenu = async (key: string) => {
+    const newValue = !((menuStatus as any)[key]);
+    setMenuStatus(prev => ({ ...prev, [key]: newValue }));
+    
+    await supabase
+      .from("team_settings")
+      .upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
+  };
+
+  // 기존 데이터 불러오기 로직 (복원)
+  async function fetchDailyData() {
+    const { data } = await supabase
+      .from("daily_stats")
+      .select("admin_notice")
+      .eq("date", dateStr)
+      .single();
+    setDailyAdminNotice(data?.admin_notice || "");
   }
 
   async function fetch3MonthAvg() {
-    const d = new Date(selectedDate);
-    const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
-    const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
-
-    let query = supabase
-      .from("daily_perf")
-      .select("contract_amt, contract_cnt, user_id, date")
-      .gte("date", startOfRange)
-      .lt("date", endOfRange);
-
-    if (!isAdmin) {
-      query = query.eq("user_id", user.id);
-    }
-
-    const { data, error } = await query;
+    const today = new Date();
+    const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+    const startStr = threeMonthsAgo.toISOString().split('T')[0];
     
-    if (data && data.length > 0) {
-      const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
-      const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
-      const uniqueMonths = new Set(data.map(item => item.date.substring(0, 7))).size;
-      const divisor = uniqueMonths > 0 ? uniqueMonths : 3;
+    const { data } = await supabase
+      .from("performance")
+      .select("amount, count")
+      .gte("date", startStr);
 
-      setThreeMonthAvg({ 
-        amt: Math.round(totalAmt / divisor), 
-        cnt: Number((totalCnt / divisor).toFixed(1)) 
+    if (data && data.length > 0) {
+      const totalAmt = data.reduce((sum, item) => sum + (item.amount || 0), 0);
+      const totalCnt = data.reduce((sum, item) => sum + (item.count || 0), 0);
+      setThreeMonthAvg({
+        amt: Math.floor(totalAmt / 3),
+        cnt: Number((totalCnt / 3).toFixed(1))
       });
-    } else {
-      setThreeMonthAvg({ amt: 0, cnt: 0 });
     }
   }
 
-  const saveDailyNotice = async (val: string) => {
-    setDailyAdminNotice(val);
+  // 관리자 공지 저장
+  async function saveDailyNotice() {
+    if (!isAdmin) return;
     const { error } = await supabase
-      .from("team_settings")
-      .upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
-    if (error) console.error("Error saving daily notice:", error);
+      .from("daily_stats")
+      .upsert({ date: dateStr, admin_notice: dailyAdminNotice }, { onConflict: 'date' });
+    
+    if (!error) alert("공지사항이 저장되었습니다.");
+  }
+
+  const handleOpenLink = (url: string) => {
+    window.open(url, "_blank");
   };
 
-  const savePrivateMemo = (val: string) => {
-    setPrivateMemo(val);
-    localStorage.setItem(`memo_${user.id}`, val);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
   return (
     <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
-      <h2 className="text-2xl italic border-b-4 border-black pb-1 uppercase tracking-tighter text-center font-black">History</h2>
+      {/* 헤더 섹션 */}
+      <div className="flex justify-between items-center border-b-4 border-black pb-1">
+        <h2 className="text-2xl italic uppercase tracking-tighter font-black">History</h2>
+        {isMaster && (
+          <button 
+            onClick={() => setIsEditMode(!isEditMode)}
+            className={`text-[10px] px-2 py-1 rounded font-bold transition-colors ${isEditMode ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-700'}`}
+          >
+            {isEditMode ? "설정 완료" : "⚙️ 메뉴 관리"}
+          </button>
+        )}
+      </div>
       
       {/* 1. 달력 영역 */}
-      <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
+      <div className="flex justify-center bg-slate-50 p-2 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
         <Calendar 
-          onChange={(d: any) => onDateChange(d)} 
+          onChange={onDateChange} 
           value={selectedDate} 
-          formatDay={(_, date) => date.getDate().toString()} 
-          className="border-0 w-full font-black text-xs"
-          calendarType="gregory"
-          next2Label={null}
-          prev2Label={null}
+          formatDay={(locale, date) => date.getDate().toString()}
+          className="border-none bg-transparent font-black"
         />
       </div>
-
-      {/* 2. 3개월 평균 실적 */}
-      <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
-        <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black">
-          {isAdmin ? "Team 3-Month Performance" : "My 3-Month Performance"}
-        </p>
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div className="border-r border-white/10">
-            <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Amount</p>
-            <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
-          </div>
+      
+      {/* 2. 실적 요약 */}
+      <div className="bg-black text-white p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(67,97,238,1)]">
+        <p className="text-[10px] uppercase italic text-slate-400 mb-2 font-black">3-Month Average Performance</p>
+        <div className="flex justify-between items-end">
           <div>
-            <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Count</p>
-            <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
+            <p className="text-2xl font-black italic">₩{threeMonthAvg.amt.toLocaleString()}</p>
+            <p className="text-[10px] text-blue-400 font-bold">Monthly Avg Revenue</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xl font-black">{threeMonthAvg.cnt}건</p>
+            <p className="text-[10px] text-slate-400 font-bold">Avg Count</p>
           </div>
         </div>
       </div>
@@ -123,74 +150,109 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
       <div className="px-1 space-y-3">
         <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Community & Tools</p>
         
-        {/* 재무/보장분석 도구 (기존) */}
-        <button 
-          onClick={() => handleOpenLink("/financial_planner.html")}
-          className="w-full flex items-center justify-center gap-3 py-3.5 bg-[#f8fafc] border-2 border-black rounded-[1.5rem] hover:bg-black hover:text-[#d4af37] transition-all group shadow-sm active:scale-95"
-        >
-          <span className="text-xl">📊</span>
-          <span className="text-[12px] font-black tracking-tight">재무 분석 도구</span>
-        </button>
+        {/* 재무 분석 도구 */}
+        {(menuStatus.show_finance || isEditMode) && (
+          <div className="relative">
+            <button 
+              onClick={() => !isEditMode && handleOpenLink("/financial_planner.html")}
+              className={`w-full flex items-center justify-center gap-3 py-3.5 border-2 border-black rounded-[1.5rem] transition-all group shadow-sm active:scale-95 
+                ${menuStatus.show_finance ? 'bg-[#f8fafc]' : 'bg-gray-100 opacity-40'}`}
+            >
+              <span className="text-xl">📊</span>
+              <span className="text-[12px] font-black tracking-tight">재무 분석 도구</span>
+            </button>
+            {isEditMode && (
+              <input 
+                type="checkbox" 
+                checked={menuStatus.show_finance} 
+                onChange={() => toggleMenu("show_finance")} 
+                className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-5 h-5 accent-black cursor-pointer"
+              />
+            )}
+          </div>
+        )}
 
-        {/* ✅ 보장분석 버튼 (신규 추가) */}
-        <button 
-          onClick={() => handleOpenLink("/insu.html")}
-          className="w-full flex items-center justify-center gap-3 py-3.5 bg-white border-2 border-blue-600 text-blue-600 rounded-[1.5rem] hover:bg-blue-600 hover:text-white transition-all group shadow-sm active:scale-95"
-        >
-          <span className="text-xl">🛡️</span>
-          <span className="text-[12px] font-black tracking-tight">보장분석 탭</span>
-        </button>
+        {/* 보장분석 탭 */}
+        {(menuStatus.show_insu || isEditMode) && (
+          <div className="relative">
+            <button 
+              onClick={() => !isEditMode && handleOpenLink("/insu.html")}
+              className={`w-full flex items-center justify-center gap-3 py-3.5 border-2 border-blue-600 rounded-[1.5rem] transition-all group shadow-sm active:scale-95
+                ${menuStatus.show_insu ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}
+            >
+              <span className="text-xl">🛡️</span>
+              <span className="text-[12px] font-black tracking-tight">보장분석 탭</span>
+            </button>
+            {isEditMode && (
+              <input 
+                type="checkbox" 
+                checked={menuStatus.show_insu} 
+                onChange={() => toggleMenu("show_insu")} 
+                className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-5 h-5 accent-blue-600 cursor-pointer"
+              />
+            )}
+          </div>
+        )}
 
-        {/* 성장연구소 카페 버튼 (기존) */}
-        <button 
-          onClick={() => handleOpenLink("https://cafe.naver.com/signal1035")}
-          className="w-full flex items-center justify-center gap-3 py-3.5 bg-white border-2 border-[#2db400] text-[#2db400] rounded-[1.5rem] hover:bg-[#2db400] hover:text-white transition-all group shadow-sm active:scale-95"
-        >
-          <span className="text-xl">☕</span>
-          <span className="text-[12px] font-black tracking-tight">성장연구소 카페</span>
-        </button>
+        {/* 카페 버튼 */}
+        {(menuStatus.show_cafe || isEditMode) && (
+          <div className="relative">
+            <button 
+              onClick={() => !isEditMode && handleOpenLink("https://cafe.naver.com/signal1035")}
+              className={`w-full flex items-center justify-center gap-3 py-3.5 border-2 border-[#2db400] rounded-[1.5rem] transition-all group shadow-sm active:scale-95
+                ${menuStatus.show_cafe ? 'bg-white text-[#2db400]' : 'bg-gray-100 text-gray-400 opacity-40'}`}
+            >
+              <span className="text-xl">☕</span>
+              <span className="text-[12px] font-black tracking-tight">성장연구소 카페</span>
+            </button>
+            {isEditMode && (
+              <input 
+                type="checkbox" 
+                checked={menuStatus.show_cafe} 
+                onChange={() => toggleMenu("show_cafe")} 
+                className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-5 h-5 accent-[#2db400] cursor-pointer"
+              />
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 4. 메모 및 공지 영역 */}
-      <div className="flex flex-col gap-4">
-        <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-44">
-          <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Daily Instruction</p>
+      {/* 4. 공지 및 개인 메모 */}
+      <div className="flex flex-col gap-4 mt-auto">
+        <div>
+          <div className="flex justify-between items-center mb-1 px-1">
+            <p className="text-[9px] text-slate-400 uppercase italic tracking-widest font-black">Admin Notice</p>
+            {isAdmin && <button onClick={saveDailyNotice} className="text-[9px] font-black text-blue-600 hover:underline">SAVE</button>}
+          </div>
           <textarea 
-            value={dailyAdminNotice}
-            onChange={(e) => isAdmin && saveDailyNotice(e.target.value)}
             readOnly={!isAdmin}
-            className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-2 bg-white/50 rounded-xl focus:bg-white transition-all'}`}
+            value={dailyAdminNotice}
+            onChange={(e) => setDailyAdminNotice(e.target.value)}
+            className="w-full h-20 p-3 text-[11px] border-2 border-black rounded-xl bg-yellow-50 resize-none font-bold"
+            placeholder="관리자 공지사항이 없습니다."
           />
         </div>
 
-        <div className="bg-amber-50 p-5 rounded-[2.5rem] border border-amber-100 flex flex-col h-44 font-black">
-          <p className="text-[9px] font-black text-amber-600 uppercase italic mb-2 tracking-widest">Private Memo</p>
+        <div>
+          <p className="text-[9px] text-slate-400 uppercase italic mb-1 px-1 tracking-widest font-black">Private Memo</p>
           <textarea 
             value={privateMemo}
-            onChange={(e) => savePrivateMemo(e.target.value)}
-            className="w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none text-amber-900 leading-relaxed p-2 bg-white/50 rounded-xl focus:bg-white transition-all"
+            onChange={(e) => {
+              setPrivateMemo(e.target.value);
+              localStorage.setItem(`memo_${user.id}`, e.target.value);
+            }}
+            className="w-full h-20 p-3 text-[11px] border-2 border-slate-200 rounded-xl bg-slate-50 resize-none font-bold italic"
+            placeholder="나만의 메모를 입력하세요..."
           />
         </div>
-      </div>
 
-      {/* 5. 시스템 로그아웃 */}
-      <button 
-        onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} 
-        className="w-full bg-black text-[#d4af37] py-5 rounded-[1.5rem] font-black text-xs uppercase shadow-xl italic mt-4 mb-8"
-      >
-        Logout System
-      </button>
-      
-      <style jsx global>{`
-        .react-calendar { border: none !important; width: 100% !important; font-family: inherit !important; }
-        .react-calendar__navigation button { font-weight: 900; font-style: italic; font-size: 14px; }
-        .react-calendar__month-view__weekdays__weekday abbr { text-decoration: none; font-size: 10px; opacity: 0.5; }
-        .react-calendar__month-view__weekdays__weekday:nth-child(1) abbr { color: #f87171; }
-        .react-calendar__month-view__weekdays__weekday:nth-child(7) abbr { color: #60a5fa; }
-        .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px !important; }
-        .react-calendar__tile { padding: 10px 5px !important; font-size: 12px; font-weight: 900; }
-        abbr[title] { text-decoration: none; }
-      `}</style>
+        <button 
+          onClick={handleLogout}
+          className="w-full py-3 text-[11px] font-black text-slate-400 hover:text-red-500 transition-colors border-t border-slate-100"
+        >
+          LOGOUT SYSTEM
+        </button>
+      </div>
     </aside>
   );
 }
