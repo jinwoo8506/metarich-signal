@@ -5,19 +5,20 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
-export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack }: any) {
+// ✅ onMenuUpdate를 추가하여 사이드바의 설정 변경을 부모(Dashboard)에게 알림
+export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack, onMenuUpdate }: any) {
   const router = useRouter();
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   
-  // ✅ 사이드바 버튼 활성화 상태 관리 (신규 링크 2종 추가)
-  const [menuStatus, setMenuStatus] = useState({
+  // ✅ 사이드바 내부에서 관리하는 메뉴 활성화 상태
+  const [menuStatus, setMenuStatus] = useState<any>({
     show_finance: true,
     show_insu: true,
     show_cafe: true,
-    show_hira: true,     // 진료기록확인
-    show_cont: true      // 숨은보험금찾기
+    show_hira: true,
+    show_cont: true
   });
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -33,6 +34,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
 
+  // DB에서 마스터 설정값 불러오기
   async function fetchMenuSettings() {
     const { data } = await supabase
       .from("team_settings")
@@ -44,72 +46,77 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         acc[curr.key] = curr.value === "true";
         return acc;
       }, {});
-      setMenuStatus(prev => ({ ...prev, ...settings }));
+      setMenuStatus(settings);
+      // 부모 컴포넌트(Dashboard)에도 초기값 전달
+      if (onMenuUpdate) onMenuUpdate(settings);
     }
   }
 
+  // 메뉴 상태 변경 로직
   const toggleMenu = async (key: string) => {
     const newValue = !((menuStatus as any)[key]);
-    setMenuStatus(prev => ({ ...prev, [key]: newValue }));
+    const updatedStatus = { ...menuStatus, [key]: newValue };
     
+    // 1. UI 즉시 반영 (사이드바)
+    setMenuStatus(updatedStatus);
+    
+    // 2. 부모 컴포넌트에게 알려서 메인 화면 버튼 동기화
+    if (onMenuUpdate) onMenuUpdate(updatedStatus);
+    
+    // 3. DB 저장
     await supabase
       .from("team_settings")
       .upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
   };
 
   async function fetchDailyData() {
-    const { data } = await supabase
-      .from("daily_stats")
-      .select("admin_notice")
-      .eq("date", dateStr)
-      .single();
+    const { data } = await supabase.from("daily_stats").select("admin_notice").eq("date", dateStr).single();
     setDailyAdminNotice(data?.admin_notice || "");
   }
 
   async function fetch3MonthAvg() {
     const today = new Date();
-    const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-    const startStr = threeMonthsAgo.toISOString().split('T')[0];
-    
-    const { data } = await supabase
-      .from("performance")
-      .select("amount, count")
-      .gte("date", startStr);
+    const startStr = new Date(today.getFullYear(), today.getMonth() - 3, 1).toISOString().split('T')[0];
+    const { data } = await supabase.from("performance").select("amount, count").gte("date", startStr);
 
     if (data && data.length > 0) {
       const totalAmt = data.reduce((sum, item) => sum + (item.amount || 0), 0);
       const totalCnt = data.reduce((sum, item) => sum + (item.count || 0), 0);
-      setThreeMonthAvg({
-        amt: Math.floor(totalAmt / 3),
-        cnt: Number((totalCnt / 3).toFixed(1))
-      });
+      setThreeMonthAvg({ amt: Math.floor(totalAmt / 3), cnt: Number((totalCnt / 3).toFixed(1)) });
     }
   }
 
   async function saveDailyNotice() {
     if (!isAdmin) return;
-    const { error } = await supabase
-      .from("daily_stats")
-      .upsert({ date: dateStr, admin_notice: dailyAdminNotice }, { onConflict: 'date' });
+    const { error } = await supabase.from("daily_stats").upsert({ date: dateStr, admin_notice: dailyAdminNotice }, { onConflict: 'date' });
     if (!error) alert("공지사항이 저장되었습니다.");
   }
 
-  const handleOpenLink = (url: string) => {
-    window.open(url, "_blank");
-  };
+  const handleOpenLink = (url: string) => window.open(url, "_blank");
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
   };
 
+  // 공통 메뉴 데이터 구조 (관리용)
+  const menuConfig = [
+    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black text-black' },
+    { id: 'show_insu', label: '보장분석 탭', icon: '🛡️', url: '/insu.html', color: 'border-blue-600 text-blue-600' },
+    { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람', color: 'border-orange-500 text-orange-600' },
+    { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500 text-emerald-600' },
+    { id: 'show_cafe', label: '성장연구소 카페', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400] text-[#2db400]' }
+  ];
+
   return (
     <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
       
+      {/* 상단 뒤로가기 */}
       <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-10px] transition-colors flex items-center gap-1 group font-black italic">
         <span className="group-hover:-translate-x-1 transition-transform">←</span> BACK TO SELECTOR
       </button>
 
+      {/* 헤더 */}
       <div className="flex justify-between items-center border-b-4 border-black pb-1">
         <h2 className="text-2xl italic uppercase tracking-tighter font-black">
           {mode === 'office' ? 'History' : 'Consult'}
@@ -121,6 +128,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         )}
       </div>
       
+      {/* 사무실 모드 전용 위젯 (달력, 실적) */}
       {mode === 'office' && (
         <>
           <div className="flex justify-center bg-slate-50 p-2 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -142,60 +150,34 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         </>
       )}
       
+      {/* 퀵 링크 섹션 (관리자 설정 반영) */}
       <div className="px-1 space-y-3">
         <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Links</p>
         
-        {/* 재무 분석 도구 */}
-        {(menuStatus.show_finance || isEditMode) && (
-          <div className="relative">
-            <button onClick={() => !isEditMode && handleOpenLink("/financial_planner.html")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-black rounded-xl transition-all ${menuStatus.show_finance ? 'bg-[#f8fafc]' : 'bg-gray-100 opacity-40'}`}>
-              <span className="text-lg">📊</span><span className="text-[11px] font-black">재무 분석 도구</span>
-            </button>
-            {isEditMode && <input type="checkbox" checked={menuStatus.show_finance} onChange={() => toggleMenu("show_finance")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-black cursor-pointer"/>}
-          </div>
-        )}
-
-        {/* 보장분석 탭 */}
-        {(menuStatus.show_insu || isEditMode) && (
-          <div className="relative">
-            <button onClick={() => !isEditMode && handleOpenLink("/insu.html")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-blue-600 rounded-xl transition-all ${menuStatus.show_insu ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
-              <span className="text-lg">🛡️</span><span className="text-[11px] font-black">보장분석 탭</span>
-            </button>
-            {isEditMode && <input type="checkbox" checked={menuStatus.show_insu} onChange={() => toggleMenu("show_insu")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-blue-600 cursor-pointer"/>}
-          </div>
-        )}
-
-        {/* 신규: 진료기록확인 */}
-        {(menuStatus.show_hira || isEditMode) && (
-          <div className="relative">
-            <button onClick={() => !isEditMode && handleOpenLink("https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-orange-500 rounded-xl transition-all ${menuStatus.show_hira ? 'bg-white text-orange-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
-              <span className="text-lg">🏥</span><span className="text-[11px] font-black">진료기록 확인</span>
-            </button>
-            {isEditMode && <input type="checkbox" checked={menuStatus.show_hira} onChange={() => toggleMenu("show_hira")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-orange-500 cursor-pointer"/>}
-          </div>
-        )}
-
-        {/* 신규: 숨은보험금찾기 */}
-        {(menuStatus.show_cont || isEditMode) && (
-          <div className="relative">
-            <button onClick={() => !isEditMode && handleOpenLink("https://cont.insure.or.kr/cont_web/intro.do")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-emerald-500 rounded-xl transition-all ${menuStatus.show_cont ? 'bg-white text-emerald-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
-              <span className="text-lg">🔍</span><span className="text-[11px] font-black">숨은 보험금 찾기</span>
-            </button>
-            {isEditMode && <input type="checkbox" checked={menuStatus.show_cont} onChange={() => toggleMenu("show_cont")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-emerald-500 cursor-pointer"/>}
-          </div>
-        )}
-
-        {/* 카페 버튼 */}
-        {(menuStatus.show_cafe || isEditMode) && (
-          <div className="relative">
-            <button onClick={() => !isEditMode && handleOpenLink("https://cafe.naver.com/signal1035")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-[#2db400] rounded-xl transition-all ${menuStatus.show_cafe ? 'bg-white text-[#2db400]' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
-              <span className="text-lg">☕</span><span className="text-[11px] font-black">성장연구소 카페</span>
-            </button>
-            {isEditMode && <input type="checkbox" checked={menuStatus.show_cafe} onChange={() => toggleMenu("show_cafe")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-[#2db400] cursor-pointer"/>}
-          </div>
-        )}
+        {menuConfig.map((item) => (
+          (menuStatus[item.id] || isEditMode) && (
+            <div key={item.id} className="relative">
+              <button 
+                onClick={() => !isEditMode && handleOpenLink(item.url)} 
+                className={`w-full flex items-center justify-center gap-3 py-3 border-2 ${item.color} rounded-xl transition-all shadow-sm active:scale-95 ${menuStatus[item.id] ? 'bg-white' : 'bg-gray-100 opacity-40'}`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-[11px] font-black">{item.label}</span>
+              </button>
+              {isEditMode && (
+                <input 
+                  type="checkbox" 
+                  checked={menuStatus[item.id]} 
+                  onChange={() => toggleMenu(item.id)} 
+                  className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 cursor-pointer accent-black"
+                />
+              )}
+            </div>
+          )
+        ))}
       </div>
 
+      {/* 하단 메모 및 공지 (사무실 모드 전용) */}
       <div className="flex flex-col gap-4 mt-auto">
         {mode === 'office' && (
           <>
@@ -212,7 +194,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
             </div>
           </>
         )}
-        <button onClick={handleLogout} className="w-full py-3 text-[11px] font-black text-slate-400 hover:text-red-500 border-t border-slate-100 transition-colors">LOGOUT SYSTEM</button>
+        <button onClick={handleLogout} className="w-full py-3 text-[11px] font-black text-slate-400 hover:text-red-500 border-t border-slate-100 transition-colors uppercase">Logout System</button>
       </div>
     </aside>
   );
