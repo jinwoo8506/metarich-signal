@@ -5,19 +5,21 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
-export default function Sidebar({ user, selectedDate, onDateChange }: any) {
+export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack }: any) {
   const router = useRouter();
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   
-  // ✅ 사이드바 버튼 활성화 상태 관리
+  // ✅ 사이드바 버튼 활성화 상태 관리 (신규 링크 2종 추가)
   const [menuStatus, setMenuStatus] = useState({
     show_finance: true,
     show_insu: true,
-    show_cafe: true
+    show_cafe: true,
+    show_hira: true,     // 진료기록확인
+    show_cont: true      // 숨은보험금찾기
   });
-  const [isEditMode, setIsEditMode] = useState(false); // 마스터 전용 편집 모드
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const dateStr = selectedDate.toLocaleDateString('en-CA');
   const isAdmin = user.role === 'admin' || user.role === 'master';
@@ -26,17 +28,16 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
   useEffect(() => {
     fetchDailyData();
     fetch3MonthAvg();
-    fetchMenuSettings(); // 메뉴 설정 불러오기
+    fetchMenuSettings();
     const savedPrivate = localStorage.getItem(`memo_${user.id}`);
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
 
-  // 1. 메뉴 활성화 상태 불러오기 (Supabase)
   async function fetchMenuSettings() {
     const { data } = await supabase
       .from("team_settings")
       .select("key, value")
-      .in("key", ["show_finance", "show_insu", "show_cafe"]);
+      .in("key", ["show_finance", "show_insu", "show_cafe", "show_hira", "show_cont"]);
 
     if (data) {
       const settings = data.reduce((acc: any, curr: any) => {
@@ -47,7 +48,6 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     }
   }
 
-  // 2. 마스터가 메뉴 상태 변경 시 DB 저장
   const toggleMenu = async (key: string) => {
     const newValue = !((menuStatus as any)[key]);
     setMenuStatus(prev => ({ ...prev, [key]: newValue }));
@@ -57,7 +57,6 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
       .upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
   };
 
-  // 기존 데이터 불러오기 로직 (복원)
   async function fetchDailyData() {
     const { data } = await supabase
       .from("daily_stats")
@@ -87,13 +86,11 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
     }
   }
 
-  // 관리자 공지 저장
   async function saveDailyNotice() {
     if (!isAdmin) return;
     const { error } = await supabase
       .from("daily_stats")
       .upsert({ date: dateStr, admin_notice: dailyAdminNotice }, { onConflict: 'date' });
-    
     if (!error) alert("공지사항이 저장되었습니다.");
   }
 
@@ -108,150 +105,114 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
 
   return (
     <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
-      {/* 헤더 섹션 */}
+      
+      <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-10px] transition-colors flex items-center gap-1 group font-black italic">
+        <span className="group-hover:-translate-x-1 transition-transform">←</span> BACK TO SELECTOR
+      </button>
+
       <div className="flex justify-between items-center border-b-4 border-black pb-1">
-        <h2 className="text-2xl italic uppercase tracking-tighter font-black">History</h2>
+        <h2 className="text-2xl italic uppercase tracking-tighter font-black">
+          {mode === 'office' ? 'History' : 'Consult'}
+        </h2>
         {isMaster && (
-          <button 
-            onClick={() => setIsEditMode(!isEditMode)}
-            className={`text-[10px] px-2 py-1 rounded font-bold transition-colors ${isEditMode ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-700'}`}
-          >
-            {isEditMode ? "설정 완료" : "⚙️ 메뉴 관리"}
+          <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-2 py-1 rounded font-bold transition-colors ${isEditMode ? 'bg-red-500 text-white' : 'bg-slate-200 text-slate-700'}`}>
+            {isEditMode ? "완료" : "⚙️ 메뉴 관리"}
           </button>
         )}
       </div>
       
-      {/* 1. 달력 영역 */}
-      <div className="flex justify-center bg-slate-50 p-2 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-        <Calendar 
-          onChange={onDateChange} 
-          value={selectedDate} 
-          formatDay={(locale, date) => date.getDate().toString()}
-          className="border-none bg-transparent font-black"
-        />
-      </div>
-      
-      {/* 2. 실적 요약 */}
-      <div className="bg-black text-white p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(67,97,238,1)]">
-        <p className="text-[10px] uppercase italic text-slate-400 mb-2 font-black">3-Month Average Performance</p>
-        <div className="flex justify-between items-end">
-          <div>
-            <p className="text-2xl font-black italic">₩{threeMonthAvg.amt.toLocaleString()}</p>
-            <p className="text-[10px] text-blue-400 font-bold">Monthly Avg Revenue</p>
+      {mode === 'office' && (
+        <>
+          <div className="flex justify-center bg-slate-50 p-2 rounded-2xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <Calendar onChange={onDateChange} value={selectedDate} formatDay={(l, d) => d.getDate().toString()} className="border-none bg-transparent font-black"/>
           </div>
-          <div className="text-right">
-            <p className="text-xl font-black">{threeMonthAvg.cnt}건</p>
-            <p className="text-[10px] text-slate-400 font-bold">Avg Count</p>
+          <div className="bg-black text-white p-5 rounded-2xl shadow-[4px_4px_0px_0px_rgba(67,97,238,1)]">
+            <p className="text-[10px] uppercase italic text-slate-400 mb-2 font-black">3-Month Average Performance</p>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-2xl font-black italic">₩{threeMonthAvg.amt.toLocaleString()}</p>
+                <p className="text-[10px] text-blue-400 font-bold">Monthly Avg Revenue</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-black">{threeMonthAvg.cnt}건</p>
+                <p className="text-[10px] text-slate-400 font-bold">Avg Count</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
       
-      {/* 3. 퀵 링크 버튼 섹션 */}
       <div className="px-1 space-y-3">
-        <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Community & Tools</p>
+        <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Links</p>
         
         {/* 재무 분석 도구 */}
         {(menuStatus.show_finance || isEditMode) && (
           <div className="relative">
-            <button 
-              onClick={() => !isEditMode && handleOpenLink("/financial_planner.html")}
-              className={`w-full flex items-center justify-center gap-3 py-3.5 border-2 border-black rounded-[1.5rem] transition-all group shadow-sm active:scale-95 
-                ${menuStatus.show_finance ? 'bg-[#f8fafc]' : 'bg-gray-100 opacity-40'}`}
-            >
-              <span className="text-xl">📊</span>
-              <span className="text-[12px] font-black tracking-tight">재무 분석 도구</span>
+            <button onClick={() => !isEditMode && handleOpenLink("/financial_planner.html")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-black rounded-xl transition-all ${menuStatus.show_finance ? 'bg-[#f8fafc]' : 'bg-gray-100 opacity-40'}`}>
+              <span className="text-lg">📊</span><span className="text-[11px] font-black">재무 분석 도구</span>
             </button>
-            {isEditMode && (
-              <input 
-                type="checkbox" 
-                checked={menuStatus.show_finance} 
-                onChange={() => toggleMenu("show_finance")} 
-                className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-5 h-5 accent-black cursor-pointer"
-              />
-            )}
+            {isEditMode && <input type="checkbox" checked={menuStatus.show_finance} onChange={() => toggleMenu("show_finance")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-black cursor-pointer"/>}
           </div>
         )}
 
         {/* 보장분석 탭 */}
         {(menuStatus.show_insu || isEditMode) && (
           <div className="relative">
-            <button 
-              onClick={() => !isEditMode && handleOpenLink("/insu.html")}
-              className={`w-full flex items-center justify-center gap-3 py-3.5 border-2 border-blue-600 rounded-[1.5rem] transition-all group shadow-sm active:scale-95
-                ${menuStatus.show_insu ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}
-            >
-              <span className="text-xl">🛡️</span>
-              <span className="text-[12px] font-black tracking-tight">보장분석 탭</span>
+            <button onClick={() => !isEditMode && handleOpenLink("/insu.html")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-blue-600 rounded-xl transition-all ${menuStatus.show_insu ? 'bg-white text-blue-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
+              <span className="text-lg">🛡️</span><span className="text-[11px] font-black">보장분석 탭</span>
             </button>
-            {isEditMode && (
-              <input 
-                type="checkbox" 
-                checked={menuStatus.show_insu} 
-                onChange={() => toggleMenu("show_insu")} 
-                className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-5 h-5 accent-blue-600 cursor-pointer"
-              />
-            )}
+            {isEditMode && <input type="checkbox" checked={menuStatus.show_insu} onChange={() => toggleMenu("show_insu")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-blue-600 cursor-pointer"/>}
+          </div>
+        )}
+
+        {/* 신규: 진료기록확인 */}
+        {(menuStatus.show_hira || isEditMode) && (
+          <div className="relative">
+            <button onClick={() => !isEditMode && handleOpenLink("https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-orange-500 rounded-xl transition-all ${menuStatus.show_hira ? 'bg-white text-orange-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
+              <span className="text-lg">🏥</span><span className="text-[11px] font-black">진료기록 확인</span>
+            </button>
+            {isEditMode && <input type="checkbox" checked={menuStatus.show_hira} onChange={() => toggleMenu("show_hira")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-orange-500 cursor-pointer"/>}
+          </div>
+        )}
+
+        {/* 신규: 숨은보험금찾기 */}
+        {(menuStatus.show_cont || isEditMode) && (
+          <div className="relative">
+            <button onClick={() => !isEditMode && handleOpenLink("https://cont.insure.or.kr/cont_web/intro.do")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-emerald-500 rounded-xl transition-all ${menuStatus.show_cont ? 'bg-white text-emerald-600' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
+              <span className="text-lg">🔍</span><span className="text-[11px] font-black">숨은 보험금 찾기</span>
+            </button>
+            {isEditMode && <input type="checkbox" checked={menuStatus.show_cont} onChange={() => toggleMenu("show_cont")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-emerald-500 cursor-pointer"/>}
           </div>
         )}
 
         {/* 카페 버튼 */}
         {(menuStatus.show_cafe || isEditMode) && (
           <div className="relative">
-            <button 
-              onClick={() => !isEditMode && handleOpenLink("https://cafe.naver.com/signal1035")}
-              className={`w-full flex items-center justify-center gap-3 py-3.5 border-2 border-[#2db400] rounded-[1.5rem] transition-all group shadow-sm active:scale-95
-                ${menuStatus.show_cafe ? 'bg-white text-[#2db400]' : 'bg-gray-100 text-gray-400 opacity-40'}`}
-            >
-              <span className="text-xl">☕</span>
-              <span className="text-[12px] font-black tracking-tight">성장연구소 카페</span>
+            <button onClick={() => !isEditMode && handleOpenLink("https://cafe.naver.com/signal1035")} className={`w-full flex items-center justify-center gap-3 py-3 border-2 border-[#2db400] rounded-xl transition-all ${menuStatus.show_cafe ? 'bg-white text-[#2db400]' : 'bg-gray-100 text-gray-400 opacity-40'}`}>
+              <span className="text-lg">☕</span><span className="text-[11px] font-black">성장연구소 카페</span>
             </button>
-            {isEditMode && (
-              <input 
-                type="checkbox" 
-                checked={menuStatus.show_cafe} 
-                onChange={() => toggleMenu("show_cafe")} 
-                className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-5 h-5 accent-[#2db400] cursor-pointer"
-              />
-            )}
+            {isEditMode && <input type="checkbox" checked={menuStatus.show_cafe} onChange={() => toggleMenu("show_cafe")} className="absolute top-1/2 -right-2 transform -translate-y-1/2 w-4 h-4 accent-[#2db400] cursor-pointer"/>}
           </div>
         )}
       </div>
 
-      {/* 4. 공지 및 개인 메모 */}
       <div className="flex flex-col gap-4 mt-auto">
-        <div>
-          <div className="flex justify-between items-center mb-1 px-1">
-            <p className="text-[9px] text-slate-400 uppercase italic tracking-widest font-black">Admin Notice</p>
-            {isAdmin && <button onClick={saveDailyNotice} className="text-[9px] font-black text-blue-600 hover:underline">SAVE</button>}
-          </div>
-          <textarea 
-            readOnly={!isAdmin}
-            value={dailyAdminNotice}
-            onChange={(e) => setDailyAdminNotice(e.target.value)}
-            className="w-full h-20 p-3 text-[11px] border-2 border-black rounded-xl bg-yellow-50 resize-none font-bold"
-            placeholder="관리자 공지사항이 없습니다."
-          />
-        </div>
-
-        <div>
-          <p className="text-[9px] text-slate-400 uppercase italic mb-1 px-1 tracking-widest font-black">Private Memo</p>
-          <textarea 
-            value={privateMemo}
-            onChange={(e) => {
-              setPrivateMemo(e.target.value);
-              localStorage.setItem(`memo_${user.id}`, e.target.value);
-            }}
-            className="w-full h-20 p-3 text-[11px] border-2 border-slate-200 rounded-xl bg-slate-50 resize-none font-bold italic"
-            placeholder="나만의 메모를 입력하세요..."
-          />
-        </div>
-
-        <button 
-          onClick={handleLogout}
-          className="w-full py-3 text-[11px] font-black text-slate-400 hover:text-red-500 transition-colors border-t border-slate-100"
-        >
-          LOGOUT SYSTEM
-        </button>
+        {mode === 'office' && (
+          <>
+            <div>
+              <div className="flex justify-between items-center mb-1 px-1 text-[9px] text-slate-400 uppercase italic font-black">
+                <span>Admin Notice</span>
+                {isAdmin && <button onClick={saveDailyNotice} className="text-blue-600 hover:underline">SAVE</button>}
+              </div>
+              <textarea readOnly={!isAdmin} value={dailyAdminNotice} onChange={(e) => setDailyAdminNotice(e.target.value)} className="w-full h-20 p-3 text-[11px] border-2 border-black rounded-xl bg-yellow-50 resize-none font-bold" placeholder="관리자 공지가 없습니다."/>
+            </div>
+            <div>
+              <p className="text-[9px] text-slate-400 uppercase italic mb-1 px-1 font-black">Private Memo</p>
+              <textarea value={privateMemo} onChange={(e) => {setPrivateMemo(e.target.value); localStorage.setItem(`memo_${user.id}`, e.target.value);}} className="w-full h-20 p-3 text-[11px] border-2 border-slate-200 rounded-xl bg-slate-50 resize-none font-bold italic" placeholder="나만의 메모..."/>
+            </div>
+          </>
+        )}
+        <button onClick={handleLogout} className="w-full py-3 text-[11px] font-black text-slate-400 hover:text-red-500 border-t border-slate-100 transition-colors">LOGOUT SYSTEM</button>
       </div>
     </aside>
   );
