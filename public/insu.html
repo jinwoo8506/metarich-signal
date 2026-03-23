@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>보장분석 Pro v6 — 보험 전문가용</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="importmap">
+  {
+    "imports": {
+      "@google/generative-ai": "https://esm.run/@google/generative-ai"
+    }
+  }
+</script>
+<style>
+:root{
+  --pri:#4361ee;--pri-l:#e8ecff;--pri-d:#2d4bdb;
+  --acc:#7c3aed;--acc-l:#f3eeff;
+  --navy:#0f1e3c;--navy2:#1a3260;
+  --gold:#c8941a;--gold-l:#fef9e7;
+  --green:#16a34a;--green-l:#f0fdf4;
+  --red:#dc2626;--red-l:#fef2f2;
+  --orange:#ea580c;--orange-l:#fff7ed;
+  --teal:#0d9488;--teal-l:#f0fdfa;
+  --rose:#e11d48;
+  --slate:#f4f6fb;--white:#fff;
+  --t1:#0f172a;--t2:#475569;--t3:#94a3b8;
+  --border:#e2e8f0;--border2:#cbd5e1;
+  --sh:0 1px 14px rgba(15,30,60,.07);
+  --sh2:0 8px 32px rgba(15,30,60,.12);
+  --sh3:0 20px 60px rgba(15,30,60,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:18px;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t1);}
+
+/* ── TOPBAR ── */
+.topbar{height:60px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:300;box-shadow:var(--sh);}
+.tb-left{display:flex;align-items:center;gap:12px;}
+.tb-logo{width:34px;height:34px;background:linear-gradient(135deg,var(--pri),var(--acc));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.tb-brand{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:700;color:var(--navy);}
+.tb-pro{padding:2px 9px;background:var(--pri-l);color:var(--pri);border-radius:9px;font-size:12px;font-weight:700;letter-spacing:.5px;}
+.tb-right{display:flex;gap:7px;align-items:center;}
+.tbtn{padding:7px 15px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.tbtn-out{background:transparent;color:var(--t2);border:1.5px solid var(--border2);}
+.tbtn-out:hover{background:var(--slate);}
+.tbtn-policy{background:linear-gradient(135deg,#7c3aed,#4361ee);color:#fff;display:flex;align-items:center;gap:6px;}
+.tbtn-policy:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(124,58,237,.35);}
+.tbtn-disease{background:linear-gradient(135deg,#0d9488,#0369a1);color:#fff;display:flex;align-items:center;gap:6px;}
+.tbtn-disease:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(13,148,136,.35);}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:1fr 280px;min-height:calc(100vh - 60px);align-items:start;}
+.main{padding:24px 28px;display:flex;flex-direction:column;gap:18px;}
+
+/* ── INPUT PANEL ── */
+.input-panel{background:var(--white);border-radius:15px;box-shadow:var(--sh);overflow:hidden;}
+.ip-head{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:16px 24px;}
+.ip-head-inner{display:flex;align-items:center;gap:12px;}
+.ip-head-ico{width:38px;height:38px;background:rgba(255,255,255,.13);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:19px;}
+.ip-head-t{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:700;color:#fff;}
+.ip-head-s{font-size:12px;color:rgba(255,255,255,.46);margin-top:2px;}
+.ip-body{padding:20px 24px;display:flex;flex-direction:column;gap:18px;}
+
+/* INFO ROWS */
+.info-row{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;}
+.info-block{display:flex;flex-direction:column;gap:8px;}
+.ibl{font-size:13px;font-weight:700;color:var(--t3);letter-spacing:1px;text-transform:uppercase;}
+.info-fields{background:var(--slate);border-radius:10px;padding:13px;display:flex;flex-direction:column;gap:8px;}
+.fr{display:grid;gap:7px;}
+.fr.c2{grid-template-columns:1fr 1fr;}
+.fr.c3{grid-template-columns:1fr 1fr 1fr;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg label{font-size:12px;font-weight:600;color:var(--t2);}
+.fc{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:var(--t1);background:var(--white);width:100%;transition:all .2s;}
+.fc:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px rgba(67,97,238,.1);}
+
+/* API KEY INPUT STYLE */
+.api-key-box { background: var(--orange-l); border: 1.5px dashed var(--orange); }
+
+/* MODE TABS */
+.mode-wrap{display:flex;flex-direction:column;gap:9px;}
+.mode-label{font-size:13px;font-weight:700;color:var(--t3);letter-spacing:1px;text-transform:uppercase;}
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
+.mode-tab{padding:12px 9px;border-radius:11px;border:2px solid var(--border);background:var(--white);cursor:pointer;text-align:center;transition:all .22s;position:relative;}
+.mode-tab:hover{border-color:var(--pri-d);background:var(--pri-l);}
+.mode-tab.on{border-color:var(--pri);background:var(--pri-l);box-shadow:0 0 0 2px rgba(67,97,238,.1);}
+.mode-tab-ico{font-size:24px;margin-bottom:6px;}
+.mode-tab-t{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.mode-tab.on .mode-tab-t{color:var(--pri);}
+.mode-tab-s{font-size:13px;color:var(--t3);line-height:1.35;}
+.mode-check{position:absolute;top:7px;right:9px;width:17px;height:17px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;display:none;align-items:center;justify-content:center;}
+.mode-tab.on .mode-check{display:flex;}
+
+/* MODE PANELS */
+.mode-panel{display:none;flex-direction:column;gap:12px;}
+.mode-panel.show{display:flex;}
+
+/* SUBMODE for compare */
+.submode-wrap{display:flex;gap:8px;}
+.submode-btn{flex:1;padding:10px 8px;border-radius:9px;border:2px solid var(--border);background:var(--white);cursor:pointer;text-align:center;font-size:13px;font-weight:700;color:var(--t2);transition:all .2s;}
+.submode-btn:hover{border-color:var(--teal);color:var(--teal);}
+.submode-btn.on{border-color:var(--teal);background:var(--teal-l);color:var(--teal);}
+.submode-btn-ico{font-size:18px;margin-bottom:3px;}
+
+/* UPLOAD */
+.upload-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;margin-bottom:9px;}
+.upload-section-label{font-size:13px;font-weight:700;color:var(--t2);}
+.slot-row{display:flex;align-items:center;gap:5px;}
+.slot-txt{font-size:12px;font-weight:700;color:var(--t3);}
+.sn{width:30px;height:30px;border-radius:6px;border:1.5px solid var(--border);background:var(--white);font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;}
+.sn:hover{border-color:var(--pri);color:var(--pri);}
+.sn.on{background:var(--pri);border-color:var(--pri);color:#fff;}
+.upload-grid{display:grid;gap:10px;}
+.uc{position:relative;border-radius:10px;border:2px dashed var(--border2);padding:16px 12px;text-align:center;cursor:pointer;transition:all .22s;background:var(--white);}
+.uc:hover{border-color:var(--pri);background:var(--pri-l);}
+.uc.is-base{border-color:var(--pri);border-style:solid;background:var(--pri-l);}
+.uc.has-file{border-style:solid;border-color:var(--green);background:var(--green-l);}
+.uc.dragover{transform:scale(1.01);border-color:var(--pri-d);}
+.uc input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.uc-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:7px;}
+.ch-base{background:rgba(67,97,238,.12);color:var(--pri);}
+.ch-new{background:rgba(124,58,237,.1);color:var(--acc);}
+.ch-cross{background:rgba(13,148,136,.1);color:var(--teal);}
+.ch-policy{background:rgba(13,148,136,.1);color:var(--teal);}
+.uc-ico{font-size:24px;margin-bottom:6px;}
+.uc-name{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px;}
+.uc-hint{font-size:13px;color:var(--t3);line-height:1.3;}
+.uc-fname{font-size:12px;color:var(--green);font-weight:600;margin-top:4px;word-break:break-all;}
+.uc-cnt{position:absolute;top:7px;right:7px;background:var(--green);color:#fff;border-radius:7px;font-size:11px;font-weight:700;padding:1px 6px;}
+
+/* NOTICE */
+.notice{padding:10px 13px;border-radius:8px;font-size:12px;line-height:1.6;display:flex;gap:7px;}
+.notice-blue{background:var(--pri-l);color:var(--pri);}
+.notice-teal{background:var(--teal-l);color:var(--teal);}
+
+/* QUERY */
+.query-wrap{display:flex;flex-direction:column;gap:7px;}
+.query-label{font-size:13px;font-weight:700;color:var(--t2);}
+.query-input{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:var(--t1);background:var(--white);resize:vertical;min-height:68px;}
+.query-input:focus{outline:none;border-color:var(--teal);}
+.query-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;}
+.qchip{padding:4px 10px;border-radius:18px;border:1.5px solid var(--border2);font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;background:var(--white);transition:all .18s;}
+.qchip:hover{border-color:var(--teal);color:var(--teal);background:var(--teal-l);}
+
+/* RUN BUTTONS */
+.run-btn{width:100%;padding:14px;border:none;border-radius:11px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:9px;}
+.run-btn:hover{transform:translateY(-2px);}
+.run-btn:disabled{opacity:.35;transform:none;cursor:not-allowed;}
+.rb-analyze{background:linear-gradient(135deg,var(--pri),var(--acc));color:#fff;}
+.rb-analyze:hover:not(:disabled){box-shadow:0 8px 26px rgba(67,97,238,.4);}
+.rb-compare{background:linear-gradient(135deg,#0f766e,var(--teal));color:#fff;}
+.rb-compare:hover:not(:disabled){box-shadow:0 8px 26px rgba(13,148,136,.38);}
+.rb-policy{background:linear-gradient(135deg,#b45309,var(--gold));color:#fff;}
+.rb-policy:hover:not(:disabled){box-shadow:0 8px 26px rgba(200,148,26,.36);}
+.run-icon{font-size:18px;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* ── LOADING ── */
+.loading-box{background:var(--white);border-radius:15px;box-shadow:var(--sh);padding:50px 26px;text-align:center;display:none;}
+.l-spinner{width:50px;height:50px;border:4px solid var(--border);border-top-color:var(--pri);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 15px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.l-title{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.l-sub{font-size:13px;color:var(--t3);margin-bottom:18px;}
+.l-prog{max-width:380px;margin:0 auto;background:var(--border);border-radius:3px;height:4px;overflow:hidden;}
+.l-bar{height:100%;background:linear-gradient(90deg,var(--pri),var(--acc));transition:width .5s ease;width:0;}
+.l-steps{max-width:360px;margin:14px auto 0;display:flex;flex-direction:column;gap:6px;}
+.l-step{display:flex;align-items:center;gap:8px;padding:8px 13px;border-radius:7px;font-size:13px;color:var(--t3);background:var(--slate);}
+.l-step.done{background:var(--green-l);color:var(--green);}
+.l-step.cur{background:var(--pri-l);color:var(--pri);font-weight:700;}
+.l-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* ── RESULTS ── */
+.result-wrap{display:none;flex-direction:column;gap:18px;}
+.result-wrap.show{display:flex;}
+
+/* SCORE HERO */
+.score-hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 60%,#263d7a 100%);border-radius:16px;padding:28px 34px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--sh3);}
+.score-hero::before{content:'';position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.03);top:-90px;right:-50px;pointer-events:none;}
+.score-hero::after{content:'';position:absolute;width:160px;height:160px;border-radius:50%;background:rgba(67,97,238,.1);bottom:-60px;left:60px;pointer-events:none;}
+.sh-row{display:flex;align-items:flex-start;justify-content:space-between;position:relative;z-index:1;margin-bottom:22px;gap:20px;}
+.sh-left{flex:1;}
+.sh-left h2{font-family:'Noto Serif KR',serif;font-size:21px;font-weight:700;margin-bottom:5px;}
+.sh-meta{font-size:13px;color:rgba(255,255,255,.8);line-height:1.7; white-space: pre-line;} /* AI 답변용 */
+.sh-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+.sh-tag{padding:3px 11px;background:rgba(255,255,255,.1);border-radius:13px;font-size:12px;color:rgba(255,255,255,.82);}
+.sh-adv{margin-top:9px;padding:8px 13px;background:rgba(255,255,255,.07);border-radius:8px;font-size:13px;color:rgba(255,255,255,.68);display:inline-flex;align-items:center;gap:7px;}
+.sh-scores{display:flex;align-items:center;gap:13px;flex-shrink:0;}
+.sc-box{text-align:center;padding:13px 19px;background:rgba(255,255,255,.07);border-radius:12px;}
+.sc-num{font-family:'IBM Plex Mono',monospace;font-size:48px;font-weight:600;line-height:1;}
+.sc-lbl{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;opacity:.5;}
+.sc-b .sc-num{color:rgba(255,255,255,.38);}
+.sc-a .sc-num,.sc-only .sc-num{color:#fbbf24;}
+.sc-a .sc-lbl{color:#fbbf24;opacity:.8;}
+.sc-mid{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.sc-arr{font-size:20px;color:rgba(255,255,255,.25);}
+.sc-diff{padding:4px 12px;border-radius:13px;font-size:13px;font-weight:700;background:rgba(22,163,74,.25);color:#86efac;}
+.sh-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;position:relative;z-index:1;}
+.sh-kpi{text-align:center;padding:10px 6px;background:rgba(255,255,255,.05);border-radius:8px;}
+.sh-kpi-v{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:500;color:#fbbf24;}
+.sh-kpi-l{font-size:12px;color:rgba(255,255,255,.33);margin-top:2px;}
+
+/* TABS */
+.tab-bar{display:flex;gap:3px;background:var(--white);border-radius:12px;padding:4px;box-shadow:var(--sh);}
+.tab-btn{flex:1;padding:10px 5px;border:none;background:transparent;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;color:var(--t3);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.tab-btn.on{background:var(--pri);color:#fff;box-shadow:0 2px 8px rgba(67,97,238,.28);}
+.tab-btn:hover:not(.on){background:var(--slate);color:var(--t1);}
+.tc{display:none;flex-direction:column;gap:16px;}
+.tc.on{display:flex;}
+
+/* CARDS */
+.scard{background:var(--white);border-radius:12px;box-shadow:var(--sh);padding:20px 24px;}
+.scard-title{font-size:12px;font-weight:700;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:15px;display:flex;align-items:center;gap:6px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+
+/* SCORE BARS */
+.sg{border-radius:10px;padding:15px;}
+.sg-b{background:var(--slate);border:1.5px solid var(--border);}
+.sg-a{background:var(--green-l);border:1.5px solid rgba(22,163,74,.2);}
+.sg-solo{background:var(--pri-l);border:1.5px solid rgba(67,97,238,.18);}
+.sg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,.05);}
+.sg-tag{font-size:13px;font-weight:700;letter-spacing:.3px;padding:2px 8px;border-radius:8px;}
+.sg-b .sg-tag{background:var(--border);color:var(--t2);}
+.sg-a .sg-tag{background:rgba(22,163,74,.13);color:var(--green);}
+.sg-solo .sg-tag{background:rgba(67,97,238,.13);color:var(--pri);}
+.sg-total{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;}
+.sg-b .sg-total{color:var(--t2);}
+.sg-a .sg-total,.sg-solo .sg-total{color:var(--pri);}
+.sb-row{margin-bottom:9px;}
+.sb-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px;}
+.sb-name{color:var(--t2);}
+.sb-val{font-family:'IBM Plex Mono',monospace;color:var(--t1);}
+.sb-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
+.sb-fill{height:100%;border-radius:3px;transition:width 1.6s cubic-bezier(.4,0,.2,1);}
+.f-grey{background:linear-gradient(90deg,#94a3b8,#cbd5e1);}
+.f-blue{background:linear-gradient(90deg,var(--pri),#818cf8);}
+.f-green{background:linear-gradient(90deg,var(--green),#4ade80);}
+.f-teal{background:linear-gradient(90deg,var(--teal),#2dd4bf);}
+.f-gold{background:linear-gradient(90deg,var(--gold),#fbbf24);}
+.f-rose{background:linear-gradient(90deg,var(--rose),#fb7185);}
+
+/* VENN */
+.venn-sec{padding:18px;background:var(--slate);border-radius:10px;}
+.venn-leg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:13px;}
+.vl{padding:10px 12px;border-radius:8px;}
+.vl-r{background:#fee2e2;border:1.5px solid #fca5a5;}
+.vl-y{background:#fef3c7;border:1.5px solid #fcd34d;}
+.vl-g{background:#dcfce7;border:1.5px solid #86efac;}
+.vl-h{font-size:12px;font-weight:700;margin-bottom:5px;}
+.vl-r .vl-h{color:#dc2626;}
+.vl-y .vl-h{color:#d97706;}
+.vl-g .vl-h{color:#16a34a;}
+.vl-body{font-size:13px;color:var(--t2);line-height:1.6;}
+
+/* COVERAGE TABLE */
+.cov-table{width:100%;border-collapse:collapse;font-size:13px;}
+.cov-table thead tr{background:var(--navy);}
+.cov-table th{padding:9px 12px;color:rgba(255,255,255,.8);text-align:left;font-weight:600;font-size:13px;}
+.cov-table th:first-child{border-radius:7px 0 0 7px;}
+.cov-table th:last-child{border-radius:0 7px 7px 0;}
+.cov-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.cov-table tbody tr:hover td{background:var(--slate);}
+.cov-table tr:last-child td{border-bottom:none;}
+.cat-pill{display:inline-flex;padding:2px 7px;border-radius:6px;font-size:12px;font-weight:700;}
+.cat-cancer{background:#fce7f3;color:#be185d;}
+.cat-surgery{background:#ede9fe;color:#7c3aed;}
+.cat-death{background:#fef3c7;color:#d97706;}
+.cat-accident{background:#e0f2fe;color:#0369a1;}
+.cat-ci{background:#dcfce7;color:#15803d;}
+.cat-other{background:var(--slate);color:var(--t2);}
+.chg-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;}
+.chg-up{background:var(--green-l);color:var(--green);}
+.chg-dn{background:var(--red-l);color:var(--red);}
+.chg-sm{background:var(--slate);color:var(--t3);}
+.chg-nw{background:var(--pri-l);color:var(--pri);}
+.chg-del{background:var(--red-l);color:var(--red);}
+
+/* PREMIUM */
+.prem-layout{display:grid;grid-template-columns:1fr 56px 1fr;gap:13px;align-items:start;}
+.prem-col h4{font-size:13px;font-weight:700;color:var(--t3);letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px;text-align:center;}
+.prem-item{display:flex;justify-content:space-between;align-items:center;padding:8px 11px;background:var(--slate);border-radius:7px;margin-bottom:5px;}
+.prem-item.aft{background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.13);}
+.prem-iname{font-size:12px;color:var(--t2);}
+.prem-iname small{display:block;font-size:12px;color:var(--t3);}
+.prem-ival{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--t1);}
+.prem-tot{display:flex;justify-content:space-between;padding:9px 11px;background:var(--navy);border-radius:7px;color:#fff;font-weight:700;font-size:13px;}
+.prem-tot-v{font-family:'IBM Plex Mono',monospace;color:#fbbf24;}
+.prem-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:30px;gap:5px;}
+.prem-arr{font-size:18px;color:var(--t3);}
+.prem-diff{text-align:center;padding:7px 9px;border-radius:8px;font-size:12px;font-weight:700;}
+.pd-s{background:var(--green-l);color:var(--green);}
+.pd-m{background:var(--red-l);color:var(--red);}
+
+/* SUM BOXES */
+.sum-boxes{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px;}
+.sum-box{padding:13px;border-radius:10px;text-align:center;}
+.sb-nw{background:var(--pri-l);}
+.sb-up{background:var(--green-l);}
+.sb-sm{background:var(--slate);}
+.sb-dn{background:var(--red-l);}
+.sum-num{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;}
+.sb-nw .sum-num{color:var(--pri);}
+.sb-up .sum-num{color:var(--green);}
+.sb-sm .sum-num{color:var(--t2);}
+.sb-dn .sum-num{color:var(--red);}
+.sum-lbl{font-size:13px;color:var(--t3);margin-top:4px;}
+
+/* RECOMMENDATION */
+.grade-wrap{display:flex;align-items:center;gap:15px;padding:16px;background:var(--slate);border-radius:10px;margin-bottom:14px;}
+.grade-badge{width:64px;height:64px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+.grade-text{font-size:13px;color:var(--t2);line-height:1.7;}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.rec-grp{display:flex;flex-direction:column;gap:5px;}
+.rec-grp-t{font-size:13px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-bottom:3px;}
+.rec-item{padding:9px 12px;border-radius:7px;font-size:13px;line-height:1.6;border-left:3px solid;}
+.ri-g{background:var(--green-l);border-color:var(--green);}
+.ri-o{background:var(--orange-l);border-color:var(--orange);}
+.ri-b{background:var(--pri-l);border-color:var(--pri);}
+.notes-box{margin-top:12px;padding:12px 15px;background:var(--gold-l);border-radius:8px;font-size:13px;color:var(--t2);line-height:1.75;border-left:3px solid var(--gold);}
+
+/* ─── PRODUCT MANAGEMENT (Mode 0 result) ─── */
+.product-mgmt{display:flex;flex-direction:column;gap:10px;}
+.prod-card{border-radius:11px;border:2px solid var(--border);overflow:hidden;transition:all .2s;}
+.prod-card.kept{border-color:var(--green);}
+.prod-card.cancelled{border-color:var(--red);opacity:.7;}
+.prod-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;transition:background .15s;}
+.prod-head:hover{background:var(--slate);}
+.prod-card.kept .prod-head{background:rgba(22,163,74,.05);}
+.prod-card.cancelled .prod-head{background:rgba(220,38,38,.04);}
+.prod-head-left{display:flex;align-items:center;gap:10px;}
+.prod-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;background:var(--pri-l);}
+.prod-name{font-size:15px;font-weight:700;color:var(--t1);}
+.prod-premium{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--t2);margin-top:2px;}
+.prod-head-right{display:flex;align-items:center;gap:8px;}
+.prod-status-btns{display:flex;gap:5px;}
+.psbtn{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.psbtn.keep{border-color:var(--green);color:var(--green);}
+.psbtn.keep.on{background:var(--green);color:#fff;}
+.psbtn.cancel{border-color:var(--red);color:var(--red);}
+.psbtn.cancel.on{background:var(--red);color:#fff;}
+.prod-detail-btn{padding:5px 11px;border-radius:7px;font-size:12px;font-weight:700;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:'Noto Sans KR',sans-serif;color:var(--t2);transition:all .2s;}
+.prod-detail-btn:hover{border-color:var(--pri);color:var(--pri);}
+
+/* PRODUCT SUMMARY BAR */
+.prod-summary-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;background:var(--navy);border-radius:11px;color:#fff;margin-bottom:14px;}
+.psb-item{text-align:center;}
+.psb-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#fbbf24;}
+.psb-lbl{font-size:13px;color:rgba(255,255,255,.45);margin-top:2px;}
+
+/* RIGHT SIDEBAR */
+.sidebar-right{background:var(--white);border-left:1px solid var(--border);padding:16px 13px;display:flex;flex-direction:column;gap:8px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
+.sidebar-right::-webkit-scrollbar{width:3px;}
+.sidebar-right::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.sr-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:1px;}
+.sr-sub{font-size:13px;color:var(--t3);line-height:1.45;margin-bottom:5px;}
+.analysis-item{border-radius:8px;border:1.5px solid var(--border);overflow:hidden;transition:all .2s;cursor:pointer;}
+.analysis-item:hover{border-color:var(--pri-d);}
+.analysis-item.selected{border-color:var(--pri);box-shadow:0 0 0 2px rgba(67,97,238,.1);}
+.ai-head{display:flex;align-items:center;gap:7px;padding:8px 10px;transition:background .15s;user-select:none;}
+.ai-head:hover{background:var(--slate);}
+.analysis-item.selected .ai-head{background:var(--pri-l);}
+.ai-ico{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.ai-info{flex:1;}
+.ai-name{font-size:13px;font-weight:700;color:var(--t1);}
+.ai-sub{font-size:12px;color:var(--t3);margin-top:1px;}
+.ai-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .15s;}
+.analysis-item.selected .ai-check{background:var(--pri);border-color:var(--pri);color:#fff;}
+
+/* ─── MODAL BASE ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.22);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;}
+.modal-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:700;color:var(--navy);}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--slate);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--t2);transition:all .2s;}
+.modal-close:hover{background:var(--border);color:var(--t1);}
+.modal-body{overflow-y:auto;flex:1;padding:20px 24px;}
+
+/* ─── POLICY LOOKUP MODAL ─── */
+.policy-modal .modal{width:min(980px,96vw);}
+.policy-pill-tabs{display:flex;gap:7px;margin-bottom:18px;flex-wrap:wrap;padding:12px 14px;background:var(--slate);border-radius:12px;}
+.ppt-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:22px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;background:var(--white);color:var(--t2);box-shadow:0 1px 5px rgba(0,0,0,.07);}
+.ppt-btn:hover{filter:brightness(.96);}
+.ppt-btn.on{color:#fff;}
+.ppt-all.on{background:#374151;}
+.ppt-damage.on{background:#2563eb;}
+.ppt-life.on{background:#e11d48;}
+.ppt-gongjae.on{background:#16a34a;}
+.ppt-digital.on{background:#7c3aed;}
+.cc-section-label{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--t3);letter-spacing:1.2px;text-transform:uppercase;padding:10px 4px 5px;border-bottom:1px solid var(--border);margin-top:4px;}
+.cc-section-label:first-child{padding-top:2px;}
+.company-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.company-card{border-radius:10px;border:1.5px solid var(--border);padding:11px 13px;cursor:pointer;transition:all .2s;text-decoration:none;display:flex;align-items:center;gap:10px;background:var(--white);}
+.company-card:hover{border-color:var(--teal);background:var(--teal-l);transform:translateY(-1px);box-shadow:var(--sh);}
+.cc-ico{width:32px;height:32px;border-radius:8px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.cc-info{flex:1;min-width:0;}
+.cc-name{font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.company-card:hover .cc-name{color:var(--teal);}
+.cc-badge{display:inline-flex;align-items:center;padding:1px 7px;border-radius:7px;font-size:12px;font-weight:700;margin-top:3px;}
+.cc-badge-life{background:#fce7f3;color:#be185d;}
+.cc-badge-damage{background:#dbeafe;color:#1d4ed8;}
+.cc-badge-gongjae{background:#dcfce7;color:#15803d;}
+.cc-badge-digital{background:#ede9fe;color:#6d28d9;}
+.cc-arrow{font-size:14px;color:var(--t3);flex-shrink:0;transition:all .2s;}
+.company-card:hover .cc-arrow{color:var(--teal);transform:translateX(2px);}
+
+/* ─── PRODUCT DETAIL MODAL ─── */
+.prod-detail-modal .modal{width:min(720px,95vw);}
+.coverage-list{display:flex;flex-direction:column;gap:7px;}
+.cov-detail-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;border:1.5px solid var(--border);transition:all .2s;}
+.cov-detail-item.endorsed{background:var(--red-l);border-color:var(--red);opacity:.6;}
+.cov-detail-left{display:flex;align-items:center;gap:10px;}
+.cov-detail-name{font-size:14px;font-weight:600;color:var(--t1);}
+.cov-detail-name.endorsed{text-decoration:line-through;color:var(--t3);}
+.cov-detail-cat{font-size:12px;font-weight:700;padding:2px 7px;border-radius:6px;}
+.cov-detail-amt{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--t2);}
+.cov-endorse-btn{padding:4px 11px;border-radius:7px;font-size:13px;font-weight:700;border:1.5px solid;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.cov-endorse-btn.active{border-color:var(--red);color:var(--red);background:var(--white);}
+.cov-endorse-btn.active:hover{background:var(--red);color:#fff;}
+.cov-endorse-btn.endorsed{border-color:var(--green);color:var(--green);background:var(--white);}
+.cov-endorse-btn.endorsed:hover{background:var(--green);color:#fff;}
+.modal-premium-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--navy);border-radius:9px;margin-top:14px;color:#fff;}
+.mpb-label{font-size:13px;font-weight:700;}
+.mpb-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#fbbf24;}
+.mpb-sub{font-size:13px;color:rgba(255,255,255,.45);margin-top:1px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tb-left">
+    <div class="tb-logo">📊</div>
+    <div class="tb-brand">보장분석 Pro <span class="tb-pro">V6 EXPERT</span></div>
+  </div>
+  <div class="tb-right">
+    <button class="tbtn tbtn-out">로그아웃</button>
+    <button class="tbtn tbtn-disease">📋 질병분석</button>
+    <button class="tbtn tbtn-policy">📁 증권조회</button>
+  </div>
+</div>
+
+<div class="app">
+  <div class="main">
+    <div class="input-panel">
+      <div class="ip-head">
+        <div class="ip-head-inner">
+          <div class="ip-head-ico">👤</div>
+          <div>
+            <div class="ip-head-t">분석 설정 및 데이터 입력</div>
+            <div class="ip-head-s">고객 정보와 분석 모드를 선택하세요</div>
+          </div>
+        </div>
+      </div>
+      <div class="ip-body">
+        <div class="info-row">
+          <div class="info-block">
+            <div class="ibl">고객 정보 및 API 설정</div>
+            <div class="info-fields">
+              <div class="fr c3">
+                <div class="fg"><label>고객명</label><input type="text" id="custName" class="fc" placeholder="홍길동"></div>
+                <div class="fg"><label>연령</label><input type="number" id="custAge" class="fc" placeholder="40"></div>
+                <div class="fg"><label>직업</label><input type="text" id="custJob" class="fc" placeholder="사무직"></div>
+              </div>
+              <div class="fr">
+                <div class="fg"><label>Gemini API Key (분석 필수)</label>
+                <input type="password" id="geminiKey" class="fc api-key-box" placeholder="여기에 구글 API 키를 입력하세요"></div>
+              </div>
+            </div>
+          </div>
+          <div class="info-block">
+            <div class="ibl">분석 모드 선택</div>
+            <div class="mode-tabs">
+              <div class="mode-tab on" data-mode="analyze">
+                <div class="mode-tab-ico">🔍</div>
+                <div class="mode-tab-t">보장 분석</div>
+                <div class="mode-tab-s">기존 보험의 보장 수준 정밀 분석</div>
+                <div class="mode-check">✓</div>
+              </div>
+              <div class="mode-tab" data-mode="compare">
+                <div class="mode-tab-ico">⚖️</div>
+                <div class="mode-tab-t">리모델링 비교</div>
+                <div class="mode-tab-s">기존 vs 신규 보험 1:1 비교 분석</div>
+                <div class="mode-check">✓</div>
+              </div>
+              <div class="mode-tab" data-mode="policy">
+                <div class="mode-tab-ico">📄</div>
+                <div class="mode-tab-t">증권 요약</div>
+                <div class="mode-tab-s">복잡한 증권을 한눈에 요약</div>
+                <div class="mode-check">✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-panel show" id="panel-upload">
+           <div class="upload-top">
+             <div class="upload-section-label">보험 증권 업로드 (PDF/JPG)</div>
+           </div>
+           <div class="upload-grid">
+             <div class="uc">
+               <input type="file" id="fileInput" multiple>
+               <div class="uc-chip ch-policy">가입 증권</div>
+               <div class="uc-ico">📤</div>
+               <div class="uc-name">파일을 드래그하거나 클릭하세요</div>
+               <div class="uc-hint">최대 5개 파일 (PDF, 이미지)</div>
+               <div id="fileNameDisplay" class="uc-fname"></div>
+             </div>
+           </div>
+        </div>
+
+        <div class="query-wrap">
+          <div class="query-label">추가 분석 요청 사항</div>
+          <textarea id="queryInput" class="query-input" placeholder="분석 시 특별히 고려해야 할 사항을 입력하세요 (예: 뇌혈관 보장 강화, 보험료 10만원 이하로 조정 등)"></textarea>
+          <div class="query-chips">
+            <span class="qchip">암 진단비 집중 분석</span>
+            <span class="qchip">불필요한 특약 삭제</span>
+            <span class="qchip">가족력 고려 분석</span>
+            <span class="qchip">갱신형 전환 검토</span>
+          </div>
+        </div>
+
+        <button class="run-btn rb-analyze" id="runAnalyze">
+          <span class="run-icon">✨</span>
+          <span id="btnText">분석 프로세스 가동</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="loading-box" id="loadingBox">
+      <div class="l-spinner"></div>
+      <div class="l-title">AI 전문가가 보장 내용을 분석 중입니다</div>
+      <div class="l-sub">데이터 규모에 따라 5~10초 정도 소요될 수 있습니다.</div>
+      <div class="l-prog"><div class="l-bar" id="loadBar"></div></div>
+      <div class="l-steps">
+        <div class="l-step cur" id="step1"><div class="l-dot"></div>데이터 구조화 및 로딩...</div>
+        <div class="l-step" id="step2"><div class="l-dot"></div>보장 항목 매칭 분석...</div>
+        <div class="l-step" id="step3"><div class="l-dot"></div>Gemini AI 기반 리포트 생성...</div>
+      </div>
+    </div>
+
+    <div class="result-wrap" id="resultWrap">
+      <div class="score-hero">
+        <div class="sh-row">
+          <div class="sh-left">
+            <h2 id="resTitle">고객님 보장 분석 리포트</h2>
+            <div class="sh-meta" id="resSummary">분석 결과가 여기에 표시됩니다.</div>
+            <div class="sh-tags">
+              <span class="sh-tag">#3대진단비_우수</span>
+              <span class="sh-tag">#수술비_보강필요</span>
+              <span class="sh-tag">#비갱신형_위주</span>
+            </div>
+            <div class="sh-adv">💡 전문가 조언: 전체적으로 양호하나 뇌혈관 진단비 범위 확대가 권장됩니다.</div>
+          </div>
+          <div class="sh-scores">
+            <div class="sc-box sc-only">
+              <div class="sc-num">88</div>
+              <div class="sc-lbl">종합 점수</div>
+            </div>
+          </div>
+        </div>
+        <div class="sh-kpis">
+          <div class="sh-kpi"><div class="sh-kpi-v">14.2만</div><div class="sh-kpi-l">월 보험료</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-v">5,000</div><div class="sh-kpi-l">암진단비</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-v">2,000</div><div class="sh-kpi-l">2대질환</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-v">100%</div><div class="sh-kpi-l">비갱신비율</div></div>
+          <div class="sh-kpi"><div class="sh-kpi-v">22년</div><div class="sh-kpi-l">잔여납입</div></div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab-btn on">보장 현황</button>
+        <button class="tab-btn">세부 분석</button>
+        <button class="tab-btn">제안 방향</button>
+      </div>
+
+      <div class="tc on">
+        <div class="scard">
+          <div class="scard-title">🛡️ 보장 카테고리별 수준</div>
+          <div class="g2">
+            <div class="sg sg-solo">
+               <div class="sg-head"><span class="sg-tag">현재 보장</span><span class="sg-total">GOOD</span></div>
+               <div class="sb-row">
+                 <div class="sb-top"><span class="sb-name">암 진단/치료</span><span class="sb-val">90%</span></div>
+                 <div class="sb-track"><div class="sb-fill f-green" style="width:90%"></div></div>
+               </div>
+               <div class="sb-row">
+                 <div class="sb-top"><span class="sb-name">뇌/심장 보장</span><span class="sb-val">45%</span></div>
+                 <div class="sb-track"><div class="sb-fill f-rose" style="width:45%"></div></div>
+               </div>
+               <div class="sb-row">
+                 <div class="sb-top"><span class="sb-name">수술/입원비</span><span class="sb-val">75%</span></div>
+                 <div class="sb-track"><div class="sb-fill f-blue" style="width:75%"></div></div>
+               </div>
+            </div>
+            <div class="venn-sec">
+               <div class="vl vl-y">
+                 <div class="vl-h">주요 관찰 사항</div>
+                 <div class="vl-body">암 보장은 충분하나, 2대 질환(뇌/심장)의 범위가 협소한 상태입니다.</div>
+               </div>
+               <div class="venn-leg">
+                 <div class="vl vl-g"><div class="vl-h">충분</div><div class="vl-body">암, 사망</div></div>
+                 <div class="vl vl-y"><div class="vl-h">보통</div><div class="vl-body">수술, 실손</div></div>
+                 <div class="vl vl-r"><div class="vl-h">부족</div><div class="vl-body">뇌심장</div></div>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-right">
+    <div class="sr-title">분석 히스토리</div>
+    <div class="sr-sub">최근 분석한 항목들입니다.</div>
+    <div class="analysis-item selected">
+      <div class="ai-head">
+        <div class="ai-ico" style="background:var(--pri-l);color:var(--pri)">👤</div>
+        <div class="ai-info">
+          <div class="ai-name">홍길동 고객님</div>
+          <div class="ai-sub">2026.03.23 분석</div>
+        </div>
+        <div class="ai-check">✓</div>
+      </div>
+    </div>
+    <div class="analysis-item">
+      <div class="ai-head">
+        <div class="ai-ico" style="background:var(--slate);color:var(--t2)">👤</div>
+        <div class="ai-info">
+          <div class="ai-name">이영희 고객님</div>
+          <div class="ai-sub">2026.03.20 분석</div>
+        </div>
+        <div class="ai-check"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { GoogleGenerativeAI } from "@google/generative-ai";
+
+  // 요소 참조
+  const btnRun = document.getElementById('runAnalyze');
+  const loadingBox = document.getElementById('loadingBox');
+  const resultWrap = document.getElementById('resultWrap');
+  const loadBar = document.getElementById('loadBar');
+  const fileNameDisplay = document.getElementById('fileNameDisplay');
+  const fileInput = document.getElementById('fileInput');
+
+  // 파일 선택 시 이름 표시
+  fileInput.addEventListener('change', (e) => {
+    const files = e.target.target?.files || e.target.files;
+    if(files.length > 0) {
+      fileNameDisplay.innerText = Array.from(files).map(f => f.name).join(', ');
+    }
+  });
+
+  // 분석 실행 메인 함수
+  btnRun.addEventListener('click', async () => {
+    const apiKey = document.getElementById('geminiKey').value;
+    const custName = document.getElementById('custName').value || "고객";
+    const custAge = document.getElementById('custAge').value || "미상";
+    const custJob = document.getElementById('custJob').value || "미상";
+    const query = document.getElementById('queryInput').value;
+
+    if (!apiKey) {
+      alert("구글 Gemini API 키를 입력해주세요.");
+      document.getElementById('geminiKey').focus();
+      return;
+    }
+
+    // UI 초기화
+    loadingBox.style.display = 'block';
+    resultWrap.classList.remove('show');
+    loadBar.style.width = '0%';
+    
+    try {
+      // 단계 애니메이션 (시각적 효과)
+      updateStep(1);
+      await progressTo(30);
+      
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      updateStep(2);
+      await progressTo(60);
+
+      const prompt = `
+        당신은 보험 분석 전문가입니다. 다음 정보를 바탕으로 상세한 보장 분석 리포트를 작성하세요.
+        
+        고객명: ${custName}
+        연령: ${custAge}세
+        직업: ${custJob}
+        사용자 요청: ${query}
+        
+        [지침]
+        1. 첫 문장은 인사를 건네고, 현재 보험의 전반적인 상태를 요약하세요.
+        2. 암, 뇌, 심장 질환 보장의 적절성을 구체적으로 언급하세요.
+        3. 가성비나 보장 범위 면에서 개선할 점을 3가지 제안하세요.
+        4. 어조는 전문적이고 신뢰감 있게 작성하세요.
+        5. 한국어로 답변하세요.
+      `;
+
+      updateStep(3);
+      await progressTo(90);
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const aiText = response.text();
+
+      // 결과 화면 반영
+      document.getElementById('resTitle').innerText = `${custName} 고객님 전문 보장 분석`;
+      document.getElementById('resSummary').innerText = aiText;
+      
+      await progressTo(100);
+      setTimeout(() => {
+        loadingBox.style.display = 'none';
+        resultWrap.classList.add('show');
+      }, 500);
+
+    } catch (error) {
+      console.error(error);
+      alert("에러가 발생했습니다: " + error.message);
+      loadingBox.style.display = 'none';
+    }
+  });
+
+  // 유틸리티: 로딩 바 진행
+  function progressTo(val) {
+    return new Promise(resolve => {
+      loadBar.style.width = val + '%';
+      setTimeout(resolve, 800);
+    });
+  }
+
+  // 유틸리티: 단계 표시 변경
+  function updateStep(stepNum) {
+    document.querySelectorAll('.l-step').forEach((s, idx) => {
+      if(idx + 1 < stepNum) {
+        s.classList.remove('cur');
+        s.classList.add('done');
+      } else if(idx + 1 === stepNum) {
+        s.classList.add('cur');
+      }
+    });
+  }
+
+  // 칩(태그) 클릭 시 텍스트 영역에 추가하는 기능
+  document.querySelectorAll('.qchip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const input = document.getElementById('queryInput');
+      input.value += (input.value ? ", " : "") + chip.innerText;
+    });
+  });
+</script>
+
+</body>
+</html>

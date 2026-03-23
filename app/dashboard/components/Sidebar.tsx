@@ -129,10 +129,19 @@ export default function Sidebar({ user, selectedDate, onDateChange }: any) {
           className="w-full flex items-center justify-center gap-3 py-3.5 bg-[#f8fafc] border-2 border-black rounded-[1.5rem] hover:bg-black hover:text-[#d4af37] transition-all group shadow-sm active:scale-95"
         >
           <span className="text-xl">📊</span>
-          <span className="text-[12px] font-black tracking-tight">재무 / 보장분석 도구</span>
+          <span className="text-[12px] font-black tracking-tight">재무 분석 도구</span>
         </button>
 
-        {/* ✅ 성장연구소 카페 버튼 (신규 추가) */}
+        {/* ✅ 보장분석 버튼 (신규 추가) */}
+        <button 
+          onClick={() => handleOpenLink("/insu.html")}
+          className="w-full flex items-center justify-center gap-3 py-3.5 bg-white border-2 border-blue-600 text-blue-600 rounded-[1.5rem] hover:bg-blue-600 hover:text-white transition-all group shadow-sm active:scale-95"
+        >
+          <span className="text-xl">🛡️</span>
+          <span className="text-[12px] font-black tracking-tight">보장분석 탭</span>
+        </button>
+
+        {/* 성장연구소 카페 버튼 (기존) */}
         <button 
           onClick={() => handleOpenLink("https://cafe.naver.com/signal1035")}
           className="w-full flex items-center justify-center gap-3 py-3.5 bg-white border-2 border-[#2db400] text-[#2db400] rounded-[1.5rem] hover:bg-[#2db400] hover:text-white transition-all group shadow-sm active:scale-95"
