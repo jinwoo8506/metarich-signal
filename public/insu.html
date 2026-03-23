@@ -820,10 +820,76 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     </div>
     <button class="tbtn tbtn-policy" onclick="openPolicyModal()">📊 상품공시실</button>
     <button class="tbtn tbtn-disease" onclick="window.open('https://www.kcdcode.kr','_blank')">🔬 질병분류</button>
+    <button class="tbtn" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;" onclick="openSettingModal()">⚙️ 보장 기준 설정</button>
     <button class="tbtn tbtn-out" onclick="clearAll()">↺ 초기화</button>
     <button class="tbtn tbtn-out" onclick="window.print()">🖨 인쇄 / PDF</button>
   </div>
 </header>
+
+<!-- ─── 보장 기준 설정 모달 ─── -->
+<div class="modal-overlay" id="settingModal" onclick="if(event.target===this)closeSettingModal()" style="z-index:600;">
+  <div class="modal" style="width:min(860px,96vw);max-height:90vh;overflow-y:auto;">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">⚙️ 보장 기준 설정</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">나이대별 추천 기준을 선택하거나 항목별로 직접 설정하세요</div>
+      </div>
+      <button class="modal-close" onclick="closeSettingModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+
+      <!-- 1. 나이대별 프리셋 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:10px;letter-spacing:.5px;">📌 나이대별 평균 보장 기준 (빠른 설정)</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="presetCards">
+          <!-- JS로 렌더 -->
+        </div>
+        <div style="margin-top:8px;padding:8px 11px;background:var(--pri-l);border-radius:7px;font-size:11px;color:var(--pri);line-height:1.6;">
+          💡 나이대 선택 시 해당 연령대에 권장되는 보장 금액이 자동으로 설정됩니다. 이후 상세 탭에서 개별 조정도 가능합니다.
+        </div>
+      </div>
+
+      <!-- 2. 상세 설정 탭 -->
+      <div style="margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:10px;letter-spacing:.5px;">🔧 항목별 상세 설정</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;" id="settingCatTabs">
+          <!-- JS로 렌더 -->
+        </div>
+        <div id="settingItemGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <!-- JS로 렌더 -->
+        </div>
+      </div>
+
+      <!-- 3. 월보험료 기준 -->
+      <div style="padding:14px 16px;background:var(--slate);border-radius:9px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">💰 월보험료 적정 기준</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px;">최소 권장 (원/월)</div>
+            <input type="number" id="setPremMin" class="fc" style="font-size:13px;" placeholder="200000">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px;">적정 권장 (원/월)</div>
+            <input type="number" id="setPremOpt" class="fc" style="font-size:13px;" placeholder="400000">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px;">최대 허용 (원/월)</div>
+            <input type="number" id="setPremMax" class="fc" style="font-size:13px;" placeholder="700000">
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--t3);line-height:1.6;">
+          ※ 보험료가 최소 이하면 "부족", 적정~최대면 "충분", 최대 초과면 "과다" 로 표시됩니다.
+        </div>
+      </div>
+
+      <!-- 버튼 -->
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <button onclick="resetSetting()" style="padding:9px 18px;background:var(--slate);color:var(--t2);border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">↺ 기본값으로</button>
+        <button onclick="applySetting()" style="padding:9px 22px;background:linear-gradient(135deg,var(--pri),#6366f1);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">✅ 적용하기</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ─── POLICY LOOKUP MODAL (상품공시실) ─── -->
 <div class="modal-overlay policy-modal" id="policyModal" onclick="if(event.target===this)closePolicyModal()">
@@ -933,6 +999,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
             <div class="mode-tab-t">약관 검색 · 분석</div>
             <div class="mode-tab-s">약관 PDF 업로드 후 질문으로 즉시 조회</div>
           </div>
+          <div class="mode-tab" id="modeTab3" onclick="setMode(3)" style="border-color:var(--green);background:linear-gradient(135deg,#f0fdf4,#fff);">
+            <div class="mode-check" style="background:var(--green);">✓</div>
+            <div class="mode-tab-ico" style="font-size:22px;">✍️</div>
+            <div class="mode-tab-t" style="color:var(--green);">수동 입력 분석</div>
+            <div class="mode-tab-s">API 없이 · 직접 입력 · 즉시 분석</div>
+          </div>
         </div>
       </div>
 
@@ -989,13 +1061,79 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
           </div>
           <div class="upload-grid" id="uploadGrid2"></div>
         </div>
+
+        <!-- 약관 분석 옵션 -->
+        <div style="padding:10px 13px;background:#f0fdfa;border-radius:9px;border:1.5px solid rgba(13,148,136,.2);margin-bottom:8px;">
+          <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:8px;">⚙️ 분석 옵션</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:3px;">📄 약관 범위</label>
+              <select id="policyRange" class="fc" style="font-size:13px;">
+                <option value="full">전체 약관 분석 (소용량 PDF)</option>
+                <option value="front">앞부분 위주 (보장 내용·면책사항)</option>
+                <option value="back">뒷부분 위주 (특약·부가조항)</option>
+                <option value="smart" selected>스마트 분석 (질문 관련 부분만)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--t3);display:block;margin-bottom:3px;">🤖 분석 모델</label>
+              <select id="policyModel" class="fc" style="font-size:13px;">
+                <option value="haiku" selected>Haiku 4.5 (빠름·저렴)</option>
+                <option value="sonnet">Sonnet 4 (정확·대용량 권장)</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:8px;padding:7px 10px;background:rgba(220,38,38,.06);border-radius:6px;font-size:11px;color:#dc2626;line-height:1.6;">
+            ⚠️ <strong>토큰 초과 오류 발생 시:</strong> 모델을 <strong>Sonnet 4</strong>로 변경하거나, 약관을 핵심 부분만 페이지 추출 후 업로드하세요.<br>
+            Haiku 최대 200K 토큰 ≈ 약 150페이지 / Sonnet 최대 200K 토큰 ≈ 동일 (더 정확)
+          </div>
+        </div>
+
         <div class="query-wrap">
           <div class="query-label">🔎 찾고 싶은 내용을 입력하세요</div>
-          <textarea class="query-input" id="policyQuery" placeholder="예) 암 진단금 지급 조건이 어떻게 되나요?&#10;면책기간과 감액 지급 기준을 찾아주세요"></textarea>
+          <textarea class="query-input" id="policyQuery" placeholder="예) 암 진단금 지급 조건이 어떻게 되나요?&#10;면책기간과 감액 지급 기준을 찾아주세요&#10;뇌혈관질환 보장 범위와 제외 질병을 알려주세요"></textarea>
           <div class="query-chips" id="queryChips"></div>
         </div>
-        <div class="notice notice-teal"><span>⚡</span><span>수백 페이지 약관도 질문한 내용만 즉시 추출해 쉽게 설명드립니다.</span></div>
+        <div class="notice notice-teal"><span>⚡</span><span>약관 조항을 AI가 직접 찾아 쉽게 설명합니다. 대용량 약관은 Sonnet 4 모델을 권장합니다.</span></div>
         <button class="run-btn rb-policy" id="runBtn2" onclick="runAnalysis(2)" disabled><span class="run-icon">📖</span> 약관 검색·분석 시작</button>
+      </div>
+
+      <!-- MODE 3: 수동 입력 -->
+      <div class="mode-panel" id="mp3">
+        <div style="padding:10px 13px;background:linear-gradient(135deg,#f0fdf4,#fff);border-radius:9px;border:1.5px solid rgba(22,163,74,.2);margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:3px;">✍️ 수동 입력 분석 — API 없이 즉시 분석</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.6;">보험 서류 없이 계약·담보 정보를 직접 입력하면 <strong>API 없이도</strong> 보장 분석이 바로 실행됩니다.</div>
+        </div>
+
+        <!-- 계약 입력 -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:700;color:var(--t2);">📋 보험 계약 목록</div>
+            <button onclick="addManualContract()" style="padding:4px 11px;background:var(--green-l);color:var(--green);border:1.5px solid var(--green);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 계약 추가</button>
+          </div>
+          <div id="manualContracts">
+            <!-- JS로 렌더 -->
+          </div>
+        </div>
+
+        <!-- 담보 입력 -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:700;color:var(--t2);">🛡️ 담보별 가입 금액 (만원 단위)</div>
+            <div style="display:flex;gap:6px;">
+              <button onclick="fillManualAll(0)" style="padding:4px 10px;background:var(--slate);color:var(--t2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;">전체 초기화</button>
+              <button onclick="fillManualFromSetting()" style="padding:4px 10px;background:var(--pri-l);color:var(--pri);border:1px solid var(--border2);border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;">⚙️ 설정 기준값 채우기</button>
+            </div>
+          </div>
+          <div id="manualCovGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <!-- JS로 렌더 -->
+          </div>
+        </div>
+
+        <div class="notice notice-blue"><span>💡</span><span>담보 금액을 0으로 두면 <strong>미가입</strong>으로 처리됩니다. 설정된 권장 기준과 비교해 미가입/부족/충분이 자동 판정됩니다.</span></div>
+        <button class="run-btn" id="runBtn3" onclick="runManualAnalysis()" style="background:linear-gradient(135deg,var(--green),#22c55e);box-shadow:0 4px 16px rgba(22,163,74,.3);">
+          <span class="run-icon">✍️</span> 수동 분석 실행 (API 불필요)
+        </button>
       </div>
 
     </div>
@@ -1040,24 +1178,122 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     <div class="tc" id="tc3">
       <div class="scard"><div class="scard-title">💡 전문가 종합 의견</div><div id="recContent"></div></div>
     </div>
-    <!-- 보장편집 탭 -->
+    <!-- 보장편집 탭 (★ 핵심 화면) -->
     <div class="tc" id="tc4">
+
+      <!-- ── STEP 1: 현재 보장 확인 ── -->
+      <div class="scard" id="covStatusSummary" style="border-top:3px solid var(--pri);">
+        <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span>🔍 STEP 1 — 현재 보장 현황 확인</span>
+          <div style="display:flex;gap:6px;">
+            <button onclick="switchTab(0)" style="padding:5px 11px;background:var(--pri-l);color:var(--pri);border:1.5px solid var(--pri);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">📊 종합</button>
+            <button onclick="switchTab(1)" style="padding:5px 11px;background:var(--slate);color:var(--t2);border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🛡️ 보장상세</button>
+          </div>
+        </div>
+        <div id="covStatusGrid"></div>
+      </div>
+
+      <!-- ── STEP 2: 제안 내용 입력 (설계사가 직접 입력) ── -->
+      <div class="scard" style="border-top:3px solid var(--green);">
+        <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span>✍️ STEP 2 — 제안 내용 입력 <span style="font-size:11px;font-weight:400;color:var(--t3);">( PDF 업로드 또는 직접 입력 )</span></span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--t2);">
+              <input type="radio" name="propMode" value="upload" id="propUpload" onchange="setPropMode('upload')" checked>
+              📄 제안서 PDF 업로드
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--t2);">
+              <input type="radio" name="propMode" value="manual" id="propManual" onchange="setPropMode('manual')">
+              ✍️ 직접 입력
+            </label>
+          </div>
+        </div>
+
+        <!-- 제안서 PDF 업로드 방식 -->
+        <div id="propUploadArea">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;">📄 제안서 PDF 업로드</div>
+              <div id="propSlot" style="border:2px dashed var(--border2);border-radius:8px;padding:18px;text-align:center;cursor:pointer;background:#fafbfd;position:relative;"
+                ondragover="event.preventDefault();this.style.borderColor='var(--green)'"
+                ondragleave="this.style.borderColor='var(--border2)'"
+                ondrop="handlePropDrop(event)">
+                <input type="file" accept=".pdf,.jpg,.jpeg,.png" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" onchange="handlePropFiles(this.files)">
+                <div style="font-size:22px;margin-bottom:5px;">📄</div>
+                <div style="font-size:12px;font-weight:700;color:var(--t1);">제안서 PDF 업로드</div>
+                <div style="font-size:11px;color:var(--t3);margin-top:2px;">클릭 또는 드래그</div>
+                <div style="font-size:11px;color:var(--green);margin-top:4px;" id="propFileName"></div>
+              </div>
+            </div>
+            <div style="padding:12px 14px;background:#f0fdf4;border-radius:8px;border:1px solid rgba(22,163,74,.2);">
+              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px;">💡 제안서 업로드 방법</div>
+              <div style="font-size:11px;color:var(--t2);line-height:1.8;">
+                • 보험사 제안서 PDF를 업로드하면 AI가 자동 추출합니다<br>
+                • 여러 보험사 제안서 동시 업로드 가능<br>
+                • 업로드 후 <strong>제안 분석 실행</strong> 버튼을 눌러주세요<br>
+                • PDF 없이는 아래 직접 입력 방식을 사용하세요
+              </div>
+            </div>
+          </div>
+          <button onclick="runPropAnalysis()" id="propRunBtn" disabled
+            style="width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--green),#22c55e);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;opacity:.4;">
+            🔍 제안서 AI 분석 실행
+          </button>
+        </div>
+
+        <!-- 직접 입력 방식 -->
+        <div id="propManualArea" style="display:none;">
+          <!-- 제안 계약 입력 -->
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:11px;font-weight:700;color:var(--t3);">📋 제안 계약 목록</div>
+              <button onclick="addPropContract()" style="padding:3px 10px;background:var(--green-l);color:var(--green);border:1.5px solid var(--green);border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;">+ 추가</button>
+            </div>
+            <div id="propContracts"></div>
+          </div>
+
+          <!-- 제안 담보 입력 -->
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:11px;font-weight:700;color:var(--t3);">🛡️ 제안 담보 (현재 보장에서 변경/추가되는 항목)</div>
+              <button onclick="copyCurrentToProp()" style="padding:3px 10px;background:var(--pri-l);color:var(--pri);border:1px solid var(--border2);border-radius:5px;font-size:11px;cursor:pointer;">현재 보장 그대로 복사</button>
+            </div>
+            <div id="propCovGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"></div>
+          </div>
+
+          <button onclick="runPropManual()"
+            style="width:100%;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--green),#22c55e);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+            ✅ 제안 내용 적용 → Before/After 비교
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Before/After 비교 결과 (제안 적용 후 표시) ── -->
+      <div class="scard" id="compareResultCard" style="display:none;border-top:3px solid var(--gold);">
+        <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>📊 STEP 3 — Before/After 비교 결과</span>
+          <div style="display:flex;gap:6px;">
+            <button onclick="switchTab(1)" style="padding:5px 11px;background:var(--gold-l);color:var(--gold);border:1.5px solid var(--gold);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🔄 보장 변화 보기</button>
+            <button onclick="window.print()" style="padding:5px 11px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨 출력</button>
+          </div>
+        </div>
+        <div id="compareResultBody"></div>
+      </div>
+
+      <!-- ── 계약 목록 수정 ── -->
       <div class="scard">
         <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <span>✏️ 보장편집 — 계약·담보 수정 후 출력</span>
+          <span>✏️ 현재 계약 목록 수정</span>
           <div style="display:flex;gap:6px;">
             <button onclick="addNewContract()" style="padding:5px 12px;background:var(--green-l);color:var(--green);border:1.5px solid var(--green);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 계약 추가</button>
             <button onclick="switchToAddCov()" style="padding:5px 12px;background:var(--pri-l);color:var(--pri);border:1.5px solid var(--pri);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 담보 추가</button>
           </div>
         </div>
-        <!-- 요약바 -->
         <div class="prod-summary-bar" id="prodSummaryBar"></div>
-        <!-- 메모 -->
         <div style="margin:8px 0 12px;padding:10px 13px;background:var(--gold-l);border-radius:8px;border-left:3px solid var(--gold);">
-          <div style="font-size:11px;font-weight:700;color:#7a5000;margin-bottom:4px;">📝 메모 / 특이사항 (PDF에 없는 내용, 구두 확인 사항 등)</div>
-          <textarea id="editMemo" placeholder="예) 2024년 12월 추가 가입 예정 / 고지 필요 사항 있음 / 갱신 시 보험료 인상 예상..." style="width:100%;border:1px solid #f0d08a;border-radius:6px;padding:7px 10px;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;min-height:52px;background:#fff;"></textarea>
+          <div style="font-size:11px;font-weight:700;color:#7a5000;margin-bottom:4px;">📝 메모 / 특이사항</div>
+          <textarea id="editMemo" placeholder="PDF에 없는 내용, 구두 확인 사항, 향후 보완 필요 항목 등..." style="width:100%;border:1px solid #f0d08a;border-radius:6px;padding:7px 10px;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;min-height:52px;background:#fff;"></textarea>
         </div>
-        <!-- 계약 카드 -->
         <div class="product-mgmt" id="productMgmt"></div>
       </div>
 
@@ -1239,17 +1475,27 @@ const ANALYSIS_ITEMS=[
 // API KEY 관리
 // ════════════════════════════════════════
 function getApiKey(){
-  return sessionStorage.getItem('ins_api_key') || document.getElementById('apiKeyInput')?.value || '';
+  // 입력창 → localStorage 순으로 확인
+  const inp=document.getElementById('apiKeyInput')?.value?.trim()||'';
+  if(inp) return inp;
+  return localStorage.getItem('ins_api_key')||'';
 }
 function saveApiKey(val){
-  if(val){ sessionStorage.setItem('ins_api_key',''); sessionStorage.setItem('ins_api_key',val); }
+  const clean=(val||'').trim();
+  if(clean) localStorage.setItem('ins_api_key', clean);
   const st=document.getElementById('apiKeyStatus');
-  if(st) st.textContent = val ? '✅ 키 입력됨' : '';
+  if(st) st.textContent = clean ? '✅' : '';
 }
 // 페이지 로드 시 저장된 키 복원
 document.addEventListener('DOMContentLoaded',function(){
-  const saved=sessionStorage.getItem('ins_api_key');
-  if(saved){ const el=document.getElementById('apiKeyInput'); if(el){ el.value=saved; saveApiKey(saved); } }
+  const saved=localStorage.getItem('ins_api_key');
+  if(saved){
+    const el=document.getElementById('apiKeyInput');
+    if(el){ el.value=saved; }
+    const st=document.getElementById('apiKeyStatus');
+    if(st) st.textContent='✅';
+  }
+  loadSetting();
 });
 
 // ════════════════════════════════════════
@@ -1360,13 +1606,6 @@ function renderPolicyGrid(filter){
 // ════════════════════════════════════════
 // MODE / SUBMODE
 // ════════════════════════════════════════
-function setMode(m){
-  S.mode=m;
-  [0,1,2].forEach(i=>{
-    document.getElementById('modeTab'+i).classList.toggle('on',i===m);
-    document.getElementById('mp'+i).classList.toggle('show',i===m);
-  });
-}
 function setSubMode(sm){
   S.subMode=sm;
   [0,1].forEach(i=>document.getElementById('sub'+i).classList.toggle('on',i===sm));
@@ -1466,12 +1705,26 @@ function switchTab(i){
 // ANALYSIS RUNNER
 // ════════════════════════════════════════
 async function runAnalysis(mode){
-  if(!Object.values(S.slots[mode]||{}).some(s=>s.b64&&s.b64.length>0)){alert('파일을 먼저 업로드해주세요.');return;}
+  // ① API 키 사전 확인
+  const apiKey=getApiKey();
+  if(!apiKey){
+    alert('❌ API Key를 입력해주세요.\n\n상단의 🔑 입력창에 sk-ant-... 키를 붙여넣으세요.\n(console.anthropic.com → API Keys에서 발급)');
+    return;
+  }
+
+  // ② 파일 확인
+  if(!Object.values(S.slots[mode]||{}).some(s=>s.b64&&s.b64.length>0)){
+    alert('파일을 먼저 업로드해주세요.');
+    return;
+  }
+
   const titles=['현재 보장 분석 중...','비교·리모델링 분석 중...','약관 검색 중...'];
   document.getElementById('lTitle').textContent=titles[mode];
   document.getElementById('lSub').textContent=['보장 항목 추출 및 점수 계산 중','보험사별 보장 비교 중','약관 조항 검색 중'][mode];
   document.getElementById('loadingBox').style.display='block';
   document.getElementById('resultWrap').classList.remove('show');
+
+  // ③ 진행 애니메이션
   const steps=['ls1','ls2','ls3','ls4','ls5'],progs=[15,35,55,75,92];
   let si=0;
   const iv=setInterval(()=>{
@@ -1479,23 +1732,48 @@ async function runAnalysis(mode){
     if(si<steps.length){document.getElementById(steps[si]).classList.add('cur');document.getElementById('lBar').style.width=progs[si]+'%';si++;}
     else clearInterval(iv);
   },1200);
+
+  // ④ 120초 타임아웃 (로딩 무한 방지)
+  const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('응답 시간 초과(120초). 네트워크 또는 API 상태를 확인해주세요.')),120000));
+
   try{
-    const res=mode===2?await callPolicyAPI():await callAnalysisAPI(mode);
+    const res=await Promise.race([
+      mode===2?callPolicyAPI():callAnalysisAPI(mode),
+      timeout
+    ]);
     clearInterval(iv);
     steps.forEach(s=>{document.getElementById(s).classList.add('done');document.getElementById(s).classList.remove('cur');});
     document.getElementById('lBar').style.width='100%';
     setTimeout(()=>{
-      document.getElementById('loadingBox').style.display='none';
-      S.result=res;S.currentMode=mode;
-      if(mode===2) renderPolicyResult(res);
-      else{renderAll(res,mode);renderProductMgmt(res);}
-      document.getElementById('resultWrap').classList.add('show');
-      renderInfoSections();
-    },450);
+      try{
+        document.getElementById('loadingBox').style.display='none';
+        S.result=res; S.currentMode=mode;
+        if(mode===2){
+          renderPolicyResult(res);
+        } else {
+          renderAll(res,mode);
+          renderProductMgmt(res);
+          switchTab(4);
+          document.getElementById('resultWrap').scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        document.getElementById('resultWrap').classList.add('show');
+        renderInfoSections();
+      }catch(renderErr){
+        document.getElementById('loadingBox').style.display='none';
+        console.error('렌더링 오류:', renderErr);
+        alert('⚠️ 화면 렌더링 오류\n\n'+renderErr.message+'\n\n분석은 완료됐습니다. 새로고침 후 다시 시도해주세요.');
+      }
+    },300);
   }catch(err){
     clearInterval(iv);
     document.getElementById('loadingBox').style.display='none';
-    alert('분석 오류: '+err.message);
+    // 오류 메시지 상세 안내
+    let msg=err.message||'알 수 없는 오류';
+    if(msg.includes('credit')||msg.includes('balance')) msg='크레딧 부족입니다.\nconsole.anthropic.com → Billing에서 충전해주세요.';
+    else if(msg.includes('401')||msg.includes('auth')) msg='API Key가 잘못되었습니다.\n키를 다시 확인하고 재입력해주세요.';
+    else if(msg.includes('429')) msg='요청이 너무 많습니다. 잠시 후 다시 시도해주세요.';
+    else if(msg.includes('파싱')) msg='AI 응답 파싱 실패. 다시 시도해주세요.\n(PDF가 너무 크거나 내용이 없을 수 있습니다)';
+    alert('⚠️ 분석 오류\n\n'+msg);
   }
 }
 
@@ -1510,60 +1788,208 @@ async function callAnalysisAPI(mode){
   const modeSlots=S.slots[mode]||{};
   const isSolo=mode===0;
   const isCross=mode===1&&S.subMode===1;
+  const isCompare=mode===1&&S.subMode===0;
 
+  // ── 파일 첨부 ──
   if(isSolo){
     const allF=Object.values(modeSlots).flatMap(s=>s.b64||[]);
-    content.push({type:'text',text:'[현재 가입 보험 서류:]'});
+    content.push({type:'text',text:'[현재 가입 보험 서류]'});
     allF.forEach(f=>af(content,f));
-    content.push({type:'text',text:`\n고객:${v('custName')}/${v('custBirth')}/${v('custGender')}/${v('custJob')} 담당:${v('advName')}/${v('advPhone')}/${v('advCompany')}\n모드: 현재 보장 단독 분석`});
+    content.push({type:'text',text:`고객: ${v('custName')} / ${v('custBirth')} / ${v('custGender')} / ${v('custJob')}\n담당: ${v('advName')} / ${v('advPhone')} / ${v('advCompany')}`});
   } else if(isCross){
     const slots=Object.entries(modeSlots).filter(([k,s])=>s.b64&&s.b64.length>0);
     slots.forEach(([key,slot],i)=>{
-      content.push({type:'text',text:`\n[보험사 ${i+1} 제안서:]`});
+      content.push({type:'text',text:`[보험사 ${i+1} 제안서]`});
       slot.b64.forEach(f=>af(content,f));
     });
-    content.push({type:'text',text:`\n고객:${v('custName')}/${v('custBirth')}/${v('custGender')} 담당:${v('advName')}/${v('advPhone')}\n모드: 교차분석 — 보험사별 보장 항목 교차 비교 및 Best 조합 추천`});
+    content.push({type:'text',text:`고객: ${v('custName')} / ${v('custBirth')} / ${v('custGender')}\n담당: ${v('advName')} / ${v('advPhone')}`});
   } else {
     const base=modeSlots['base'];
-    if(base&&base.b64.length){content.push({type:'text',text:'[기존 보험 (Before):]'});base.b64.forEach(f=>af(content,f));}
-    else content.push({type:'text',text:'[기존 보험: 없음]'});
-    for(const [key,slot] of Object.entries(modeSlots).filter(([k])=>k.startsWith('new')&&S.slots[mode][k].b64.length)){
-      const n=parseInt(key.replace('new',''))+1;
-      content.push({type:'text',text:`\n[신규 제안서 ${n}:]`});
-      slot.b64.forEach(f=>af(content,f));
+    if(base&&base.b64&&base.b64.length){
+      content.push({type:'text',text:'[기존 보험 (Before) — 현재 가입 보험 서류]'});
+      base.b64.forEach(f=>af(content,f));
+    } else {
+      content.push({type:'text',text:'[기존 보험: 없음 — 신규 설계 케이스]'});
     }
-    content.push({type:'text',text:`\n고객:${v('custName')}/${v('custBirth')}/${v('custGender')} 담당:${v('advName')}/${v('advPhone')}\n모드: 비교분석`});
+    const newSlots=Object.entries(modeSlots).filter(([k])=>k.startsWith('new')).filter(([k,s])=>s.b64&&s.b64.length);
+    newSlots.forEach(([key,slot],i)=>{
+      content.push({type:'text',text:`[신규 제안서 ${i+1} — 보험사/상품 제안서]`});
+      slot.b64.forEach(f=>af(content,f));
+    });
+    content.push({type:'text',text:`고객: ${v('custName')} / ${v('custBirth')} / ${v('custGender')}\n담당: ${v('advName')} / ${v('advPhone')}`});
   }
 
-  const PROMPT_INST = '[중요 지시사항] 업로드된 PDF는 대한민국 보험사(메리츠화재/KB손보 등)의 보장분석 제안서입니다. PDF에서 아래 항목을 빠짐없이 정확히 추출하여 JSON으로만 응답하세요. 필수 추출: 1.고객기본정보(이름/나이/성별/생년월일) 2.담당설계사(이름/연락처/소속) 3.보험계약현황(정상계약건수/월보험료합계원단위숫자/보험사별계약목록[보험사명,상품명전체,월보험료숫자,납입기간,만기연령,보장시작일,보장종료일]) 4.담보별가입금액(만원단위숫자): 질병사망,상해사망,상해후유장해,일반암진단비,유사암진단비,뇌혈관진단비,뇌졸중진단비,뇌출혈진단비,허혈성심장질환진단비,급성심근경색진단비,중증치매진단,고액항암치료비,암주요치료비,2대질환주요치료비,질병입원의료비,질병통원의료비,상해입원의료비,상해통원의료비,암수술비,뇌혈관수술비,허혈심장수술비,질병수술비,상해수술비,간병인사용입원일당,1인실입원일당,교통사고처리지원금,변호사선임비용,벌금,일상생활배상책임 5.각담보보장상태(미가입/부족/충분) 6.보험사별상품상세담보목록. ※금액단위: 억원x10000=만원, 원/10000=만원 ※PDF에서실제읽히는값만사용추정금지';
-  const PROMPT_JSON = '{"customer":{"name":"","age":"","gender":"","birth":"","summary":""},"advisor":{"name":"","phone":"","company":""},"contract_summary":{"normal_count":0,"lapsed_count":0,"total_monthly_premium":0,"analysis_date":""},"before":{"insurers":[],"total_premium":0,"premiums":[{"name":"보험사명","product":"상품명전체","premium":0,"period":"납입기간","maturity":"만기연령","start":"보장시작일","end":"보장종료일"}],"coverages":[{"item":"담보명","category":"암","amount":"금액"}],"products":[{"id":"p1","name":"상품명","insurer":"보험사","premium":0,"period":"","maturity":"","coverages":[{"item":"담보명","category":"암","amount":"0","note":""}]}]},"after":{"insurers":[],"total_premium":0,"premiums":[],"coverages":[]},"coverage_detail":{"질병사망":0,"상해사망":0,"상해후유장해":0,"일반암진단비":0,"유사암진단비":0,"뇌혈관진단비":0,"뇌졸중진단비":0,"뇌출혈진단비":0,"허혈성심장질환진단비":0,"급성심근경색진단비":0,"중증치매진단":0,"고액항암치료비":0,"암주요치료비":0,"2대질환주요치료비":0,"질병입원의료비":0,"질병통원의료비":0,"상해입원의료비":0,"상해통원의료비":0,"암수술비":0,"뇌혈관수술비":0,"허혈심장수술비":0,"질병수술비":0,"상해수술비":0,"간병인사용입원일당":0,"1인실입원일당":0,"교통사고처리지원금":0,"변호사선임비용":0,"벌금":0,"일상생활배상책임":0},"coverage_status":{"질병사망":"미가입","상해사망":"미가입","일반암진단비":"미가입","유사암진단비":"미가입","뇌혈관진단비":"미가입","허혈성심장질환진단비":"미가입","고액항암치료비":"미가입","질병입원의료비":"미가입","암수술비":"미가입","교통사고처리지원금":"미가입","변호사선임비용":"미가입","일상생활배상책임":"미가입"},"scores":{"before":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""},"after":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""}},"venn":{"only_before":[],"both":[],"only_after":[]},"coverage_table":[{"item":"","category":"암","before_amount":"","after_amount":"","change":"SAME","change_detail":""}],"premium_analysis":{"monthly_diff":0,"annual_diff":0,"assessment":"","cost_per_score":""},"recommendation":{"overall_grade":"B","summary":"","strengths":[],"cautions":[],"why_change":[],"notes":"","remodeling_suggestion":""}}';
-  content.push({type:'text', text: PROMPT_INST + '\n\nJSON 형식(마크다운 없이 순수 JSON만):\n' + PROMPT_JSON});
+  // ── 모드별 특화 프롬프트 ──
+  let INST='', TMPL='';
 
-  const apiKey = getApiKey();
-  if(!apiKey){ throw new Error('API Key가 없습니다. 상단에 Anthropic API Key를 입력해주세요.'); }
+  if(isSolo){
+    INST=`[현재보장분석 지시] 업로드 PDF는 현재 가입 보험 서류입니다. 아래를 정확히 추출해 JSON으로만 응답(마크다운 절대금지):
+1. 고객정보(이름/나이/성별/생년월일) 2. 설계사(이름/연락처/소속)
+3. 계약현황: 정상계약건수/실효해지건수/월보험료합계(원단위)
+4. 보험사별 계약목록: [보험사명, 상품명전체, 월보험료(원), 납입기간, 만기연령, 보장시작일, 보장종료일]
+5. 담보별 가입금액(만원단위): 질병사망,상해사망,상해후유장해,일반암진단비,유사암진단비,뇌혈관진단비,뇌졸중진단비,뇌출혈진단비,허혈성심장질환진단비,급성심근경색진단비,중증치매진단,고액항암치료비,암주요치료비,2대질환주요치료비,질병입원의료비,질병통원의료비,상해입원의료비,상해통원의료비,암수술비,뇌혈관수술비,허혈심장수술비,질병수술비,상해수술비,간병인사용입원일당,1인실입원일당,교통사고처리지원금,변호사선임비용,벌금,일상생활배상책임
+6. 각 담보 보장상태(미가입/부족/충분) — 권장기준: 일반암진단비 3000만이상=충분, 뇌혈관/심장 각 3000만이상=충분, 나머지는 0=미가입
+7. 보험점수(0-100): 사망(death)/암(cancer)/CI뇌심장(ci)/수술입원(surgery)/재해운전자(accident) 각각 + 총점(total)
+8. 종합권고: 등급(A+/A/B+/B/C)/요약/강점배열/취약점배열/리모델링제안
+※억원=10000만원 ※PDF실제값만사용 ※JSON외텍스트절대불포함`;
 
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:8000,system:'당신은 대한민국 보험 전문 분석가입니다. 업로드된 보험 PDF에서 데이터를 정확히 추출합니다. 반드시 요청한 JSON 형식으로만 응답하고 JSON 이외 텍스트 절대 불포함. PDF에서 실제로 읽히는 값만 사용하고 추정 금지. 금액은 만원 단위 정수로 통일(억원x10000, 원/10000 반올림).',messages:[{role:'user',content}]})});
-  if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류');}
+    TMPL='{"customer":{"name":"","age":"","gender":"","birth":"","summary":""},"advisor":{"name":"","phone":"","company":""},"contract_summary":{"normal_count":0,"lapsed_count":0,"total_monthly_premium":0,"analysis_date":""},"before":{"insurers":[],"total_premium":0,"premiums":[{"name":"보험사명","product":"상품명전체","premium":0,"period":"납입기간","maturity":"만기연령","start":"보장시작일","end":"보장종료일"}],"coverages":[{"item":"담보명","category":"암","amount":"금액"}],"products":[{"id":"p1","name":"상품명","insurer":"보험사","premium":0,"period":"","maturity":"","coverages":[{"item":"담보명","category":"암","amount":"0","note":""}]}]},"after":{"insurers":[],"total_premium":0,"premiums":[],"coverages":[]},"coverage_detail":{"질병사망":0,"상해사망":0,"상해후유장해":0,"일반암진단비":0,"유사암진단비":0,"뇌혈관진단비":0,"뇌졸중진단비":0,"뇌출혈진단비":0,"허혈성심장질환진단비":0,"급성심근경색진단비":0,"중증치매진단":0,"고액항암치료비":0,"암주요치료비":0,"2대질환주요치료비":0,"질병입원의료비":0,"질병통원의료비":0,"상해입원의료비":0,"상해통원의료비":0,"암수술비":0,"뇌혈관수술비":0,"허혈심장수술비":0,"질병수술비":0,"상해수술비":0,"간병인사용입원일당":0,"1인실입원일당":0,"교통사고처리지원금":0,"변호사선임비용":0,"벌금":0,"일상생활배상책임":0},"coverage_status":{"질병사망":"미가입","상해사망":"미가입","일반암진단비":"미가입","유사암진단비":"미가입","뇌혈관진단비":"미가입","허혈성심장질환진단비":"미가입","고액항암치료비":"미가입","질병입원의료비":"미가입","암수술비":"미가입","교통사고처리지원금":"미가입","변호사선임비용":"미가입","일상생활배상책임":"미가입"},"scores":{"before":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""},"after":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""}},"venn":{"only_before":[],"both":[],"only_after":[]},"coverage_table":[{"item":"","category":"암","before_amount":"","after_amount":"","change":"SAME","change_detail":""}],"premium_analysis":{"monthly_diff":0,"annual_diff":0,"assessment":"","cost_per_score":""},"recommendation":{"overall_grade":"B","summary":"","strengths":[],"cautions":[],"why_change":[],"notes":"","remodeling_suggestion":""}}';
+
+  } else if(isCompare){
+    INST=`[비교분석·리모델링 지시] 업로드 PDF는 [기존보험(Before)]와 [신규제안서(After)]입니다. 아래를 정확히 분석해 JSON으로만 응답(마크다운 절대금지):
+1. 고객정보 / 설계사정보
+2. Before(기존): 보험사별 계약목록[보험사명,상품명,월보험료,납입기간,만기], 담보별 가입금액(만원)
+3. After(신규제안): 보험사별 계약목록[보험사명,상품명,월보험료,납입기간,만기], 담보별 가입금액(만원)
+4. 담보 변화 비교표: 각 담보별 [before_amount, after_amount, change(UP/DOWN/SAME/NEW/REMOVED), change_detail]
+   — 보험료 차이, 보장 확대/축소 항목, 중복 보장 여부 반드시 명시
+5. 보험점수: before/after 각각 total/death/cancer/ci/surgery/accident
+6. 보험료 분석: 월 차이(원), 연 차이, 효율 평가
+7. 리모델링 종합의견: 등급/요약/변경권유이유/주의사항/리모델링제안
+   — 어떤 담보가 늘었고 줄었는지, 실질 보장 개선 여부, 보험료 대비 가치 구체적으로 작성
+※억원=10000만원 ※PDF실제값만사용 ※JSON외텍스트절대불포함`;
+
+    TMPL='{"customer":{"name":"","age":"","gender":"","birth":""},"advisor":{"name":"","phone":"","company":""},"contract_summary":{"normal_count":0,"lapsed_count":0,"total_monthly_premium":0},"before":{"insurers":[],"total_premium":0,"premiums":[{"name":"보험사명","product":"상품명","premium":0,"period":"납입기간","maturity":"만기"}],"coverages":[{"item":"담보명","category":"암","amount":"금액"}],"products":[]},"after":{"insurers":[],"total_premium":0,"premiums":[{"name":"보험사명","product":"상품명","premium":0,"period":"납입기간","maturity":"만기"}],"coverages":[{"item":"담보명","category":"암","amount":"금액"}],"products":[]},"coverage_detail":{"질병사망":0,"일반암진단비":0,"유사암진단비":0,"뇌혈관진단비":0,"허혈성심장질환진단비":0,"고액항암치료비":0,"암주요치료비":0,"질병입원의료비":0,"암수술비":0,"교통사고처리지원금":0,"변호사선임비용":0},"coverage_status":{"질병사망":"미가입","일반암진단비":"미가입","뇌혈관진단비":"미가입","허혈성심장질환진단비":"미가입","고액항암치료비":"미가입"},"scores":{"before":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""},"after":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""}},"venn":{"only_before":[],"both":[],"only_after":[]},"coverage_table":[{"item":"","category":"암","before_amount":"","after_amount":"","change":"SAME","change_detail":""}],"premium_analysis":{"monthly_diff":0,"annual_diff":0,"assessment":"","cost_per_score":""},"recommendation":{"overall_grade":"B","summary":"","strengths":[],"cautions":[],"why_change":[],"notes":"","remodeling_suggestion":""}}';
+
+  } else {
+    // 교차분석
+    INST=`[교차분석 지시] 업로드 PDF는 여러 보험사 제안서입니다. 보험사별 보장 항목을 교차 비교해 Best 조합을 추천해주세요. JSON으로만 응답(마크다운 절대금지):
+1. 고객정보 / 설계사정보
+2. 보험사별 제안서 요약: [보험사명, 상품명, 월보험료, 주요담보목록]
+3. 담보 교차 비교표: 각 담보별로 어느 보험사가 얼마인지 비교
+4. Best 조합 추천: 담보별 최적 보험사 선택, 월 합산 보험료
+5. 보험점수(교차분석 기준 total/cancer/ci/surgery)
+6. 종합의견: 등급/요약/Best조합이유/주의사항
+※억원=10000만원 ※JSON외텍스트절대불포함`;
+
+    TMPL='{"customer":{"name":"","age":"","gender":"","birth":""},"advisor":{"name":"","phone":"","company":""},"contract_summary":{"normal_count":0,"total_monthly_premium":0},"before":{"insurers":[],"total_premium":0,"premiums":[],"coverages":[],"products":[]},"after":{"insurers":[],"total_premium":0,"premiums":[],"coverages":[]},"cross_analysis":{"companies":[{"insurer":"보험사명","product":"상품명","premium":0,"key_coverages":[{"item":"담보명","amount":"금액"}]}],"comparison_table":[{"item":"담보명","category":"암","values":{"보험사1":"금액","보험사2":"금액"}}],"best_combination":[{"item":"담보명","best_insurer":"보험사명","amount":"금액","reason":"선택이유"}],"best_monthly_total":0},"coverage_detail":{},"coverage_status":{},"scores":{"before":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""},"after":{"total":0,"death":0,"cancer":0,"ci":0,"surgery":0,"accident":0,"reason":""}},"venn":{"only_before":[],"both":[],"only_after":[]},"coverage_table":[{"item":"","category":"암","before_amount":"","after_amount":"","change":"NEW","change_detail":""}],"premium_analysis":{"monthly_diff":0,"annual_diff":0,"assessment":"","cost_per_score":""},"recommendation":{"overall_grade":"B","summary":"","strengths":[],"cautions":[],"why_change":[],"notes":"","remodeling_suggestion":""}}';
+  }
+
+  content.push({type:'text', text: INST + '\n\nJSON(마크다운없이순수JSON만):\n' + TMPL});
+
+  const apiKey=getApiKey();
+  if(!apiKey) throw new Error('상단에 Anthropic API Key를 입력해주세요.');
+
+  const systemPrompt = isSolo
+    ? '대한민국 보험 전문 분석가. PDF에서 실제 읽히는 값만 추출. 추정금지. 요청JSON형식으로만응답. JSON외텍스트절대불포함. 금액만원단위정수.'
+    : isCompare
+    ? '대한민국 보험 리모델링 전문가. Before/After 보험을 정밀 비교 분석. 보장 변화와 보험료 효율을 구체적으로 평가. 요청JSON형식으로만응답. JSON외텍스트절대불포함. 금액만원단위정수.'
+    : '대한민국 보험 교차분석 전문가. 여러 보험사 제안서를 담보별로 교차 비교하고 최적 조합 추천. 요청JSON형식으로만응답. JSON외텍스트절대불포함. 금액만원단위정수.';
+
+  // 보장분석은 Sonnet 4 사용 (PDF가 크기 때문에 Haiku는 rate limit 초과 위험)
+  const model = 'claude-sonnet-4-20250514';
+
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({
+      model:model,
+      max_tokens:8000,
+      system:systemPrompt,
+      messages:[{role:'user',content}]
+    })
+  });
+
+  if(!resp.ok){
+    const e=await resp.json().catch(()=>({}));
+    const msg=e.error?.message||'API 오류 ('+resp.status+')';
+    if(msg.includes('rate limit')||msg.includes('rate_limit')){
+      throw new Error('⏱ 요청 한도 초과\n\n잠시 후 다시 시도해주세요.\n(1분 후 자동으로 한도가 초기화됩니다)');
+    }
+    if(msg.includes('too long')||msg.includes('tokens')){
+      throw new Error('📄 PDF가 너무 큽니다\n\n핵심 페이지만 추출 후 다시 업로드해주세요.');
+    }
+    throw new Error(msg);
+  }
+
   const data=await resp.json();
   const raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-  try{return JSON.parse(raw);}catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('파싱 실패');}
+  try{return JSON.parse(raw);}catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('JSON 파싱 실패 — 응답: '+raw.slice(0,200));}
 }
 
 async function callPolicyAPI(){
   const query=v('policyQuery').trim();
+  if(!query){throw new Error('검색할 내용을 입력해주세요.');}
+
   const modeSlots=S.slots[2]||{};
   const allF=Object.values(modeSlots).flatMap(s=>s.b64||[]);
+  if(!allF.length){throw new Error('약관 PDF를 먼저 업로드해주세요.');}
+
+  const modelSel=document.getElementById('policyModel')?.value||'haiku';
+  const rangeSel=document.getElementById('policyRange')?.value||'smart';
+  const model=modelSel==='sonnet'?'claude-sonnet-4-20250514':'claude-haiku-4-5-20251001';
+
+  // 파일이 여러 개이고 토큰 위험이 있으면 첫 번째 파일만 우선 처리
+  // (전체 선택 시 모든 파일, smart/front/back은 1개만)
+  const filesToUse = rangeSel==='full' ? allF : allF.slice(0,1);
+
+  const rangeHint = {
+    full:  '약관 전체를 분석합니다.',
+    front: '약관 앞부분(보장내용·보험금 지급 조건·면책사항) 위주로 분석합니다.',
+    back:  '약관 뒷부분(특약·부가조항·용어정의) 위주로 분석합니다.',
+    smart: '질문과 관련된 조항을 중심으로 핵심만 추출합니다.'
+  }[rangeSel]||'';
+
   const content=[];
-  content.push({type:'text',text:'[약관 PDF:]'});
-  allF.forEach(f=>af(content,f));
-  content.push({type:'text',text:`\n아래 질문에 답하는 JSON만 응답:\n${query}\n\n{"answers":[{"question":"","answer":"","article":"","caution":""}],"overall_note":""}`});
-  const apiKey2 = getApiKey();
-  if(!apiKey2){ throw new Error('API Key가 없습니다. 상단에 Anthropic API Key를 입력해주세요.'); }
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey2,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,system:'보험 약관 전문가. 약관 내용을 정확히 찾아 쉽게 설명. 요청 JSON만 응답.',messages:[{role:'user',content}]})});
-  if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류');}
+  content.push({type:'text',text:`[약관 PDF — ${rangeHint}]`});
+  filesToUse.forEach(f=>af(content,f));
+
+  if(allF.length>1&&rangeSel!=='full'){
+    content.push({type:'text',text:`※ 파일 ${allF.length}개 중 1개만 분석 중. 전체 분석 시 '전체 약관 분석'을 선택하세요.`});
+  }
+
+  content.push({type:'text',text:`
+[질문] ${query}
+
+위 약관에서 질문에 해당하는 조항을 찾아 아래 JSON 형식으로만 응답하세요 (마크다운 없이 순수 JSON):
+{
+  "answers": [
+    {
+      "question": "질문 내용",
+      "answer": "쉬운 설명 (3~5줄)",
+      "article": "관련 조항 번호 (예: 제3조, 별표1)",
+      "key_point": "핵심 포인트 1줄",
+      "caution": "주의사항 (있으면)"
+    }
+  ],
+  "related_articles": [
+    {"title": "조항명", "content": "핵심 내용 요약"}
+  ],
+  "overall_note": "종합 안내",
+  "file_count_note": "${allF.length>1&&rangeSel!=='full'?allF.length+'개 파일 중 1개만 분석됨. 나머지 파일도 확인 필요.':''}"
+}`});
+
+  const apiKey2=getApiKey();
+  if(!apiKey2) throw new Error('상단에 Anthropic API Key를 입력해주세요.');
+
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey2,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({
+      model:model,
+      max_tokens:3000,
+      system:'대한민국 보험 약관 전문가. 약관에서 질문한 내용을 정확히 찾아 일반인도 이해할 수 있게 설명. 요청 JSON만 응답. JSON 외 텍스트 절대 불포함. 조항 번호를 반드시 명시.',
+      messages:[{role:'user',content}]
+    })
+  });
+
+  if(!resp.ok){
+    const e=await resp.json().catch(()=>({}));
+    const msg=e.error?.message||'API 오류 ('+resp.status+')';
+    // 토큰 초과 시 친절한 안내
+    if(msg.includes('too long')||msg.includes('tokens')){
+      throw new Error('약관이 너무 큽니다 (토큰 초과).\n\n해결방법:\n① 모델을 Sonnet 4로 변경\n② 약관을 핵심 부분(예: 1~50페이지)만 추출 후 업로드\n③ 여러 질문은 나눠서 검색');
+    }
+    throw new Error(msg);
+  }
+
   const data=await resp.json();
   const raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
-  try{return JSON.parse(raw);}catch(e){const m=raw.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0]);throw new Error('파싱 실패');}
+  try{return JSON.parse(raw);}
+  catch(e){
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(m) return JSON.parse(m[0]);
+    throw new Error('파싱 실패. 약관이 너무 크거나 응답이 잘렸을 수 있습니다.');
+  }
 }
 
 // ════════════════════════════════════════
@@ -1571,19 +1997,103 @@ async function callPolicyAPI(){
 // ════════════════════════════════════════
 function renderAll(d,mode){
   const isSolo=mode===0;
+  const isCross=mode===1&&S.subMode===1;
+  const isCompare=mode===1&&S.subMode===0;
+
   document.getElementById('policyResults').innerHTML='';
   document.getElementById('tabBar').style.display='';
-  
+
+  // 탭 명칭 모드별 업데이트
+  const tabs=document.querySelectorAll('.tab-btn');
+  if(isSolo){
+    tabs[0]&&(tabs[0].textContent='📊 종합');
+    tabs[1]&&(tabs[1].textContent='🛡️ 보장현황');
+    tabs[2]&&(tabs[2].textContent='💰 보험료');
+    tabs[3]&&(tabs[3].textContent='💡 의견');
+  } else if(isCompare){
+    tabs[0]&&(tabs[0].textContent='📊 비교 종합');
+    tabs[1]&&(tabs[1].textContent='🔄 보장 변화');
+    tabs[2]&&(tabs[2].textContent='💰 보험료 비교');
+    tabs[3]&&(tabs[3].textContent='💡 리모델링 의견');
+  } else {
+    tabs[0]&&(tabs[0].textContent='📊 교차 종합');
+    tabs[1]&&(tabs[1].textContent='🏆 Best 조합');
+    tabs[2]&&(tabs[2].textContent='💰 보험료 비교');
+    tabs[3]&&(tabs[3].textContent='💡 교차분석 의견');
+  }
+
   renderHero(d,isSolo);
-  renderContractList(d);      // ★ 계약목록 + 담보상세
+  renderContractList(d);
   renderScores(d,isSolo);
-  if(!isSolo)renderVenn(d); else document.getElementById('vennCard').innerHTML='';
+
+  if(isCross){
+    renderCrossAnalysis(d);
+  } else if(!isSolo){
+    renderVenn(d);
+  } else {
+    document.getElementById('vennCard').innerHTML='';
+  }
+
   renderCoverage(d,isSolo);
   renderPremium(d);
   renderRec(d,isSolo);
-  document.getElementById('disclosureSection').style.display='';
-  setDisclosureType(dsType);
+  // 고지사항 섹션 표시
+  const ds=document.getElementById('disclosureSection');
+  if(ds) ds.style.display='';
   updateCoverPage();
+}
+
+// ── 교차분석 결과 렌더 ──
+function renderCrossAnalysis(d){
+  const ca=d.cross_analysis||{};
+  const companies=ca.companies||[];
+  const bestCombo=ca.best_combination||[];
+  const bestTotal=ca.best_monthly_total||0;
+  const vennCard=document.getElementById('vennCard');
+
+  if(!companies.length){vennCard.innerHTML='';return;}
+
+  const colors=['#4361ee','#16a34a','#dc2626','#d97706','#7c3aed'];
+  vennCard.innerHTML=`
+  <div class="scard-title">🏆 교차분석 — 보험사별 비교 및 Best 조합</div>
+
+  <!-- 보험사별 요약 -->
+  <div style="display:grid;grid-template-columns:repeat(${Math.min(companies.length,3)},1fr);gap:8px;margin-bottom:14px;">
+    ${companies.map((c,i)=>`
+    <div style="border-radius:9px;border:1.5px solid ${colors[i%colors.length]}33;overflow:hidden;">
+      <div style="padding:8px 12px;background:${colors[i%colors.length]}11;border-bottom:2px solid ${colors[i%colors.length]};">
+        <div style="font-size:13px;font-weight:700;color:${colors[i%colors.length]};">${c.insurer||'보험사 '+(i+1)}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:1px;">${c.product||''}</div>
+      </div>
+      <div style="padding:8px 12px;">
+        <div style="font-size:15px;font-weight:700;color:var(--navy);font-family:'IBM Plex Mono',monospace;margin-bottom:6px;">${(c.premium||0).toLocaleString()}원/월</div>
+        ${(c.key_coverages||[]).slice(0,5).map(cov=>`
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--t2);">${cov.item}</span>
+          <span style="font-weight:700;color:var(--t1);">${cov.amount}</span>
+        </div>`).join('')}
+      </div>
+    </div>`).join('')}
+  </div>
+
+  <!-- Best 조합 -->
+  ${bestCombo.length?`
+  <div style="padding:12px 14px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:9px;margin-bottom:10px;">
+    <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:8px;">⭐ Best 조합 추천</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+      ${bestCombo.map(b=>`
+      <div style="padding:7px 10px;background:rgba(255,255,255,.07);border-radius:7px;">
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px;">${b.item}</div>
+        <div style="font-size:12px;font-weight:700;color:#fbbf24;">${b.best_insurer}</div>
+        <div style="font-size:11px;color:#86efac;">${b.amount}</div>
+        ${b.reason?`<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">${b.reason}</div>`:''}
+      </div>`).join('')}
+    </div>
+    ${bestTotal?`<div style="margin-top:10px;padding:8px 12px;background:rgba(255,255,255,.1);border-radius:7px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:rgba(255,255,255,.7);">Best 조합 월 합산 보험료</span>
+      <span style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#fbbf24;">${bestTotal.toLocaleString()}원</span>
+    </div>`:''}
+  </div>`:''}`;
 }
 
 // ── 계약목록 + 담보상세 ──────────────────────
@@ -1847,9 +2357,131 @@ function renderProductMgmt(d){
     S.covEditRows=covs.map(c=>({item:c.item||'',amount:c.amount||0,status:'',category:c.category||'기타'}));
   }
 
+  // ★ 담보 상태 요약 그리드 렌더링
+  renderCovStatusGrid(d);
+
   updateProdSummary();
   renderProdCards();
   renderCovEditTable();
+}
+
+// ★ 담보별 보장 현황 — 미가입/부족/충분 한눈에 보기
+function renderCovStatusGrid(d){
+  const el=document.getElementById('covStatusGrid');
+  if(!el) return;
+
+  const cd=d.coverage_detail||{};
+  const cs=d.coverage_status||{};
+
+  // 권장 기준 — CUR_SETTING 우선, 없으면 기본값
+  const RECOMMEND_DEFAULT={
+    '질병사망':10000,'상해사망':20000,'일반암진단비':3000,'유사암진단비':1000,
+    '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
+    '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
+    '고액항암치료비':5000,'암주요치료비':2000,'2대질환주요치료비':2000,
+    '질병입원의료비':5000,'질병통원의료비':3000,
+    '암수술비':2000,'뇌혈관수술비':3000,'허혈심장수술비':3000,
+    '간병인사용입원일당':10,'교통사고처리지원금':20000,
+    '변호사선임비용':5000,'일상생활배상책임':10000
+  };
+  const RECOMMEND={...RECOMMEND_DEFAULT,...CUR_SETTING};
+
+  const stColor={'충분':'var(--green)','부족':'var(--orange)','미가입':'var(--red)'};
+  const stBg={'충분':'var(--green-l)','부족':'var(--orange-l)','미가입':'var(--red-l)'};
+  const stIcon={'충분':'✅','부족':'⚠️','미가입':'❌'};
+
+  // 상태 배열 구성 (coverage_detail 기준, 없으면 coverage_status 기준)
+  let items=[];
+  if(Object.keys(cd).length){
+    items=Object.entries(cd).map(([k,v])=>({
+      item:k, amount:v, status:cs[k]||(!v?'미가입':''), recommend:RECOMMEND[k]||0
+    }));
+  } else if(Object.keys(cs).length){
+    items=Object.entries(cs).map(([k,st])=>({
+      item:k, amount:0, status:st, recommend:RECOMMEND[k]||0
+    }));
+  }
+
+  if(!items.length){el.innerHTML='<div style="padding:16px;color:var(--t3);font-size:13px;">분석 결과에서 담보 정보를 추출하지 못했습니다. PDF를 다시 확인해주세요.</div>';return;}
+
+  const missing=items.filter(i=>i.status==='미가입');
+  const lacking=items.filter(i=>i.status==='부족');
+  const enough=items.filter(i=>i.status==='충분');
+
+  el.innerHTML=`
+    <!-- 요약 카운트 -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div style="padding:12px;background:var(--red-l);border-radius:9px;text-align:center;border:1.5px solid rgba(220,38,38,.2);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--red);">${missing.length}</div>
+        <div style="font-size:12px;color:var(--red);font-weight:700;">❌ 미가입</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px;">즉시 보완 필요</div>
+      </div>
+      <div style="padding:12px;background:var(--orange-l);border-radius:9px;text-align:center;border:1.5px solid rgba(234,88,12,.2);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--orange);">${lacking.length}</div>
+        <div style="font-size:12px;color:var(--orange);font-weight:700;">⚠️ 부족</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px;">증액 검토 필요</div>
+      </div>
+      <div style="padding:12px;background:var(--green-l);border-radius:9px;text-align:center;border:1.5px solid rgba(22,163,74,.2);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--green);">${enough.length}</div>
+        <div style="font-size:12px;color:var(--green);font-weight:700;">✅ 충분</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px;">현재 유지</div>
+      </div>
+    </div>
+
+    ${missing.length?`
+    <!-- 미가입 항목 -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:7px;padding:6px 10px;background:var(--red-l);border-radius:6px;border-left:3px solid var(--red);">❌ 미가입 항목 — 즉시 보완 검토 (${missing.length}건)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+        ${missing.map(i=>`
+        <div style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(220,38,38,.25);position:relative;">
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px;">${i.item}</div>
+          <div style="font-size:11px;color:var(--red);">현재: 미가입</div>
+          ${i.recommend?`<div style="font-size:11px;color:var(--t2);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억원':i.recommend.toLocaleString()+'만원'}</div>`:''}
+          <button onclick="addCovRowItem('${i.item}',${i.recommend},'미가입')" style="margin-top:6px;width:100%;padding:4px;background:var(--red-l);color:var(--red);border:1px solid rgba(220,38,38,.3);border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;">+ 담보 추가</button>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    ${lacking.length?`
+    <!-- 부족 항목 -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:7px;padding:6px 10px;background:var(--orange-l);border-radius:6px;border-left:3px solid var(--orange);">⚠️ 부족 항목 — 증액 검토 (${lacking.length}건)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+        ${lacking.map(i=>`
+        <div style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(234,88,12,.25);">
+          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px;">${i.item}</div>
+          <div style="font-size:11px;color:var(--orange);">현재: ${i.amount?i.amount.toLocaleString()+'만원':'확인필요'}</div>
+          ${i.recommend?`<div style="font-size:11px;color:var(--t2);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억원':i.recommend.toLocaleString()+'만원'}</div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    ${enough.length?`
+    <!-- 충분 항목 -->
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:7px;padding:6px 10px;background:var(--green-l);border-radius:6px;border-left:3px solid var(--green);">✅ 충분 항목 (${enough.length}건)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        ${enough.map(i=>`
+        <div style="padding:5px 11px;background:var(--green-l);border-radius:20px;border:1px solid rgba(22,163,74,.2);font-size:12px;font-weight:600;color:var(--green);">
+          ${i.item} ${i.amount?i.amount.toLocaleString()+'만':''}</div>`).join('')}
+      </div>
+    </div>`:''}
+  `;
+}
+
+// 미가입 항목에서 바로 담보 추가
+function addCovRowItem(itemName, recommend, status){
+  if(!S.covEditRows) S.covEditRows=[];
+  // 이미 있으면 스크롤만
+  const exist=S.covEditRows.findIndex(r=>r.item===itemName);
+  if(exist>=0){
+    document.getElementById('covEditSection')?.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  S.covEditRows.push({item:itemName, amount:recommend||0, status:status||'미가입', category:'기타'});
+  renderCovEditTable();
+  document.getElementById('covEditSection')?.scrollIntoView({behavior:'smooth'});
 }
 
 function updateProdSummary(){
@@ -2062,33 +2694,62 @@ function toggleEndorse(prodIdx,covIdx){
 function renderPolicyResult(d){
   document.getElementById('tabBar').style.display='none';
   document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
+
+  const modelUsed=document.getElementById('policyModel')?.value==='sonnet'?'Sonnet 4':'Haiku 4.5';
+  const fileNote=d.file_count_note||'';
+
   document.getElementById('scoreHero').innerHTML=`
     <div class="sh-row" style="margin-bottom:0">
       <div class="sh-left">
         <h2>📖 약관 검색·분석 결과</h2>
-        <div class="sh-meta">업로드된 약관에서 해당 조항을 찾아 분석했습니다</div>
+        <div class="sh-meta">
+          <span style="background:rgba(13,148,136,.25);color:#99f6e4;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:700;margin-right:6px;">🤖 ${modelUsed}</span>
+          업로드된 약관에서 해당 조항을 찾아 분석했습니다
+        </div>
+        ${fileNote?`<div style="margin-top:5px;font-size:12px;color:#fca5a5;">⚠️ ${fileNote}</div>`:''}
         ${v('advName')?`<div class="sh-adv">👤 담당: ${[v('advName'),v('advPhone'),v('advCompany')].filter(Boolean).join(' · ')}</div>`:''}
       </div>
     </div>`;
+
   const answers=d.answers||[];
+  const related=d.related_articles||[];
+
   document.getElementById('policyResults').innerHTML=`
     <div class="policy-result-card">
       <div class="policy-result-head">
-        <div class="policy-result-title">약관 분석 결과 — ${answers.length}개 항목</div>
+        <div class="policy-result-title">📋 약관 분석 결과 — ${answers.length}개 항목</div>
         <button class="policy-more-btn" onclick="setMode(2);window.scrollTo({top:0,behavior:'smooth'})">+ 추가 질문</button>
       </div>
       <div class="policy-result-body">
         ${answers.map((a,i)=>`
-          <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:${i<answers.length-1?'1px solid var(--border)':'none'}">
-            <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:9px">
-              <span style="width:22px;height:22px;background:var(--teal);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${i+1}</span>
-              <div style="font-size:15px;font-weight:700;color:var(--navy)">${a.question||''}</div>
+          <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:${i<answers.length-1?'1px solid var(--border)':'none'}">
+            <div style="display:flex;align-items:flex-start;gap:9px;margin-bottom:8px">
+              <span style="width:22px;height:22px;background:var(--teal);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${i+1}</span>
+              <div style="font-size:14px;font-weight:700;color:var(--navy)">${a.question||''}</div>
             </div>
-            ${a.article?`<div style="display:inline-flex;padding:2px 9px;background:var(--teal-l);border-radius:12px;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:9px">📋 ${a.article}</div>`:''}
-            <div class="policy-answer">${(a.answer||'').replace(/\n/g,'<br>')}</div>
-            ${a.caution?`<div style="margin-top:8px;padding:9px 12px;background:#fff7ed;border-radius:7px;font-size:12px;color:#7c2d12;border-left:3px solid var(--orange)">⚠️ ${a.caution}</div>`:''}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;">
+              ${a.article?`<span style="display:inline-flex;padding:2px 9px;background:var(--teal-l);border-radius:10px;font-size:12px;font-weight:700;color:var(--teal);">📋 ${a.article}</span>`:''}
+              ${a.key_point?`<span style="display:inline-flex;padding:2px 9px;background:var(--pri-l);border-radius:10px;font-size:12px;font-weight:700;color:var(--pri);">⭐ ${a.key_point}</span>`:''}
+            </div>
+            <div class="policy-answer" style="font-size:13px;line-height:1.8;color:var(--t1);">${(a.answer||'').replace(/\n/g,'<br>')}</div>
+            ${a.caution?`<div style="margin-top:8px;padding:8px 12px;background:#fff7ed;border-radius:7px;font-size:12px;color:#7c2d12;border-left:3px solid var(--orange);">⚠️ ${a.caution}</div>`:''}
           </div>`).join('')}
-        ${d.overall_note?`<div style="padding:12px 15px;background:var(--gold-l);border-radius:8px;font-size:13px;color:var(--t1);line-height:1.8;border-left:3px solid var(--gold)"><strong>📝 종합:</strong> ${d.overall_note}</div>`:''}
+
+        ${related.length?`
+        <div style="margin-top:14px;padding:12px 14px;background:var(--slate);border-radius:9px;">
+          <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;">📑 관련 조항 요약</div>
+          ${related.map(r=>`
+          <div style="margin-bottom:8px;padding:8px 11px;background:#fff;border-radius:7px;border-left:3px solid var(--teal);">
+            <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:3px;">${r.title||''}</div>
+            <div style="font-size:12px;color:var(--t2);line-height:1.7;">${r.content||''}</div>
+          </div>`).join('')}
+        </div>`:''}
+
+        ${d.overall_note?`<div style="margin-top:12px;padding:12px 15px;background:var(--gold-l);border-radius:8px;font-size:13px;color:var(--t1);line-height:1.8;border-left:3px solid var(--gold)"><strong>📝 종합:</strong> ${d.overall_note}</div>`:''}
+
+        <div style="margin-top:12px;padding:8px 12px;background:var(--slate);border-radius:7px;font-size:11px;color:var(--t3);line-height:1.7;">
+          ⚠️ AI 분석 결과는 참고용입니다. 실제 보험금 청구 시 약관 원문 및 담당 설계사·보험사에 재확인하세요.
+        </div>
       </div>
     </div>`;
 }
@@ -2955,6 +3616,755 @@ function buildCard(id,d){
   html+=`</div>`; // end body padding
   card.innerHTML=html;
   return card;
+}
+
+// ════════════════════════════════════════
+// 보장 기준 설정 (SETTING)
+// ════════════════════════════════════════
+
+// 나이대별 프리셋 데이터
+const PRESET_AGES=[
+  {
+    label:'20대', range:'20~29세', color:'#0369a1', bg:'#e0f2fe',
+    desc:'사회초년생 · 기본 보장 구성',
+    prem:{min:150000,opt:250000,max:400000},
+    recommend:{
+      '질병사망':5000,'상해사망':10000,'일반암진단비':2000,'유사암진단비':500,
+      '뇌혈관진단비':1000,'허혈성심장질환진단비':1000,'고액항암치료비':3000,
+      '암주요치료비':1000,'질병입원의료비':3000,'질병통원의료비':2000,
+      '암수술비':1000,'교통사고처리지원금':20000,'변호사선임비용':5000,
+      '일상생활배상책임':10000,'간병인사용입원일당':5
+    }
+  },
+  {
+    label:'30대', range:'30~39세', color:'#0f766e', bg:'#f0fdfa',
+    desc:'결혼·출산 · 보장 확대 시기',
+    prem:{min:200000,opt:350000,max:550000},
+    recommend:{
+      '질병사망':10000,'상해사망':20000,'일반암진단비':3000,'유사암진단비':1000,
+      '뇌혈관진단비':2000,'허혈성심장질환진단비':2000,'고액항암치료비':5000,
+      '암주요치료비':2000,'질병입원의료비':5000,'질병통원의료비':3000,
+      '암수술비':2000,'뇌혈관수술비':2000,'허혈심장수술비':2000,
+      '교통사고처리지원금':20000,'변호사선임비용':5000,
+      '일상생활배상책임':10000,'간병인사용입원일당':7
+    }
+  },
+  {
+    label:'40대', range:'40~49세', color:'#7c3aed', bg:'#f3eeff',
+    desc:'중년 · 암/뇌심장 집중 보강',
+    prem:{min:300000,opt:500000,max:700000},
+    recommend:{
+      '질병사망':10000,'상해사망':20000,'일반암진단비':5000,'유사암진단비':1000,
+      '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
+      '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
+      '고액항암치료비':10000,'암주요치료비':2000,'2대질환주요치료비':2000,
+      '질병입원의료비':5000,'질병통원의료비':3000,'상해입원의료비':5000,
+      '암수술비':2000,'뇌혈관수술비':3000,'허혈심장수술비':3000,
+      '교통사고처리지원금':20000,'변호사선임비용':5000,
+      '일상생활배상책임':10000,'간병인사용입원일당':10
+    }
+  },
+  {
+    label:'50대', range:'50~59세', color:'#dc2626', bg:'#fef2f2',
+    desc:'갱신·유지 점검 · 간병 대비',
+    prem:{min:350000,opt:600000,max:900000},
+    recommend:{
+      '질병사망':5000,'상해사망':10000,'일반암진단비':5000,'유사암진단비':1000,
+      '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
+      '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
+      '고액항암치료비':10000,'암주요치료비':2000,'2대질환주요치료비':2000,
+      '질병입원의료비':5000,'질병통원의료비':3000,
+      '암수술비':2000,'뇌혈관수술비':3000,'허혈심장수술비':3000,
+      '중증치매진단':3000,'간병인사용입원일당':10,'1인실입원일당':10,
+      '교통사고처리지원금':20000,'변호사선임비용':5000,'일상생활배상책임':10000
+    }
+  },
+  {
+    label:'60대+', range:'60세 이상', color:'#b45309', bg:'#fef3c7',
+    desc:'노후 · 간병·치매 집중 대비',
+    prem:{min:300000,opt:500000,max:800000},
+    recommend:{
+      '질병사망':3000,'상해사망':5000,'일반암진단비':3000,'유사암진단비':500,
+      '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
+      '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
+      '고액항암치료비':5000,'암주요치료비':2000,
+      '질병입원의료비':5000,'질병통원의료비':3000,
+      '암수술비':2000,'뇌혈관수술비':3000,
+      '중증치매진단':5000,'간병인사용입원일당':15,'1인실입원일당':10,
+      '교통사고처리지원금':20000,'변호사선임비용':5000,'일상생활배상책임':10000
+    }
+  }
+];
+
+// 담보 카테고리 분류
+const SET_CATS={
+  '사망·장해':['질병사망','상해사망','상해후유장해'],
+  '암':['일반암진단비','유사암진단비','고액항암치료비','암주요치료비','암수술비'],
+  '뇌혈관':['뇌혈관진단비','뇌졸중진단비','뇌출혈진단비','뇌혈관수술비'],
+  '심장':['허혈성심장질환진단비','급성심근경색진단비','허혈심장수술비'],
+  '입원·수술':['질병입원의료비','질병통원의료비','상해입원의료비','상해통원의료비','질병수술비','상해수술비'],
+  '간병·치매':['간병인사용입원일당','1인실입원일당','중증치매진단','2대질환주요치료비'],
+  '운전자·화재':['교통사고처리지원금','변호사선임비용','벌금','일상생활배상책임']
+};
+
+// 현재 설정 상태 (localStorage로 영구 저장)
+let CUR_SETTING={};
+let SET_CAT_ACTIVE='암';
+
+function loadSetting(){
+  try{
+    const saved=localStorage.getItem('ins_setting');
+    if(saved) CUR_SETTING=JSON.parse(saved);
+    else CUR_SETTING=JSON.parse(JSON.stringify(PRESET_AGES[2].recommend)); // 기본: 40대
+  }catch(e){CUR_SETTING=JSON.parse(JSON.stringify(PRESET_AGES[2].recommend));}
+  // 보험료 기준
+  try{
+    const p=JSON.parse(localStorage.getItem('ins_prem')||'{}');
+    if(document.getElementById('setPremMin')) document.getElementById('setPremMin').value=p.min||300000;
+    if(document.getElementById('setPremOpt')) document.getElementById('setPremOpt').value=p.opt||500000;
+    if(document.getElementById('setPremMax')) document.getElementById('setPremMax').value=p.max||700000;
+  }catch(e){}
+}
+
+function saveSetting(){
+  localStorage.setItem('ins_setting',JSON.stringify(CUR_SETTING));
+  const p={
+    min:parseInt(document.getElementById('setPremMin')?.value||300000),
+    opt:parseInt(document.getElementById('setPremOpt')?.value||500000),
+    max:parseInt(document.getElementById('setPremMax')?.value||700000)
+  };
+  localStorage.setItem('ins_prem',JSON.stringify(p));
+}
+
+// ════════════════════════════════════════
+// 제안서 입력 & Before/After 비교 (STEP 2~3)
+// ════════════════════════════════════════
+let propFiles=[]; // 제안서 파일
+let propContracts=[{insurer:'',product:'',premium:0,period:'',maturity:''}];
+let propCovValues={}; // 제안 담보값
+
+function setPropMode(mode){
+  document.getElementById('propUploadArea').style.display=mode==='upload'?'block':'none';
+  document.getElementById('propManualArea').style.display=mode==='manual'?'block':'none';
+  if(mode==='manual'){
+    renderPropContracts();
+    renderPropCovGrid();
+  }
+}
+
+// ── 제안서 파일 처리 ──
+function handlePropDrop(e){
+  e.preventDefault();
+  document.getElementById('propSlot').style.borderColor='var(--border2)';
+  handlePropFiles(e.dataTransfer.files);
+}
+function handlePropFiles(files){
+  if(!files||!files.length) return;
+  const arr=Array.from(files);
+  propFiles=[];
+  let done=0;
+  arr.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      propFiles.push({base64:ev.target.result.split(',')[1],mediaType:f.type||'application/pdf',name:f.name});
+      done++;
+      if(done===arr.length){
+        document.getElementById('propFileName').textContent=arr.map(f=>f.name).join(', ');
+        document.getElementById('propSlot').style.borderColor='var(--green)';
+        document.getElementById('propSlot').style.background='var(--green-l)';
+        const btn=document.getElementById('propRunBtn');
+        btn.disabled=false;
+        btn.style.opacity='1';
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+// ── 제안서 AI 분석 ──
+async function runPropAnalysis(){
+  const apiKey=getApiKey();
+  if(!apiKey){alert('API Key를 입력해주세요.');return;}
+  if(!propFiles.length){alert('제안서 파일을 업로드해주세요.');return;}
+
+  const btn=document.getElementById('propRunBtn');
+  btn.textContent='🔍 분석 중...'; btn.disabled=true;
+
+  try{
+    const content=[];
+    content.push({type:'text',text:'[신규 제안서]'});
+    propFiles.forEach(f=>{
+      if(f.mediaType==='application/pdf') content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.base64}});
+      else content.push({type:'image',source:{type:'base64',media_type:f.mediaType,data:f.base64}});
+    });
+    content.push({type:'text',text:`[지시] 이 제안서에서 아래를 추출해 JSON으로만 응답: 1.보험사명 2.상품명 3.월보험료 4.납입기간 5.만기 6.담보별가입금액(만원) JSON형식: {"insurer":"","product":"","premium":0,"period":"","maturity":"","coverages":{"질병사망":0,"상해사망":0,"일반암진단비":0,"유사암진단비":0,"뇌혈관진단비":0,"허혈성심장질환진단비":0,"고액항암치료비":0,"암주요치료비":0,"암수술비":0,"뇌혈관수술비":0,"허혈심장수술비":0,"질병입원의료비":0,"질병통원의료비":0,"교통사고처리지원금":0,"변호사선임비용":0,"일상생활배상책임":0}}`});
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,system:'보험 제안서 분석가. 요청 JSON만 응답.',messages:[{role:'user',content}]})
+    });
+    const data=await resp.json();
+    const raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
+    const prop=JSON.parse(raw.match(/\{[\s\S]*\}/)[0]);
+
+    // 제안 데이터 적용 후 비교
+    applyPropAndCompare({
+      contracts:[{insurer:prop.insurer,product:prop.product,premium:prop.premium,period:prop.period,maturity:prop.maturity}],
+      coverages:prop.coverages||{}
+    });
+  }catch(e){
+    alert('제안서 분석 오류: '+e.message);
+  }finally{
+    btn.textContent='🔍 제안서 AI 분석 실행'; btn.disabled=false;
+  }
+}
+
+// ── 제안서 직접 입력 ──
+function renderPropContracts(){
+  const wrap=document.getElementById('propContracts');
+  if(!wrap) return;
+  wrap.innerHTML=propContracts.map((c,i)=>`
+    <div style="display:grid;grid-template-columns:1.5fr 2fr 1fr 1fr 1fr auto;gap:5px;margin-bottom:5px;align-items:center;">
+      <input class="fc" placeholder="보험사" value="${c.insurer}" style="font-size:12px;" oninput="propContracts[${i}].insurer=this.value">
+      <input class="fc" placeholder="상품명" value="${c.product}" style="font-size:12px;" oninput="propContracts[${i}].product=this.value">
+      <input class="fc" type="number" placeholder="월보험료" value="${c.premium||''}" style="font-size:12px;" oninput="propContracts[${i}].premium=Number(this.value)">
+      <input class="fc" placeholder="납입기간" value="${c.period}" style="font-size:12px;" oninput="propContracts[${i}].period=this.value">
+      <input class="fc" placeholder="만기" value="${c.maturity}" style="font-size:12px;" oninput="propContracts[${i}].maturity=this.value">
+      <button onclick="propContracts.splice(${i},1);renderPropContracts()" style="padding:5px 7px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:5px;font-size:11px;cursor:pointer;">✕</button>
+    </div>`).join('');
+}
+function addPropContract(){
+  propContracts.push({insurer:'',product:'',premium:0,period:'',maturity:''});
+  renderPropContracts();
+}
+
+function renderPropCovGrid(){
+  const wrap=document.getElementById('propCovGrid');
+  if(!wrap) return;
+  const cats=[...new Set(MANUAL_COV_LIST.map(c=>c.cat))];
+  const catColors={'사망':'#1e40af','암':'#be185d','뇌심장':'#b45309','입원':'#0d9488','간병':'#16a34a','운전자':'#d97706','화재':'#ea580c'};
+  let html='';
+  cats.forEach(cat=>{
+    const items=MANUAL_COV_LIST.filter(c=>c.cat===cat);
+    const col=catColors[cat]||'#475569';
+    html+=`<div style="grid-column:1/-1;font-size:10px;font-weight:700;color:${col};background:${col}18;padding:3px 8px;border-radius:4px;border-left:2px solid ${col};margin-bottom:4px;">${cat}</div>`;
+    html+=items.map(c=>{
+      const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+      const curVal=propCovValues[c.item]||0;
+      const beforeVal=S.result?.coverage_detail?.[c.item]||0;
+      return `<div style="display:flex;align-items:center;gap:5px;padding:5px 8px;background:#fff;border-radius:6px;border:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.item}</div>
+          ${beforeVal?`<div style="font-size:10px;color:var(--t3);">현재: ${beforeVal.toLocaleString()}만</div>`:''}
+        </div>
+        <input type="number" id="pcov_${idSafe}" value="${curVal}" min="0" step="100"
+          style="width:72px;border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace;"
+          oninput="propCovValues['${c.item}']=Number(this.value)">
+        <span style="font-size:9px;color:var(--t3);">만원</span>
+      </div>`;
+    }).join('');
+  });
+  wrap.innerHTML=html;
+}
+
+function copyCurrentToProp(){
+  if(!S.result) return;
+  const cd=S.result.coverage_detail||{};
+  Object.assign(propCovValues,cd);
+  MANUAL_COV_LIST.forEach(c=>{
+    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+    const el=document.getElementById('pcov_'+idSafe);
+    if(el) el.value=cd[c.item]||0;
+  });
+}
+
+function runPropManual(){
+  const covs={};
+  MANUAL_COV_LIST.forEach(c=>{
+    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+    const el=document.getElementById('pcov_'+idSafe);
+    covs[c.item]=parseInt(el?.value||0)||0;
+  });
+  applyPropAndCompare({contracts:propContracts,coverages:covs});
+}
+
+// ── Before/After 비교 적용 ──
+function applyPropAndCompare(prop){
+  if(!S.result){ alert('먼저 현재 보장을 분석해주세요.'); return; }
+
+  const before_detail=S.result.coverage_detail||{};
+  const after_detail=prop.coverages||{};
+  const RECOMMEND_D={...{질병사망:10000,상해사망:20000,일반암진단비:3000,뇌혈관진단비:3000,허혈성심장질환진단비:3000,고액항암치료비:5000},...CUR_SETTING};
+
+  // 변화 테이블 생성
+  const allItems=[...new Set([...Object.keys(before_detail),...Object.keys(after_detail)])];
+  const covTable=allItems.map(item=>{
+    const bv=before_detail[item]||0;
+    const av=after_detail[item]||0;
+    let change='SAME';
+    if(!bv&&av>0) change='NEW';
+    else if(bv>0&&!av) change='REMOVED';
+    else if(av>bv) change='UP';
+    else if(av<bv) change='DOWN';
+    const diff=av-bv;
+    return {
+      item, category:'기타',
+      before_amount:bv?bv.toLocaleString()+'만원':'—',
+      after_amount:av?av.toLocaleString()+'만원':'—',
+      change,
+      change_detail: diff?`${diff>0?'+':''}${diff.toLocaleString()}만원`:''
+    };
+  });
+
+  // After 보험료
+  const beforeTotal=S.result.before?.total_premium||0;
+  const afterTotal=prop.contracts.reduce((s,c)=>s+(c.premium||0),0);
+
+  // 점수 계산
+  function scoreG(keys,detail){
+    const vals=keys.map(k=>({v:detail[k]||0,r:RECOMMEND_D[k]||0})).filter(x=>x.r>0);
+    if(!vals.length) return 0;
+    return Math.round(Math.min(vals.reduce((s,x)=>s+Math.min(x.v/x.r,1.5),0)/vals.length,1)*100);
+  }
+  const sc_b=S.result.scores?.before||{};
+  const sc_a={
+    total:0,
+    death:scoreG(['질병사망','상해사망'],after_detail),
+    cancer:scoreG(['일반암진단비','고액항암치료비','암주요치료비'],after_detail),
+    ci:scoreG(['뇌혈관진단비','허혈성심장질환진단비'],after_detail),
+    surgery:scoreG(['질병입원의료비','암수술비'],after_detail),
+    accident:scoreG(['교통사고처리지원금'],after_detail)
+  };
+  sc_a.total=Math.round(sc_a.death*0.15+sc_a.cancer*0.25+sc_a.ci*0.25+sc_a.surgery*0.2+sc_a.accident*0.15);
+
+  // 결과 객체 업데이트
+  const updated={...S.result,
+    after:{
+      insurers:prop.contracts.map(c=>c.insurer).filter(Boolean),
+      total_premium:afterTotal,
+      premiums:prop.contracts,
+      coverages:Object.entries(after_detail).filter(([,v])=>v>0).map(([k,v])=>({item:k,category:'기타',amount:v+'만원'})),
+      products:[]
+    },
+    scores:{before:sc_b, after:sc_a},
+    coverage_table:covTable,
+    premium_analysis:{
+      monthly_diff:afterTotal-beforeTotal,
+      annual_diff:(afterTotal-beforeTotal)*12,
+      assessment:`월 ${Math.abs(afterTotal-beforeTotal).toLocaleString()}원 ${afterTotal>beforeTotal?'증가':'절감'}. 보험점수 ${sc_b.total||0}→${sc_a.total}점 (${sc_a.total-(sc_b.total||0)>=0?'+':''}${sc_a.total-(sc_b.total||0)}점).`,
+      cost_per_score:sc_a.total?Math.round(afterTotal/sc_a.total).toLocaleString()+'원/점':'-'
+    },
+    venn:{
+      only_before:covTable.filter(r=>r.change==='REMOVED').map(r=>r.item),
+      both:covTable.filter(r=>r.change==='SAME'||r.change==='UP'||r.change==='DOWN').map(r=>r.item),
+      only_after:covTable.filter(r=>r.change==='NEW').map(r=>r.item)
+    }
+  };
+
+  S.result=updated;
+
+  // 결과 렌더링
+  renderAll(updated,1); // 비교분석 모드로 렌더
+  renderProductMgmt(updated);
+  document.getElementById('resultWrap').classList.add('show');
+
+  // Before/After 요약 표시
+  renderCompareResult(sc_b,sc_a,beforeTotal,afterTotal,covTable);
+
+  // STEP 3 카드 표시
+  document.getElementById('compareResultCard').style.display='';
+  switchTab(4);
+  document.getElementById('compareResultCard').scrollIntoView({behavior:'smooth'});
+}
+
+function renderCompareResult(sc_b,sc_a,bt,at,table){
+  const diff=at-bt; const sdiff=sc_a.total-(sc_b.total||0);
+  const up=table.filter(r=>r.change==='UP'||r.change==='NEW').length;
+  const dn=table.filter(r=>r.change==='DOWN'||r.change==='REMOVED').length;
+  document.getElementById('compareResultBody').innerHTML=`
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+    <div style="padding:12px;background:${sdiff>=0?'var(--green-l)':'var(--red-l)'};border-radius:9px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${sdiff>=0?'var(--green)':'var(--red)'};">${sdiff>=0?'+':''}${sdiff}점</div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px;">보험점수 변화</div>
+      <div style="font-size:12px;color:var(--t3);">${sc_b.total||0} → ${sc_a.total}점</div>
+    </div>
+    <div style="padding:12px;background:${diff<=0?'var(--green-l)':'var(--red-l)'};border-radius:9px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${diff<=0?'var(--green)':'var(--red)'};">${diff>0?'+':''}${diff.toLocaleString()}</div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px;">월보험료 변화(원)</div>
+      <div style="font-size:12px;color:var(--t3);">${bt.toLocaleString()} → ${at.toLocaleString()}</div>
+    </div>
+    <div style="padding:12px;background:var(--green-l);border-radius:9px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--green);">${up}건</div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px;">보장 확대/신규</div>
+    </div>
+    <div style="padding:12px;background:var(--orange-l);border-radius:9px;text-align:center;">
+      <div style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--orange);">${dn}건</div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px;">보장 축소/삭제</div>
+    </div>
+  </div>
+  <div style="padding:10px 13px;background:var(--pri-l);border-radius:8px;font-size:12px;color:var(--pri);line-height:1.7;border-left:3px solid var(--pri);">
+    💡 <strong>비교 완료.</strong> 위 탭에서 📊 종합 / 🔄 보장변화 / 💰 보험료를 확인하고 🖨 출력하세요.
+  </div>`;
+}
+
+// ════════════════════════════════════════
+// 수동 입력 분석 (MODE 3 — API 불필요)
+// ════════════════════════════════════════
+
+// 담보 목록 (수동 입력용)
+const MANUAL_COV_LIST=[
+  {item:'질병사망',      cat:'사망'},  {item:'상해사망',      cat:'사망'},  {item:'상해후유장해',   cat:'사망'},
+  {item:'일반암진단비',  cat:'암'},    {item:'유사암진단비',  cat:'암'},    {item:'고액항암치료비', cat:'암'},
+  {item:'암주요치료비',  cat:'암'},    {item:'암수술비',      cat:'암'},
+  {item:'뇌혈관진단비',  cat:'뇌심장'},{item:'뇌졸중진단비',  cat:'뇌심장'},{item:'뇌출혈진단비',   cat:'뇌심장'},
+  {item:'뇌혈관수술비',  cat:'뇌심장'},{item:'허혈성심장질환진단비',cat:'뇌심장'},{item:'급성심근경색진단비',cat:'뇌심장'},
+  {item:'허혈심장수술비', cat:'뇌심장'},
+  {item:'질병입원의료비', cat:'입원'}, {item:'질병통원의료비', cat:'입원'}, {item:'상해입원의료비',  cat:'입원'},
+  {item:'상해통원의료비', cat:'입원'}, {item:'질병수술비',     cat:'입원'}, {item:'상해수술비',      cat:'입원'},
+  {item:'2대질환주요치료비',cat:'입원'},
+  {item:'중증치매진단',  cat:'간병'}, {item:'간병인사용입원일당',cat:'간병'},{item:'1인실입원일당',  cat:'간병'},
+  {item:'교통사고처리지원금',cat:'운전자'},{item:'변호사선임비용',cat:'운전자'},{item:'벌금',cat:'운전자'},
+  {item:'일상생활배상책임',cat:'화재'},
+];
+
+// 수동 계약 데이터
+let manualContracts=[
+  {id:'mc0',insurer:'',product:'',premium:0,period:'',maturity:''}
+];
+
+function setMode(m){
+  S.mode=m;
+  [0,1,2,3].forEach(i=>{
+    const t=document.getElementById('modeTab'+i);
+    const p=document.getElementById('mp'+i);
+    if(t) t.classList.toggle('on',i===m);
+    if(p) p.classList.toggle('show',i===m);
+  });
+  if(m===3) initManualPanel();
+}
+
+function initManualPanel(){
+  renderManualContracts();
+  renderManualCovGrid();
+}
+
+function renderManualContracts(){
+  const wrap=document.getElementById('manualContracts');
+  if(!wrap) return;
+  wrap.innerHTML=manualContracts.map((c,i)=>`
+    <div style="display:grid;grid-template-columns:1.5fr 2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:8px 10px;background:${i%2===0?'#fff':'#f8fafc'};border-radius:7px;border:1px solid var(--border);margin-bottom:5px;">
+      <input class="fc" placeholder="보험사명" value="${c.insurer}" style="font-size:12px;"
+        oninput="manualContracts[${i}].insurer=this.value">
+      <input class="fc" placeholder="상품명" value="${c.product}" style="font-size:12px;"
+        oninput="manualContracts[${i}].product=this.value">
+      <input class="fc" type="number" placeholder="월보험료(원)" value="${c.premium||''}" style="font-size:12px;"
+        oninput="manualContracts[${i}].premium=Number(this.value);updateManualPremSum()">
+      <input class="fc" placeholder="납입기간" value="${c.period}" style="font-size:12px;"
+        oninput="manualContracts[${i}].period=this.value">
+      <input class="fc" placeholder="만기(예:90세)" value="${c.maturity}" style="font-size:12px;"
+        oninput="manualContracts[${i}].maturity=this.value">
+      <button onclick="deleteManualContract(${i})" style="padding:5px 8px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:5px;font-size:12px;cursor:pointer;">✕</button>
+    </div>`).join('')+
+  `<div id="manualPremSum" style="padding:6px 12px;background:var(--navy);border-radius:6px;color:#fbbf24;font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:right;">
+    월 합계: ${manualContracts.reduce((s,c)=>s+(c.premium||0),0).toLocaleString()}원
+  </div>`;
+}
+
+function addManualContract(){
+  manualContracts.push({id:'mc'+Date.now(),insurer:'',product:'',premium:0,period:'',maturity:''});
+  renderManualContracts();
+}
+function deleteManualContract(i){
+  manualContracts.splice(i,1);
+  if(!manualContracts.length) manualContracts.push({id:'mc0',insurer:'',product:'',premium:0,period:'',maturity:''});
+  renderManualContracts();
+}
+function updateManualPremSum(){
+  const el=document.getElementById('manualPremSum');
+  if(el) el.textContent='월 합계: '+manualContracts.reduce((s,c)=>s+(c.premium||0),0).toLocaleString()+'원';
+}
+
+function renderManualCovGrid(){
+  const wrap=document.getElementById('manualCovGrid');
+  if(!wrap) return;
+  // 카테고리별 섹션
+  const cats=[...new Set(MANUAL_COV_LIST.map(c=>c.cat))];
+  const catColors={'사망':'#1e40af','암':'#be185d','뇌심장':'#b45309','입원':'#0d9488','간병':'#16a34a','운전자':'#d97706','화재':'#ea580c'};
+  wrap.innerHTML='';
+
+  cats.forEach(cat=>{
+    const items=MANUAL_COV_LIST.filter(c=>c.cat===cat);
+    const col=catColors[cat]||'#475569';
+    const section=document.createElement('div');
+    section.style.cssText='grid-column:1/-1;';
+    section.innerHTML=`<div style="font-size:11px;font-weight:700;color:${col};background:${col}18;padding:4px 10px;border-radius:5px;border-left:3px solid ${col};margin-bottom:6px;">${cat}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">
+      ${items.map(c=>{
+        const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+        return `<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;background:#fff;border-radius:6px;border:1px solid var(--border);">
+          <div style="flex:1;font-size:12px;font-weight:600;color:var(--t1);">${c.item}</div>
+          <input type="number" id="mcov_${idSafe}" value="0" min="0" step="100"
+            style="width:80px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;font-size:12px;text-align:right;font-family:'IBM Plex Mono',monospace;"
+            placeholder="0">
+          <span style="font-size:10px;color:var(--t3);">만원</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+    wrap.appendChild(section);
+  });
+}
+
+function fillManualAll(val){
+  MANUAL_COV_LIST.forEach(c=>{
+    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+    const el=document.getElementById('mcov_'+idSafe);
+    if(el) el.value=val;
+  });
+}
+
+function fillManualFromSetting(){
+  MANUAL_COV_LIST.forEach(c=>{
+    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+    const el=document.getElementById('mcov_'+idSafe);
+    if(el) el.value=CUR_SETTING[c.item]||0;
+  });
+  // 알림
+  alert('✅ 현재 설정 기준값이 채워졌습니다.\n각 항목을 확인하고 수정하세요.');
+}
+
+// ── 수동 분석 실행 (API 없음) ──
+function runManualAnalysis(){
+  // 담보 값 수집
+  const covDetail={}, covStatus={};
+  let hasAny=false;
+
+  MANUAL_COV_LIST.forEach(c=>{
+    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
+    const el=document.getElementById('mcov_'+idSafe);
+    const val=parseInt(el?.value||0)||0;
+    covDetail[c.item]=val;
+
+    // 설정 기준과 비교해 상태 판정
+    const rec=CUR_SETTING[c.item]||0;
+    if(val<=0)             covStatus[c.item]='미가입';
+    else if(rec>0 && val < rec*0.7) covStatus[c.item]='부족';
+    else                   covStatus[c.item]='충분';
+    if(val>0) hasAny=true;
+  });
+
+  if(!hasAny){alert('담보 금액을 최소 1개 이상 입력해주세요.');return;}
+
+  // 보험점수 계산 (권장 대비 달성률 기반)
+  function scoreGroup(keys){
+    const vals=keys.map(k=>({v:covDetail[k]||0, r:CUR_SETTING[k]||0})).filter(x=>x.r>0);
+    if(!vals.length) return 0;
+    const avg=vals.reduce((s,x)=>s+Math.min(x.v/x.r,1.5),0)/vals.length;
+    return Math.round(Math.min(avg,1)*100);
+  }
+  const death=scoreGroup(['질병사망','상해사망','상해후유장해']);
+  const cancer=scoreGroup(['일반암진단비','유사암진단비','고액항암치료비','암주요치료비']);
+  const ci=scoreGroup(['뇌혈관진단비','뇌졸중진단비','허혈성심장질환진단비','급성심근경색진단비']);
+  const surgery=scoreGroup(['질병입원의료비','암수술비','뇌혈관수술비']);
+  const accident=scoreGroup(['교통사고처리지원금','변호사선임비용']);
+  const total=Math.round((death*0.15+cancer*0.25+ci*0.25+surgery*0.2+accident*0.15));
+
+  const totalPrem=manualContracts.reduce((s,c)=>s+(c.premium||0),0);
+
+  // 등급 계산
+  const grade=total>=90?'A+':total>=80?'A':total>=70?'B+':total>=60?'B':'C';
+
+  // 권고 내용 자동 생성
+  const missingItems=Object.entries(covStatus).filter(([,v])=>v==='미가입').map(([k])=>k);
+  const lackingItems=Object.entries(covStatus).filter(([,v])=>v==='부족').map(([k])=>k);
+
+  // 가짜 결과 객체 (renderAll 형식 맞춤)
+  const result={
+    customer:{name:v('custName'),age:'',gender:v('custGender'),birth:v('custBirth')},
+    advisor:{name:v('advName'),phone:v('advPhone'),company:v('advCompany')},
+    contract_summary:{
+      normal_count:manualContracts.filter(c=>c.insurer||c.product).length,
+      lapsed_count:0,
+      total_monthly_premium:totalPrem
+    },
+    before:{
+      insurers:[...new Set(manualContracts.map(c=>c.insurer).filter(Boolean))],
+      total_premium:totalPrem,
+      premiums:manualContracts.map(c=>({name:c.insurer,product:c.product,premium:c.premium,period:c.period,maturity:c.maturity})),
+      coverages:MANUAL_COV_LIST.filter(c=>(covDetail[c.item]||0)>0).map(c=>({item:c.item,category:c.cat,amount:covDetail[c.item]+'만원'})),
+      products:[]
+    },
+    after:{insurers:[],total_premium:0,premiums:[],coverages:[]},
+    coverage_detail:covDetail,
+    coverage_status:covStatus,
+    scores:{
+      before:{total,death,cancer,ci,surgery,accident,reason:'수동 입력 기반 점수'},
+      after:{total:0,death:0,cancer:0,ci:0,surgery:0,accident:0,reason:''}
+    },
+    venn:{only_before:[],both:[],only_after:[]},
+    coverage_table:MANUAL_COV_LIST.map(c=>({
+      item:c.item, category:c.cat,
+      before_amount:covDetail[c.item]?covDetail[c.item].toLocaleString()+'만원':'—',
+      after_amount:'—', change:'SAME', change_detail:covStatus[c.item]||''
+    })),
+    premium_analysis:{
+      monthly_diff:0, annual_diff:0,
+      assessment:`월 ${totalPrem.toLocaleString()}원 납입 중. 설정 기준(${((CUR_SETTING['월보험료적정']||0)).toLocaleString()||'미설정'}) 대비 ${totalPrem>500000?'다소 높은':'적정한'} 수준입니다.`,
+      cost_per_score:total>0?Math.round(totalPrem/total).toLocaleString()+'원/점':'-'
+    },
+    recommendation:{
+      overall_grade:grade,
+      summary:`수동 입력 기준 종합 보험점수 ${total}점 (${grade}등급). ${missingItems.length?'미가입 항목 '+missingItems.length+'건 보완 필요.':''}${lackingItems.length?' 부족 항목 '+lackingItems.length+'건 증액 검토.':''}`,
+      strengths:Object.entries(covStatus).filter(([,v])=>v==='충분').slice(0,5).map(([k])=>k+' 충분'),
+      cautions:[
+        ...missingItems.slice(0,4).map(k=>k+' 미가입 — 즉시 보완 필요'),
+        ...lackingItems.slice(0,3).map(k=>k+' 부족 — 증액 검토')
+      ],
+      why_change:[],
+      notes:'수동 입력 기반 분석입니다. 실제 보험 서류와 비교·검토하세요.',
+      remodeling_suggestion:missingItems.length?`${missingItems.slice(0,3).join(', ')} 등 미가입 항목 신규 가입을 우선 검토하세요.`:''
+    }
+  };
+
+  // 결과 표시
+  S.result=result; S.currentMode=0;
+  renderAll(result,0);
+  renderProductMgmt(result);
+  document.getElementById('resultWrap').classList.add('show');
+  switchTab(4);
+  document.getElementById('resultWrap').scrollIntoView({behavior:'smooth',block:'start'});
+  renderInfoSections();
+}
+
+function openSettingModal(){
+  loadSetting();
+  renderPresetCards();
+  renderSettingCatTabs();
+  renderSettingItems();
+  document.getElementById('settingModal').classList.add('open');
+}
+function closeSettingModal(){ document.getElementById('settingModal').classList.remove('open'); }
+
+function renderPresetCards(){
+  document.getElementById('presetCards').innerHTML=PRESET_AGES.map((p,i)=>`
+    <div onclick="applyPreset(${i})" style="cursor:pointer;padding:12px 10px;border-radius:9px;border:2px solid ${p.color}33;background:${p.bg};transition:all .18s;text-align:center;" id="presetCard${i}"
+      onmouseover="this.style.borderColor='${p.color}';this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.borderColor='${p.color}33';this.style.transform=''">
+      <div style="font-size:20px;font-weight:900;color:${p.color};font-family:'IBM Plex Mono',monospace;">${p.label}</div>
+      <div style="font-size:10px;color:${p.color};margin:2px 0;font-weight:600;">${p.range}</div>
+      <div style="font-size:10px;color:#475569;line-height:1.4;">${p.desc}</div>
+      <div style="margin-top:6px;font-size:10px;color:#64748b;">적정 ${(p.prem.opt/10000).toFixed(0)}만원/월</div>
+    </div>`).join('');
+}
+
+function applyPreset(idx){
+  const p=PRESET_AGES[idx];
+  CUR_SETTING=JSON.parse(JSON.stringify(p.recommend));
+  document.getElementById('setPremMin').value=p.prem.min;
+  document.getElementById('setPremOpt').value=p.prem.opt;
+  document.getElementById('setPremMax').value=p.prem.max;
+  // 선택 표시
+  PRESET_AGES.forEach((_,i)=>{
+    const el=document.getElementById('presetCard'+i);
+    if(el) el.style.boxShadow=i===idx?`0 0 0 2px ${PRESET_AGES[i].color}`:'';
+  });
+  renderSettingItems();
+  // 알림
+  const el=document.getElementById('presetCards');
+  const notice=document.createElement('div');
+  notice.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0f1e3c;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;z-index:999;pointer-events:none;';
+  notice.textContent=`✅ ${p.label} 기준 적용됨`;
+  el.style.position='relative';
+  el.appendChild(notice);
+  setTimeout(()=>notice.remove(),1200);
+}
+
+function renderSettingCatTabs(){
+  const cats=Object.keys(SET_CATS);
+  document.getElementById('settingCatTabs').innerHTML=cats.map(c=>`
+    <button onclick="setSettingCat('${c}')" id="setCat_${c.replace(/·/g,'_')}"
+      style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;
+        ${c===SET_CAT_ACTIVE?'background:var(--navy);color:#fff;border-color:var(--navy);':'background:#fff;color:var(--t2);border-color:var(--border);'}">${c}</button>
+  `).join('');
+}
+
+function setSettingCat(cat){
+  SET_CAT_ACTIVE=cat;
+  renderSettingCatTabs();
+  renderSettingItems();
+}
+
+function renderSettingItems(){
+  const items=SET_CATS[SET_CAT_ACTIVE]||[];
+  document.getElementById('settingItemGrid').innerHTML=items.map(item=>{
+    const cur=CUR_SETTING[item]||0;
+    const disp=cur>=10000?(cur/10000).toFixed(1)+'억':cur.toLocaleString()+'만';
+    return `
+    <div style="padding:10px 12px;background:#fff;border-radius:8px;border:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;">${item}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" id="setItem_${item.replace(/[^가-힣a-z0-9]/gi,'_')}"
+          value="${cur}" min="0" step="100"
+          style="flex:1;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:'IBM Plex Mono',monospace;text-align:right;"
+          oninput="CUR_SETTING['${item}']=Number(this.value);updateItemDisplay('${item}',Number(this.value))">
+        <span style="font-size:11px;color:var(--t3);white-space:nowrap;">만원</span>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px;" id="setDisp_${item.replace(/[^가-힣a-z0-9]/gi,'_')}">현재 기준: ${disp}</div>
+      <!-- 빠른 선택 -->
+      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
+        ${getQuickBtns(item).map(v=>`
+        <button onclick="setItemVal('${item}','${item.replace(/[^가-힣a-z0-9]/gi,'_')}',${v.val})"
+          style="padding:3px 8px;background:var(--slate);color:var(--t2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;">${v.label}</button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getQuickBtns(item){
+  // 항목별 빠른 선택 버튼
+  const map={
+    '질병사망':[{val:5000,label:'5천만'},{val:10000,label:'1억'},{val:20000,label:'2억'}],
+    '상해사망':[{val:10000,label:'1억'},{val:20000,label:'2억'},{val:30000,label:'3억'}],
+    '일반암진단비':[{val:2000,label:'2천만'},{val:3000,label:'3천만'},{val:5000,label:'5천만'}],
+    '고액항암치료비':[{val:5000,label:'5천만'},{val:10000,label:'1억'}],
+    '뇌혈관진단비':[{val:2000,label:'2천만'},{val:3000,label:'3천만'},{val:5000,label:'5천만'}],
+    '허혈성심장질환진단비':[{val:2000,label:'2천만'},{val:3000,label:'3천만'},{val:5000,label:'5천만'}],
+    '교통사고처리지원금':[{val:10000,label:'1억'},{val:20000,label:'2억'}],
+    '변호사선임비용':[{val:500,label:'500만'},{val:5000,label:'5천만'}],
+    '간병인사용입원일당':[{val:5,label:'5만'},{val:10,label:'10만'},{val:15,label:'15만'}],
+  };
+  return map[item]||[{val:1000,label:'1천만'},{val:2000,label:'2천만'},{val:3000,label:'3천만'}];
+}
+
+function setItemVal(item,idSafe,val){
+  CUR_SETTING[item]=val;
+  const inp=document.getElementById('setItem_'+idSafe);
+  if(inp) inp.value=val;
+  updateItemDisplay(item,val);
+}
+
+function updateItemDisplay(item,val){
+  const idSafe=item.replace(/[^가-힣a-z0-9]/gi,'_');
+  const disp=val>=10000?(val/10000).toFixed(1)+'억':val.toLocaleString()+'만';
+  const dispEl=document.getElementById('setDisp_'+idSafe);
+  if(dispEl) dispEl.textContent='현재 기준: '+disp+'원';
+}
+
+function resetSetting(){
+  if(!confirm('기본값(40대 기준)으로 초기화하시겠습니까?')) return;
+  applyPreset(2);
+}
+
+function applySetting(){
+  saveSetting();
+  closeSettingModal();
+  // 분석 결과가 있으면 즉시 재평가
+  if(S.result){
+    renderCovStatusGrid(S.result);
+    renderCovEditTable();
+  }
+  // 알림
+  alert('✅ 보장 기준이 저장되었습니다.\n다음 분석부터 적용됩니다.');
 }
 
 // ════════════════════════════════════════
