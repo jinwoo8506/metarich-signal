@@ -456,27 +456,33 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 .policy-more-btn:hover{background:var(--teal);color:#fff;}
 
 /* ══ PRINT — 통합 ══ */
+/* ══════ PRINT — 가로(Landscape A4) ══════ */
 .print-cover{display:none;}
+
+@page{
+  size:A4 landscape;
+  margin:10mm 12mm;
+}
+
 @media print{
   /* 숨길 요소 */
   .topbar,.sidebar-right,.tab-bar,.mode-wrap,.input-panel,
   .loading-box,.no-print,.modal-overlay{display:none!important;}
 
-  /* 기본 */
+  /* 기본 리셋 */
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-shadow:none!important;}
-  html,body{margin:0;padding:0;background:#fff;}
-  body{font-size:13px;}
+  html,body{margin:0;padding:0;background:#fff;font-size:11px;}
   .app{display:block;margin:0;padding:0;}
   .main{padding:0;margin:0;}
-  .result-wrap,.tc{display:flex!important;}
-  .score-hero,.scard,.info-card,.policy-result-card,.disclosure-section{
-    box-shadow:none;border:1px solid #e2e8f0;
-  }
 
-  /* 커버 페이지 — 1페이지 정확히 고정 */
+  /* 결과 영역 */
+  .result-wrap{display:flex!important;flex-direction:column;gap:6px;}
+  .tc{display:flex!important;flex-direction:column;gap:6px;}
+
+  /* 커버페이지 — 가로 1페이지 */
   .print-cover{
     display:flex!important;
-    flex-direction:column;
+    flex-direction:row;          /* 가로 2분할 */
     width:100%;
     height:100vh;
     max-height:100vh;
@@ -487,114 +493,163 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     break-inside:avoid;
   }
 
-  /* 각 분석 자료 카드 — 카드 내부에서 끊기지 않게만, 공간 있으면 같은 페이지에 연속 출력 */
-  .info-card{
+  /* 카드·섹션 공통 */
+  .score-hero{margin-bottom:6px;border-radius:6px;}
+  .scard{
+    border:1px solid #e2e8f0;
+    border-radius:6px;
+    padding:10px 12px;
+    margin-bottom:6px;
     page-break-inside:avoid;
     break-inside:avoid;
-    width:100%;
-    box-sizing:border-box;
-    border:none!important;
+  }
+  .scard-title{font-size:11px;margin-bottom:8px;}
+
+  /* 수술+간병 같은 페이지 2단 */
+  .info-pair-wrap{
+    display:grid!important;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    page-break-inside:avoid;
+    break-inside:avoid;
+  }
+  .info-pair-wrap .info-card{
     margin-bottom:0!important;
   }
+  /* 명의 리스트 카드 — 2컬럼 내부 끊김 방지 */
+  .info-card .specialist-col{
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+  /* 명의 테이블 행 축소 */
+  .info-card table tr td{
+    padding:2px 6px!important;
+    font-size:10px!important;
+    line-height:1.35!important;
+  }
 
-  /* 담당자의견·고지사항 */
+  /* 보장편집 탭 출력 제외 */
+  #tc4{display:none!important;}
+
+  /* 고지사항 — 새 페이지 시작 */
   .disclosure-section{
     page-break-before:always;
     break-before:page;
     page-break-inside:avoid;
     break-inside:avoid;
+    border-radius:6px;
   }
 
-  /* score-hero, scard — 연속 출력 허용 */
-  .score-hero,.scard{
-    page-break-inside:avoid;
-    break-inside:avoid;
+  /* 가로 출력 최적화: 종합탭(tc0) 2단 레이아웃 */
+  #tc0{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;align-items:start;}
+  #tc1 .cov-table{font-size:10px;}
+  #tc1 .cov-table th,#tc1 .cov-table td{padding:4px 6px;}
+
+  /* 보험료 탭 2단 */
+  .prem-layout{font-size:11px;}
+  .prem-item{padding:4px 0;}
+
+  /* 히어로 가로 최적화 */
+  .score-hero{padding:14px 18px!important;}
+  .sh-kpis{gap:8px;}
+  .kpi-card{padding:8px 10px;}
+  .kpi-val{font-size:20px!important;}
+
+  /* 표 글씨 축소 */
+  table{font-size:10px;}
+  th,td{padding:4px 6px!important;}
+
+  /* 보장현황 2컬럼 출력 */
+  #tc1{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;align-items:start;}
+  #tc1 .scard:first-child{grid-column:1/-1;}
+
+  /* 페이지 푸터 */
+  @page{
+    @bottom-center{
+      content:"보장분석 Pro — " counter(page) " / " counter(pages);
+      font-size:9px;color:#94a3b8;
+    }
   }
 }
-/* ══════════════ COVER PAGE ══════════════ */
-/* Image 1 구조: 상단 파란바 > 배경사진+텍스트 > 중간 여백+멘트 > 하단 정보 */
-.pc-top-bar{
-  background:#1565C0;
-  padding:16px 48px;
-  display:flex;align-items:center;gap:16px;
-  flex-shrink:0;
+/* ══════════════ COVER PAGE — 가로 2분할 ══════════════ */
+/* 왼쪽: 네이비 배경 + 브랜드·타이틀·멘트 | 오른쪽: 흰 배경 + 고객·설계사 정보 */
+.pc-left{
+  width:52%;flex-shrink:0;
+  background:linear-gradient(160deg,#0f1e3c 0%,#1a3260 55%,#253d7a 100%);
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:36px 44px;
   -webkit-print-color-adjust:exact;print-color-adjust:exact;
 }
-.pc-top-bar-logo{font-family:'Noto Serif KR',serif;font-size:20px;font-weight:700;color:#fff;display:flex;align-items:center;gap:10px;}
-.pc-top-bar-logo span{font-size:13px;color:rgba(255,255,255,.55);letter-spacing:2px;font-weight:400;margin-left:6px;}
-.pc-top-bar-sub{font-size:13px;color:rgba(255,255,255,.55);margin-left:auto;letter-spacing:1.5px;}
-
-/* 사진 배경 영역 */
-.pc-photo-area{
-  position:relative;
-  height:240px;
-  flex-shrink:0;
-  overflow:hidden;
-  -webkit-print-color-adjust:exact;print-color-adjust:exact;
-}
-.pc-photo-bg{
-  position:absolute;inset:0;
-  background:
-    linear-gradient(to right,rgba(8,15,35,.72) 0%,rgba(8,15,35,.52) 32%,rgba(8,15,35,.18) 62%,rgba(8,15,35,.04) 100%),
-    linear-gradient(148deg,#b0a080 0%,#c8b898 20%,#ddd0b0 40%,#ece0c4 58%,#f4e8d0 72%,#e6d6b8 88%,#c8b898 100%);
-  -webkit-print-color-adjust:exact;print-color-adjust:exact;
-}
-.pc-photo-bg::after{
-  content:'';position:absolute;right:0;top:0;bottom:0;width:58%;
-  background:
-    radial-gradient(ellipse 400px 280px at 72% 42%,rgba(240,218,172,.58) 0%,transparent 62%),
-    radial-gradient(circle 90px at 65% 52%,rgba(195,165,105,.55) 0%,transparent 42%),
-    radial-gradient(ellipse 260px 70px at 68% 70%,rgba(165,140,95,.32) 0%,transparent 52%);
-}
-.pc-photo-text{
-  position:relative;z-index:2;
-  display:flex;flex-direction:column;justify-content:center;
-  padding:28px 48px;height:100%;
-}
-.pc-label-en{font-size:12px;color:rgba(255,255,255,.52);letter-spacing:3.5px;text-transform:uppercase;margin-bottom:4px;}
-.pc-label-ko{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:12px;}
-.pc-big-title{
+.pc-logo-row{display:flex;align-items:center;gap:10px;margin-bottom:auto;}
+.pc-logo-ico{font-size:26px;}
+.pc-logo-txt{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:.3px;}
+.pc-logo-sub{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:2px;margin-top:2px;}
+.pc-center-block{flex:1;display:flex;flex-direction:column;justify-content:center;padding:20px 0;}
+.pc-en-label{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:4px;text-transform:uppercase;margin-bottom:6px;}
+.pc-main-title{
   font-family:'Noto Serif KR',serif;
-  font-size:42px;font-weight:900;color:#fff;
-  line-height:1.05;letter-spacing:-.5px;
-  text-shadow:0 2px 14px rgba(0,0,0,.28);
-  margin-bottom:14px;
+  font-size:38px;font-weight:900;color:#fff;
+  line-height:1.1;letter-spacing:-.5px;
+  text-shadow:0 3px 16px rgba(0,0,0,.35);
+  margin-bottom:16px;
 }
-.pc-photo-divider{width:36px;height:2px;background:rgba(255,255,255,.5);margin-bottom:12px;}
-.pc-copy-text{font-size:14px;color:rgba(255,255,255,.88);line-height:1.65;font-style:italic;text-shadow:0 1px 6px rgba(0,0,0,.28);}
+.pc-divider{width:40px;height:3px;background:#fbbf24;border-radius:2px;margin-bottom:16px;}
+.pc-quote{font-size:14px;color:rgba(255,255,255,.75);line-height:1.9;font-style:italic;}
+.pc-bottom-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;
+  background:rgba(255,255,255,.06);
+  border-radius:8px;
+  border-left:3px solid #fbbf24;
+  margin-top:20px;
+}
+.pc-bottom-bar-t{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1px;}
+.pc-bottom-bar-v{font-size:13px;font-weight:700;color:#fbbf24;}
 
-/* 중간 여백 + 감성 멘트 영역 */
-.pc-middle{
+.pc-right{
   flex:1;
-  display:flex;align-items:center;justify-content:center;
-  padding:28px 56px;
-}
-.pc-middle-inner{
-  text-align:center;
-  display:flex;flex-direction:column;gap:10px;
-}
-.pc-middle-line{
-  font-size:16px;color:#334155;line-height:1.9;font-weight:500;
-  letter-spacing:.2px;
-}
-.pc-middle-line strong{color:#1565C0;font-weight:800;}
-.pc-middle-rule{width:48px;height:2px;background:#1565C0;margin:4px auto;}
-
-/* 하단 정보 영역 — 흰 배경, 검은 큰 글씨 */
-.pc-info-area{
   background:#fff;
-  border-top:2.5px solid #1565C0;
-  padding:18px 48px 22px;
-  flex-shrink:0;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:36px 40px;
+  border-left:none;
 }
-.pc-cust-block{margin-bottom:14px;}
-.pc-cust-row{display:flex;align-items:baseline;gap:6px;margin-bottom:5px;}
-.pc-cust-label{font-size:15px;font-weight:800;color:#0f172a;}
-.pc-cust-val{font-size:15px;font-weight:800;color:#0f172a;}
-.pc-rule{width:100%;height:1px;background:#e2e8f0;margin-bottom:14px;}
-.pc-adv-row{display:flex;align-items:baseline;gap:0;flex-direction:column;}
-.pc-adv-name{font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-.3px;font-family:'Noto Sans KR',sans-serif;}
-.pc-adv-phone{font-size:15px;font-weight:600;color:#334155;margin-top:4px;font-family:'Noto Sans KR',sans-serif;}
+.pc-right-top{flex:1;}
+.pc-score-display{
+  display:flex;align-items:center;gap:18px;
+  margin-bottom:28px;
+  padding:16px 20px;
+  background:#f8faff;
+  border-radius:10px;
+  border:1.5px solid #dbeafe;
+}
+.pc-score-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:52px;font-weight:500;color:#1565C0;line-height:1;
+}
+.pc-score-label{font-size:12px;color:#64748b;margin-top:4px;}
+.pc-score-grade{
+  font-size:24px;font-weight:900;
+  padding:6px 14px;border-radius:8px;
+  background:#1565C0;color:#fff;
+}
+.pc-section-label{font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+.pc-cust-block{margin-bottom:22px;}
+.pc-cust-name{font-size:28px;font-weight:900;color:#0f172a;font-family:'Noto Serif KR',serif;margin-bottom:4px;}
+.pc-cust-meta{font-size:13px;color:#64748b;line-height:1.8;}
+.pc-divider-h{width:100%;height:1px;background:#e2e8f0;margin:18px 0;}
+.pc-contract-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;}
+.pc-cs-item{text-align:center;padding:12px;background:#f8faff;border-radius:8px;border:1px solid #dbeafe;}
+.pc-cs-val{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#1565C0;}
+.pc-cs-lbl{font-size:10px;color:#64748b;margin-top:3px;}
+.pc-adv-block{
+  padding:16px 18px;
+  background:#0f1e3c;
+  border-radius:8px;
+  color:#fff;
+}
+.pc-adv-name{font-size:20px;font-weight:900;color:#fff;margin-bottom:4px;}
+.pc-adv-meta{font-size:12px;color:rgba(255,255,255,.55);line-height:1.7;}
+.pc-date{font-size:11px;color:#94a3b8;margin-top:12px;text-align:right;}
 
 
 /* ─── DISCLOSURE SECTION ─── */
@@ -663,58 +718,86 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 </head>
 <body>
 
-<!-- ─── PRINT COVER PAGE ─── -->
+<!-- ─── PRINT COVER PAGE — 가로 2분할 ─── -->
 <div class="print-cover" id="printCover">
 
-  <!-- 1. 최상단 파란 회사 로고/명 바 -->
-  <div class="pc-top-bar">
-    <div class="pc-top-bar-logo">
-      🛡️ 보장분석 Pro
-      <span>INSURANCE ANALYSIS</span>
+  <!-- 왼쪽: 네이비 배경 브랜드 영역 -->
+  <div class="pc-left">
+    <div class="pc-logo-row">
+      <span class="pc-logo-ico">🛡️</span>
+      <div>
+        <div class="pc-logo-txt">보장분석 Pro</div>
+        <div class="pc-logo-sub">INSURANCE ANALYSIS REPORT</div>
+      </div>
     </div>
-    <div class="pc-top-bar-sub">Personal Coverage Report</div>
-  </div>
 
-  <!-- 2. 배경 사진 + 텍스트 -->
-  <div class="pc-photo-area">
-    <div class="pc-photo-bg"></div>
-    <div class="pc-photo-text">
-      <div class="pc-label-en">Business Overview</div>
-      <div class="pc-label-ko">사업개요</div>
-      <div class="pc-big-title">보장 분석 리포트</div>
-      <div class="pc-photo-divider"></div>
-      <div class="pc-copy-text">"행복한 내일을 보내기 위해<br>오늘 고객님의 보험을 점검합니다!"</div>
+    <div class="pc-center-block">
+      <div class="pc-en-label">Personal Coverage Report</div>
+      <div class="pc-main-title">보장 분석<br>리포트</div>
+      <div class="pc-divider"></div>
+      <div class="pc-quote">
+        "부족한 부분은 채우고<br>
+        불필요한 지출은 줄이는 것,<br>
+        소중한 가족의 미래를 위해<br>
+        꼼꼼하고 진심을 다해 점검하였습니다."
+      </div>
     </div>
-  </div>
 
-  <!-- 3. 중간 감성 멘트 -->
-  <div class="pc-middle">
-    <div class="pc-middle-inner">
-      <div class="pc-middle-line"><strong>부족한 부분은 채우는 것</strong></div>
-      <div class="pc-middle-line"><strong>불필요한 지출은 줄이는 것</strong></div>
-      <div class="pc-middle-rule"></div>
-      <div class="pc-middle-line">소중한 가족의 미래를 지키기 위해</div>
-      <div class="pc-middle-line">꼼꼼하고 진심을 다해 점검하였습니다.</div>
+    <div class="pc-bottom-bar">
+      <div>
+        <div class="pc-bottom-bar-t">ANALYSIS DATE</div>
+        <div class="pc-bottom-bar-v" id="coverDate">—</div>
+      </div>
     </div>
   </div>
 
-  <!-- 4. 하단 고객·담당자 정보 -->
-  <div class="pc-info-area">
+  <!-- 오른쪽: 흰 배경 고객·설계사 정보 -->
+  <div class="pc-right">
+    <!-- 보험점수 -->
+    <div class="pc-score-display">
+      <div>
+        <div class="pc-score-num" id="coverScore">—</div>
+        <div class="pc-score-label">종합 보험점수 / 100점</div>
+      </div>
+      <div class="pc-score-grade" id="coverGrade">—</div>
+      <div style="margin-left:auto;font-size:12px;color:#64748b;line-height:1.7;">
+        <div id="coverScoreDesc">분석 완료 후 표시됩니다</div>
+      </div>
+    </div>
+
+    <!-- 고객 정보 -->
+    <div class="pc-section-label">CLIENT INFORMATION</div>
     <div class="pc-cust-block">
-      <div class="pc-cust-row">
-        <span class="pc-cust-label">고객명 :</span>
-        <span class="pc-cust-val" id="coverCustName">—</span>
+      <div class="pc-cust-name" id="coverCustName">—</div>
+      <div class="pc-cust-meta" id="coverCustMeta">—</div>
+    </div>
+
+    <!-- 계약 요약 -->
+    <div class="pc-section-label">CONTRACT SUMMARY</div>
+    <div class="pc-contract-summary">
+      <div class="pc-cs-item">
+        <div class="pc-cs-val" id="coverContractCnt">—</div>
+        <div class="pc-cs-lbl">정상계약 (건)</div>
       </div>
-      <div class="pc-cust-row">
-        <span class="pc-cust-label">분석일 :</span>
-        <span class="pc-cust-val" id="coverDate">—</span>
+      <div class="pc-cs-item">
+        <div class="pc-cs-val" id="coverMonthly">—</div>
+        <div class="pc-cs-lbl">월 보험료 (원)</div>
+      </div>
+      <div class="pc-cs-item">
+        <div class="pc-cs-val" id="coverAnnual">—</div>
+        <div class="pc-cs-lbl">연 보험료 (원)</div>
       </div>
     </div>
-    <div class="pc-rule"></div>
-    <div class="pc-adv-row">
-      <div class="pc-adv-name" id="coverAdvFull">00회사 00소속 000 담당 설계사</div>
-      <div class="pc-adv-phone" id="coverAdvPhone"></div>
+
+    <div class="pc-divider-h"></div>
+
+    <!-- 담당 설계사 -->
+    <div class="pc-section-label">ADVISOR</div>
+    <div class="pc-adv-block">
+      <div class="pc-adv-name" id="coverAdvFull">담당 설계사</div>
+      <div class="pc-adv-meta" id="coverAdvMeta">—</div>
     </div>
+    <div class="pc-date" id="coverDateBottom"></div>
   </div>
 
 </div>
@@ -941,7 +1024,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
       <button class="tab-btn" onclick="switchTab(1)">🛡️ 보장</button>
       <button class="tab-btn" onclick="switchTab(2)">💰 보험료</button>
       <button class="tab-btn" onclick="switchTab(3)">💡 의견</button>
-      <button class="tab-btn" id="prodMgmtTab" onclick="switchTab(4)" style="display:none">🗂 상품관리</button>
+      <button class="tab-btn" id="prodMgmtTab" onclick="switchTab(4)">✏️ 보장편집</button>
     </div>
     <div class="tc on" id="tc0">
       <div class="scard"><div class="scard-title">📈 항목별 보험점수</div><div id="scoreBreakdown"></div></div>
@@ -957,12 +1040,50 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     <div class="tc" id="tc3">
       <div class="scard"><div class="scard-title">💡 전문가 종합 의견</div><div id="recContent"></div></div>
     </div>
-    <!-- 상품 관리 탭 (Mode 0 전용) -->
+    <!-- 보장편집 탭 -->
     <div class="tc" id="tc4">
       <div class="scard">
-        <div class="scard-title">🗂 현재 보험 상품 관리 — 유지 / 해지 선택</div>
+        <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span>✏️ 보장편집 — 계약·담보 수정 후 출력</span>
+          <div style="display:flex;gap:6px;">
+            <button onclick="addNewContract()" style="padding:5px 12px;background:var(--green-l);color:var(--green);border:1.5px solid var(--green);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 계약 추가</button>
+            <button onclick="switchToAddCov()" style="padding:5px 12px;background:var(--pri-l);color:var(--pri);border:1.5px solid var(--pri);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 담보 추가</button>
+          </div>
+        </div>
+        <!-- 요약바 -->
         <div class="prod-summary-bar" id="prodSummaryBar"></div>
+        <!-- 메모 -->
+        <div style="margin:8px 0 12px;padding:10px 13px;background:var(--gold-l);border-radius:8px;border-left:3px solid var(--gold);">
+          <div style="font-size:11px;font-weight:700;color:#7a5000;margin-bottom:4px;">📝 메모 / 특이사항 (PDF에 없는 내용, 구두 확인 사항 등)</div>
+          <textarea id="editMemo" placeholder="예) 2024년 12월 추가 가입 예정 / 고지 필요 사항 있음 / 갱신 시 보험료 인상 예상..." style="width:100%;border:1px solid #f0d08a;border-radius:6px;padding:7px 10px;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;min-height:52px;background:#fff;"></textarea>
+        </div>
+        <!-- 계약 카드 -->
         <div class="product-mgmt" id="productMgmt"></div>
+      </div>
+
+      <!-- 담보별 보장금액 편집 -->
+      <div class="scard" id="covEditSection">
+        <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>🛡️ 담보별 보장금액 수정 / 추가</span>
+          <button onclick="addCovEditRow()" style="padding:5px 12px;background:var(--pri-l);color:var(--pri);border:1.5px solid var(--pri);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 담보 행 추가</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;" id="covEditTable">
+            <thead>
+              <tr style="background:var(--navy);">
+                <th style="padding:8px 10px;color:rgba(255,255,255,.7);font-size:12px;text-align:left;min-width:160px;">담보명</th>
+                <th style="padding:8px 10px;color:rgba(255,255,255,.7);font-size:12px;text-align:left;min-width:80px;">구분</th>
+                <th style="padding:8px 10px;color:rgba(255,255,255,.7);font-size:12px;text-align:right;min-width:100px;">보장금액(만원)</th>
+                <th style="padding:8px 10px;color:rgba(255,255,255,.7);font-size:12px;text-align:center;min-width:80px;">상태</th>
+                <th style="padding:8px 10px;color:rgba(255,255,255,.7);font-size:12px;text-align:center;min-width:50px;">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="covEditBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;padding:8px 11px;background:var(--pri-l);border-radius:7px;font-size:11px;color:var(--pri);line-height:1.6;">
+          💡 PDF에서 인식되지 않은 담보를 직접 추가하거나 금액·상태를 수정하세요. 수정 후 인쇄하면 출력물에 반영됩니다.
+        </div>
       </div>
     </div>
 
@@ -1139,7 +1260,8 @@ const S={
   slots:{0:{},1:{},2:{}},
   slotCounts:{0:1,1:3,2:1},
   result:null, currentMode:0,
-  products:[], // [{id,name,premium,coverages,status:'keep'|'cancel',endorsedOut:[]}]
+  products:[],
+  covEditRows:[],
   selected:new Set(),
   policyTabCurrent:'life'
 };
@@ -1366,7 +1488,7 @@ async function runAnalysis(mode){
       document.getElementById('loadingBox').style.display='none';
       S.result=res;S.currentMode=mode;
       if(mode===2) renderPolicyResult(res);
-      else{renderAll(res,mode);if(mode===0)renderProductMgmt(res);}
+      else{renderAll(res,mode);renderProductMgmt(res);}
       document.getElementById('resultWrap').classList.add('show');
       renderInfoSections();
     },450);
@@ -1420,7 +1542,7 @@ async function callAnalysisAPI(mode){
   const apiKey = getApiKey();
   if(!apiKey){ throw new Error('API Key가 없습니다. 상단에 Anthropic API Key를 입력해주세요.'); }
 
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,system:'당신은 대한민국 보험 전문 분석가입니다. 업로드된 보험 PDF에서 데이터를 정확히 추출합니다. 반드시 요청한 JSON 형식으로만 응답하고 JSON 이외 텍스트 절대 불포함. PDF에서 실제로 읽히는 값만 사용하고 추정 금지. 금액은 만원 단위 정수로 통일(억원x10000, 원/10000 반올림).',messages:[{role:'user',content}]})});
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:8000,system:'당신은 대한민국 보험 전문 분석가입니다. 업로드된 보험 PDF에서 데이터를 정확히 추출합니다. 반드시 요청한 JSON 형식으로만 응답하고 JSON 이외 텍스트 절대 불포함. PDF에서 실제로 읽히는 값만 사용하고 추정 금지. 금액은 만원 단위 정수로 통일(억원x10000, 원/10000 반올림).',messages:[{role:'user',content}]})});
   if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류');}
   const data=await resp.json();
   const raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
@@ -1437,7 +1559,7 @@ async function callPolicyAPI(){
   content.push({type:'text',text:`\n아래 질문에 답하는 JSON만 응답:\n${query}\n\n{"answers":[{"question":"","answer":"","article":"","caution":""}],"overall_note":""}`});
   const apiKey2 = getApiKey();
   if(!apiKey2){ throw new Error('API Key가 없습니다. 상단에 Anthropic API Key를 입력해주세요.'); }
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey2,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,system:'보험 약관 전문가. 약관 내용을 정확히 찾아 쉽게 설명. 요청 JSON만 응답.',messages:[{role:'user',content}]})});
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey2,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,system:'보험 약관 전문가. 약관 내용을 정확히 찾아 쉽게 설명. 요청 JSON만 응답.',messages:[{role:'user',content}]})});
   if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||'API 오류');}
   const data=await resp.json();
   const raw=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();
@@ -1451,7 +1573,7 @@ function renderAll(d,mode){
   const isSolo=mode===0;
   document.getElementById('policyResults').innerHTML='';
   document.getElementById('tabBar').style.display='';
-  document.getElementById('prodMgmtTab').style.display=isSolo?'':'none';
+  
   renderHero(d,isSolo);
   renderContractList(d);      // ★ 계약목록 + 담보상세
   renderScores(d,isSolo);
@@ -1474,8 +1596,8 @@ function renderContractList(d){
   const rows=prems.length?prems:prods;
   const totalP=cs.total_monthly_premium||d.before?.total_premium||0;
   const cnt=cs.normal_count||rows.length;
+  const lapsed=cs.lapsed_count||0;
 
-  // 삽입 위치: scoreHero 바로 다음
   let sec=document.getElementById('contractListSection');
   if(!sec){
     sec=document.createElement('div');
@@ -1486,66 +1608,103 @@ function renderContractList(d){
   if(!rows.length){sec.innerHTML='';return;}
 
   const stColor={'충분':'#16a34a','부족':'#ea580c','미가입':'#dc2626'};
+  const stBg={'충분':'#f0fdf4','부족':'#fff7ed','미가입':'#fef2f2'};
 
-  // 계약 목록 행
-  const trs=rows.map((p,i)=>`
-    <tr style="background:${i%2===0?'#fff':'#f8f9fc'};border-bottom:1px solid #f0f0f0;">
-      <td style="padding:7px 10px;text-align:center;color:#94a3b8;font-size:12px;">${i+1}</td>
-      <td style="padding:7px 10px;font-weight:700;color:#0f1e3c;white-space:nowrap;font-size:13px;">${p.name||p.insurer||'—'}</td>
-      <td style="padding:7px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#475569;" title="${p.product||p.name||''}">${p.product||p.name||'—'}</td>
-      <td style="padding:7px 10px;text-align:right;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:13px;">${(p.premium||0).toLocaleString()}원</td>
-      <td style="padding:7px 10px;text-align:center;color:#94a3b8;font-size:12px;">${p.period||'—'}</td>
-      <td style="padding:7px 10px;text-align:center;color:#94a3b8;font-size:12px;">${p.maturity||'—'}</td>
-      <td style="padding:7px 10px;text-align:center;color:#94a3b8;font-size:12px;">${p.start||p.end||'—'}</td>
-    </tr>`).join('');
+  // ── 계약 목록 (가로 출력 최적화: 전체 컬럼) ──
+  const trs=rows.map((p,i)=>{
+    const isPrem=!!p.product; // premiums 배열
+    const insurer=p.name||p.insurer||'—';
+    const product=isPrem?(p.product||'—'):(p.name||'—');
+    const prem=p.premium||0;
+    const annual=prem*12;
+    const period=p.period||'—';
+    const maturity=p.maturity||'—';
+    const start=p.start||'—';
+    const end=p.end||'—';
+    return `<tr style="background:${i%2===0?'#fff':'#f8fafc'};border-bottom:1px solid #edf2f7;">
+      <td style="padding:7px 9px;text-align:center;color:#94a3b8;font-size:11px;font-weight:600;">${i+1}</td>
+      <td style="padding:7px 9px;font-weight:700;color:#0f1e3c;white-space:nowrap;font-size:12px;">${insurer}</td>
+      <td style="padding:7px 9px;font-size:11px;color:#475569;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${product}">${product}</td>
+      <td style="padding:7px 9px;text-align:right;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#0f1e3c;">${prem.toLocaleString()}</td>
+      <td style="padding:7px 9px;text-align:right;font-size:11px;color:#64748b;font-family:'IBM Plex Mono',monospace;">${annual.toLocaleString()}</td>
+      <td style="padding:7px 9px;text-align:center;font-size:11px;color:#64748b;">${period}</td>
+      <td style="padding:7px 9px;text-align:center;font-size:11px;color:#64748b;">${maturity}</td>
+      <td style="padding:7px 9px;text-align:center;font-size:11px;color:#64748b;">${start}</td>
+      <td style="padding:7px 9px;text-align:center;font-size:11px;color:#64748b;">${end}</td>
+    </tr>`;
+  }).join('');
 
-  // 담보 금액 카드
+  // ── 담보 카드 (가로 3열 그리드) ──
   const covCards=Object.entries(covD)
     .filter(([,v])=>v&&v>0)
     .map(([k,v])=>{
       const st=covSt[k]||'';
       const sc=stColor[st]||'#64748b';
-      const disp=v>=10000?(v/10000).toFixed(1)+'억원':v.toLocaleString()+'만원';
-      return `<div style="padding:8px 11px;background:#f8fafc;border-radius:8px;border-left:3px solid ${sc};">
-        <div style="font-size:10px;color:#94a3b8;margin-bottom:2px;">${k}</div>
-        <div style="font-size:13px;font-weight:700;color:#0f1e3c;">${disp}</div>
-        ${st?`<div style="font-size:10px;font-weight:700;color:${sc};margin-top:1px;">${st}</div>`:''}
+      const sb2=stBg[st]||'#f8fafc';
+      const disp=v>=10000?(v/10000).toFixed(1)+'억':v.toLocaleString()+'만';
+      return `<div style="padding:7px 10px;background:${sb2};border-radius:7px;border-left:3px solid ${sc};">
+        <div style="font-size:10px;color:#64748b;margin-bottom:1px;line-height:1.3;">${k}</div>
+        <div style="font-size:13px;font-weight:700;color:#0f1e3c;font-family:'IBM Plex Mono',monospace;">${disp}</div>
+        ${st?`<div style="font-size:10px;font-weight:700;color:${sc};">${st}</div>`:''}
       </div>`;
     }).join('');
 
+  // ── 미가입 항목 요약 ──
+  const missing=Object.entries(covSt).filter(([,v])=>v==='미가입').map(([k])=>k);
+  const lacking=Object.entries(covSt).filter(([,v])=>v==='부족').map(([k])=>k);
+
   sec.innerHTML=`
-  <div class="scard" style="margin-bottom:16px;">
-    <div class="scard-title">📋 보유 계약 목록
-      <span style="margin-left:8px;background:#e8ecff;color:#4361ee;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;text-transform:none;">${cnt}건</span>
-      <span style="margin-left:6px;background:#f0fdf4;color:#16a34a;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;text-transform:none;">월 ${totalP.toLocaleString()}원</span>
+  <div class="scard" style="margin-bottom:16px;page-break-inside:avoid;">
+    <div class="scard-title" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span>📋 보유 계약 목록</span>
+      <span style="background:#e8ecff;color:#4361ee;padding:2px 9px;border-radius:8px;font-size:11px;font-weight:700;">정상 ${cnt}건</span>
+      ${lapsed?`<span style="background:#fee2e2;color:#dc2626;padding:2px 9px;border-radius:8px;font-size:11px;font-weight:700;">실효 ${lapsed}건</span>`:''}
+      <span style="background:#f0fdf4;color:#16a34a;padding:2px 9px;border-radius:8px;font-size:11px;font-weight:700;">월 ${totalP.toLocaleString()}원</span>
+      <span style="background:#fef9e7;color:#c8941a;padding:2px 9px;border-radius:8px;font-size:11px;font-weight:700;">연 ${(totalP*12).toLocaleString()}원</span>
     </div>
-    <div style="overflow-x:auto;border-radius:9px;border:1px solid #e2e8f0;">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0;">
+      <table style="width:100%;border-collapse:collapse;">
         <thead>
           <tr style="background:#0f1e3c;">
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;">No</th>
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-align:left;">보험사</th>
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-align:left;">상품명</th>
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;text-align:right;">월보험료</th>
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;">납입기간</th>
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;">만기</th>
-            <th style="padding:9px 10px;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;">보장시작</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:center;">No</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:left;">보험사</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:left;">상품명</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:right;">월보험료(원)</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:right;">연보험료(원)</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:center;">납입기간</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:center;">만기</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:center;">보장시작</th>
+            <th style="padding:8px 9px;color:rgba(255,255,255,.6);font-size:11px;font-weight:600;text-align:center;">보장종료</th>
           </tr>
         </thead>
         <tbody>${trs}</tbody>
         <tfoot>
           <tr style="background:#1a3260;">
-            <td colspan="3" style="padding:8px 10px;color:#fff;font-weight:700;">합 계 (${cnt}건)</td>
-            <td style="padding:8px 10px;text-align:right;color:#fbbf24;font-weight:700;font-family:'IBM Plex Mono',monospace;">${totalP.toLocaleString()}원</td>
-            <td colspan="3"></td>
+            <td colspan="3" style="padding:8px 10px;color:#fff;font-weight:700;font-size:12px;">합 계 (${cnt}건)</td>
+            <td style="padding:8px 10px;text-align:right;color:#fbbf24;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:12px;">${totalP.toLocaleString()}</td>
+            <td style="padding:8px 10px;text-align:right;color:#fbbf24;font-weight:700;font-family:'IBM Plex Mono',monospace;font-size:12px;">${(totalP*12).toLocaleString()}</td>
+            <td colspan="4"></td>
           </tr>
         </tfoot>
       </table>
     </div>
+
+    ${missing.length||lacking.length?`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+      ${missing.length?`<div style="padding:10px 13px;background:#fef2f2;border-radius:8px;border-left:3px solid #dc2626;">
+        <div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:5px;">⚠️ 미가입 항목 (${missing.length}건)</div>
+        <div style="font-size:11px;color:#475569;line-height:1.8;">${missing.join(' · ')}</div>
+      </div>`:''}
+      ${lacking.length?`<div style="padding:10px 13px;background:#fff7ed;border-radius:8px;border-left:3px solid #ea580c;">
+        <div style="font-size:11px;font-weight:700;color:#ea580c;margin-bottom:5px;">📉 부족 항목 (${lacking.length}건)</div>
+        <div style="font-size:11px;color:#475569;line-height:1.8;">${lacking.join(' · ')}</div>
+      </div>`:''}
+    </div>`:''}
+
     ${covCards?`
-    <div style="margin-top:14px;">
-      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;">🛡️ 담보별 보장금액 (추출)</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;">${covCards}</div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.8px;margin-bottom:7px;">🛡️ 담보별 보장금액</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;">${covCards}</div>
     </div>`:''}
   </div>`;
 }
@@ -1665,65 +1824,163 @@ function renderRec(d,isSolo){
 }
 
 // ════════════════════════════════════════
-// PRODUCT MANAGEMENT
+// PRODUCT MANAGEMENT — 편집 기능 포함
 // ════════════════════════════════════════
 function renderProductMgmt(d){
   const prods=d.before?.products||[];
   if(!prods.length){
-    // fallback: create from premiums
     const bp=d.before?.premiums||[];
     const covs=d.before?.coverages||[];
     bp.forEach((p,i)=>{
-      prods.push({id:'p'+i,name:p.product||p.name,insurer:p.name,premium:p.premium||0,coverages:i===0?covs:[]});
+      prods.push({id:'p'+i,name:p.product||p.name,insurer:p.name,premium:p.premium||0,period:p.period||'',maturity:p.maturity||'',start:p.start||'',coverages:i===0?covs:[]});
     });
   }
-  // init state
   S.products=prods.map(p=>({...p,status:'keep',endorsedOut:[]}));
+
+  // 담보 편집 테이블 초기화
+  const cd=d.coverage_detail||{};
+  const cs=d.coverage_status||{};
+  const covs=d.before?.coverages||[];
+  if(Object.keys(cd).length>0){
+    S.covEditRows=Object.entries(cd).filter(([,v])=>v>0).map(([k,v])=>({item:k,amount:v,status:cs[k]||'',category:'기타'}));
+  } else {
+    S.covEditRows=covs.map(c=>({item:c.item||'',amount:c.amount||0,status:'',category:c.category||'기타'}));
+  }
+
   updateProdSummary();
   renderProdCards();
+  renderCovEditTable();
 }
 
 function updateProdSummary(){
   const kept=S.products.filter(p=>p.status==='keep');
   const totalOrig=S.products.reduce((a,p)=>a+(p.premium||0),0);
-  const totalKept=kept.reduce((p,prod)=>{
-    const removedPct=prod.endorsedOut.length/(prod.coverages.length||1)*0.7;
-    return p+Math.round((prod.premium||0)*(1-removedPct));
+  const totalKept=kept.reduce((sum,prod)=>{
+    const rmv=prod.endorsedOut.length/(prod.coverages.length||1)*0.7;
+    return sum+Math.round((prod.premium||0)*(1-rmv));
   },0);
   const saving=totalOrig-totalKept;
   document.getElementById('prodSummaryBar').innerHTML=`
     <div class="psb-item"><div class="psb-val">${kept.length} / ${S.products.length}</div><div class="psb-lbl">유지 / 전체 상품</div></div>
-    <div class="psb-item"><div class="psb-val">${totalKept.toLocaleString()}원</div><div class="psb-lbl">선택 후 월보험료</div></div>
+    <div class="psb-item"><div class="psb-val">${totalOrig.toLocaleString()}원</div><div class="psb-lbl">원 월보험료</div></div>
+    <div class="psb-item"><div class="psb-val">${totalKept.toLocaleString()}원</div><div class="psb-lbl">유지 후 월보험료</div></div>
     <div class="psb-item"><div class="psb-val" style="color:#86efac">${saving>0?'-'+saving.toLocaleString()+'원':'±0원'}</div><div class="psb-lbl">절감 예상액</div></div>`;
 }
 
 function renderProdCards(){
   const wrap=document.getElementById('productMgmt');
+  if(!wrap) return;
   wrap.innerHTML=S.products.map((p,idx)=>{
     const isCancelled=p.status==='cancel';
     const endorsedCount=p.endorsedOut.length;
     const covCount=p.coverages.length;
     const adjPremium=isCancelled?0:Math.round((p.premium||0)*(1-(endorsedCount/(covCount||1)*0.7)));
     return `
-      <div class="prod-card ${p.status==='keep'?'kept':p.status==='cancel'?'cancelled':''}" id="prodCard${idx}">
-        <div class="prod-head" onclick="toggleProdExpand(${idx})">
+      <div class="prod-card ${p.status==='keep'?'kept':isCancelled?'cancelled':''}" id="prodCard${idx}" style="margin-bottom:8px;border-radius:9px;border:1.5px solid ${isCancelled?'#fca5a5':p.status==='keep'?'#86efac':'var(--border)'};overflow:hidden;">
+        <div class="prod-head" style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;background:${isCancelled?'#fef2f2':'#fff'};cursor:pointer;" onclick="toggleProdExpand(${idx})">
           <div class="prod-head-left">
             <div class="prod-ico">🛡️</div>
             <div>
-              <div class="prod-name">${p.name||p.insurer||'보험상품 '+(idx+1)}</div>
-              <div class="prod-premium">${p.insurer||''} · 월 ${adjPremium.toLocaleString()}원${endorsedCount>0?` (배서 ${endorsedCount}건 삭제)`:''}</div>
+              <div class="prod-name">${p.insurer||''} <span style="font-weight:400;font-size:12px;color:var(--t2)">${(p.name||'').slice(0,28)}</span></div>
+              <div class="prod-premium">월 ${adjPremium.toLocaleString()}원 · ${p.period||'—'} · 만기 ${p.maturity||'—'}${endorsedCount>0?' · 배서 '+endorsedCount+'건 삭제':''}</div>
             </div>
           </div>
           <div class="prod-head-right">
             <div class="prod-status-btns">
               <button class="psbtn keep ${p.status==='keep'?'on':''}" onclick="event.stopPropagation();setProdStatus(${idx},'keep')">✅ 유지</button>
-              <button class="psbtn cancel ${p.status==='cancel'?'on':''}" onclick="event.stopPropagation();setProdStatus(${idx},'cancel')">❌ 해지</button>
+              <button class="psbtn cancel ${isCancelled?'on':''}" onclick="event.stopPropagation();setProdStatus(${idx},'cancel')">❌ 해지</button>
             </div>
-            <button class="prod-detail-btn" onclick="event.stopPropagation();openProdDetail(${idx})">📋 보장상세</button>
+            <button class="prod-detail-btn" onclick="event.stopPropagation();openProdDetail(${idx})">📋 담보상세</button>
+            <button onclick="event.stopPropagation();openProdEditInline(${idx})" style="padding:5px 9px;border:1.5px solid var(--pri);background:var(--pri-l);color:var(--pri);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">✏️ 수정</button>
+            <button onclick="event.stopPropagation();deleteProd(${idx})" style="padding:5px 9px;border:1.5px solid var(--red);background:var(--red-l);color:var(--red);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🗑</button>
+          </div>
+        </div>
+        <!-- 인라인 편집 -->
+        <div id="prodEditInline${idx}" style="display:none;padding:12px 14px;background:#f8f9fc;border-top:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-bottom:7px;">
+            <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px;font-weight:700;">보험사</div><input value="${p.insurer||''}" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;font-family:'Noto Sans KR',sans-serif;" oninput="editProd(${idx},'insurer',this.value)"></div>
+            <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px;font-weight:700;">상품명</div><input value="${p.name||''}" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;font-family:'Noto Sans KR',sans-serif;" oninput="editProd(${idx},'name',this.value)"></div>
+            <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px;font-weight:700;">월보험료(원)</div><input type="number" value="${p.premium||0}" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;font-family:'IBM Plex Mono',monospace;" oninput="editProd(${idx},'premium',Number(this.value));updateProdSummary()"></div>
+            <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px;font-weight:700;">납입기간</div><input value="${p.period||''}" placeholder="20년납" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;font-family:'Noto Sans KR',sans-serif;" oninput="editProd(${idx},'period',this.value)"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;">
+            <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px;font-weight:700;">만기연령</div><input value="${p.maturity||''}" placeholder="90세" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;" oninput="editProd(${idx},'maturity',this.value)"></div>
+            <div><div style="font-size:10px;color:var(--t3);margin-bottom:2px;font-weight:700;">보장시작일</div><input value="${p.start||''}" placeholder="2024.01.01" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:4px 7px;font-size:12px;" oninput="editProd(${idx},'start',this.value)"></div>
+            <div style="display:flex;align-items:flex-end;"><button onclick="deleteProd(${idx})" style="width:100%;padding:5px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:5px;cursor:pointer;font-size:12px;font-weight:700;">🗑 계약 삭제</button></div>
           </div>
         </div>
       </div>`;
   }).join('');
+}
+
+function openProdEditInline(idx){
+  const el=document.getElementById('prodEditInline'+idx);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+function toggleProdExpand(idx){openProdEditInline(idx);}
+function editProd(idx,k,v){if(S.products[idx]) S.products[idx][k]=v;}
+function deleteProd(idx){
+  if(!confirm('이 계약을 삭제하시겠습니까?')) return;
+  S.products.splice(idx,1);
+  updateProdSummary();
+  renderProdCards();
+}
+function addNewContract(){
+  switchTab(4);
+  S.products.push({id:'new'+Date.now(),insurer:'',name:'신규 계약',premium:0,period:'',maturity:'',start:'',coverages:[],status:'keep',endorsedOut:[]});
+  updateProdSummary();
+  renderProdCards();
+  setTimeout(()=>{
+    const idx=S.products.length-1;
+    openProdEditInline(idx);
+    document.getElementById('prodCard'+idx)?.scrollIntoView({behavior:'smooth'});
+  },80);
+}
+
+// ── 담보 편집 테이블 ──
+const COV_CATS=['암','수술','사망','재해','뇌심장','입원','CI','운전자','기타'];
+const COV_STS=['','충분','부족','미가입'];
+const ST_COLOR={충분:'var(--green)',부족:'var(--orange)',미가입:'var(--red)'};
+
+function renderCovEditTable(){
+  if(!S.covEditRows) S.covEditRows=[];
+  const tbody=document.getElementById('covEditBody');
+  if(!tbody) return;
+  tbody.innerHTML=S.covEditRows.map((r,i)=>buildCovEditRow(r,i)).join('');
+}
+
+function buildCovEditRow(r,i){
+  const sc=ST_COLOR[r.status]||'var(--t3)';
+  return `<tr id="covEditRow${i}" style="background:${i%2===0?'#fff':'#f8f9fc'};">
+    <td style="padding:4px 6px;"><input class="cov-edit-inp" value="${r.item||''}" placeholder="담보명 입력" style="width:100%;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;font-family:'Noto Sans KR',sans-serif;" oninput="editCovRow(${i},'item',this.value)"></td>
+    <td style="padding:4px 6px;"><select style="border:1px solid var(--border);border-radius:4px;padding:4px 5px;font-size:11px;" oninput="editCovRow(${i},'category',this.value)">${COV_CATS.map(c=>`<option ${r.category===c?'selected':''}>${c}</option>`).join('')}</select></td>
+    <td style="padding:4px 6px;"><input type="number" value="${r.amount||0}" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:4px 6px;font-size:12px;text-align:right;font-family:'IBM Plex Mono',monospace;" oninput="editCovRow(${i},'amount',Number(this.value))"></td>
+    <td style="padding:4px 6px;text-align:center;"><select style="border:1px solid var(--border);border-radius:4px;padding:4px 5px;font-size:11px;color:${sc};font-weight:700;" onchange="editCovRow(${i},'status',this.value);this.style.color=this.value?'${sc}':'var(--t3)'">${COV_STS.map(s=>`<option value="${s}" ${r.status===s?'selected':''}>${s||'—'}</option>`).join('')}</select></td>
+    <td style="padding:4px 6px;text-align:center;"><button onclick="deleteCovEditRow(${i})" style="background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:11px;font-weight:700;">✕</button></td>
+  </tr>`;
+}
+
+function editCovRow(i,k,v){if(S.covEditRows&&S.covEditRows[i]) S.covEditRows[i][k]=v;}
+function deleteCovEditRow(i){
+  document.getElementById('covEditRow'+i)?.remove();
+  if(S.covEditRows) S.covEditRows.splice(i,1);
+}
+function addCovEditRow(){
+  if(!S.covEditRows) S.covEditRows=[];
+  const i=S.covEditRows.length;
+  S.covEditRows.push({item:'',amount:0,status:'',category:'기타'});
+  const tbody=document.getElementById('covEditBody');
+  if(!tbody) return;
+  const tr=document.createElement('tr');
+  tr.id='covEditRow'+i;
+  tr.innerHTML=buildCovEditRow(S.covEditRows[i],i);
+  tbody.appendChild(tr);
+  tr.querySelector('input')?.focus();
+}
+function switchToAddCov(){
+  switchTab(4);
+  addCovEditRow();
+  setTimeout(()=>document.getElementById('covEditSection')?.scrollIntoView({behavior:'smooth'}),80);
 }
 
 function setProdStatus(idx,status){
@@ -1960,6 +2217,21 @@ const INFO_DATA={
     ],
     bars:[{l:'1종',v:45,c:'#14b8a6'},{l:'2종',v:70,c:'#0d9488'},{l:'3종',v:88,c:'#0f766e'},{l:'4종',v:100,c:'#115e59'},{l:'5종',v:78,c:'#134e4a'}],
     barTitle:'수술 종별 비용 비교 지수',
+    freqSurgery:{
+      title:'📋 다빈도 수술 TOP 10 — 많이 받는 수술과 평균 비용',
+      rows:[
+        {rank:1, name:'백내장 수술',       cost:'80~150만원',  note:'비급여 렌즈 선택 시 본인부담 증가',   color:'#0369a1'},
+        {rank:2, name:'치핵(치질) 수술',    cost:'50~120만원',  note:'1종 수술, 레이저·스테이플러 비급여',  color:'#0d9488'},
+        {rank:3, name:'제왕절개',           cost:'150~300만원', note:'분만 관련 비급여 항목 다수',          color:'#7c3aed'},
+        {rank:4, name:'충수절제(맹장)',     cost:'100~250만원', note:'복강경 수술 시 비급여 비중 높음',     color:'#16a34a'},
+        {rank:5, name:'편도선 수술',        cost:'80~180만원',  note:'마취·입원비 별도 청구',               color:'#d97706'},
+        {rank:6, name:'척추 수술',          cost:'300~800만원', note:'임플란트·기기 삽입 시 급증',          color:'#dc2626'},
+        {rank:7, name:'무릎 관절경',        cost:'150~400만원', note:'연골·인대 재건술 비급여',             color:'#be185d'},
+        {rank:8, name:'담낭절제술',         cost:'100~200만원', note:'복강경 방식 표준, 비급여 적음',       color:'#0f766e'},
+        {rank:9, name:'갑상선 수술',        cost:'150~350만원', note:'로봇수술 선택 시 300만원↑',           color:'#6d28d9'},
+        {rank:10,name:'관상동맥 스텐트',    cost:'300~800만원', note:'심장 시술, 4~5종 수술비 적용',        color:'#b45309'},
+      ]
+    },
     tip:{color:'#0d9488',bg:'#f0fdfa',text:'💡 <strong>보장 포인트</strong> : 1~5종 수술 지급액 확인. 비급여(로봇·내시경) 포함 여부. 입원일당 5만원/일↑. <strong>암·뇌·심장 후 반복보장 여부가 핵심.</strong>'}
   },
   nursing:{
@@ -2107,6 +2379,12 @@ const INFO_DATA={
       {num:'⚠️',    desc:'정보 변경 가능 — 반드시 재확인',    color:'#dc2626'},
       {num:'문의',   desc:'해당 병원으로 직접 확인 필수',      color:'#d97706'},
     ],
+    kpiNote:[
+      '2023년 기준 참고 자료입니다.',
+      '의료진 소속·진료 여부는 언제든 변경될 수 있습니다.',
+      '실제 진료 전 반드시 해당 병원에 직접 문의하시기 바랍니다.',
+      '건강보험심사평가원(www.hira.or.kr)에서도 확인 가능합니다.',
+    ],
     specialists:[
       {field:'암 (종양·외과)',color:'#be185d',bg:'#fce7f3',doctors:[
         {name:'노성훈',hospital:'연세세브란스병원',dept:'외과',note:'위암'},
@@ -2195,12 +2473,35 @@ const INFO_DATA={
 // ════════════════════════════════════════
 // INFOGRAPHIC RENDERER — 1페이지 완전 핏
 // ════════════════════════════════════════
+// 항상 같은 페이지에 묶이는 쌍 정의
+const PAIR_CARDS={surgery:'nursing', nursing:'surgery'};
+// 출력 고정 순서 (선택 순서 무관)
+const PRINT_ORDER=['death','disability','cancer','brain','heart','surgery','nursing','homecare','dementia','driver','fire','hospital','specialist'];
+
 function renderInfoSections(){
   const wrap=document.getElementById('infoSections');
   wrap.innerHTML='';
-  S.selected.forEach(id=>{
-    const d=INFO_DATA[id]; if(!d)return;
-    wrap.appendChild(buildCard(id,d));
+
+  // 선택된 id를 PRINT_ORDER 순서로 정렬
+  const ordered=PRINT_ORDER.filter(id=>S.selected.has(id));
+
+  // surgery+nursing이 둘 다 선택됐으면 2단 래퍼로 묶기
+  const rendered=new Set();
+  ordered.forEach(id=>{
+    if(rendered.has(id)) return;
+    const d=INFO_DATA[id]; if(!d) return;
+
+    const paired=PAIR_CARDS[id];
+    if(paired && S.selected.has(paired) && !rendered.has(paired)){
+      // 둘 다 선택 → 세로로 쌓기 (각 카드가 1페이지씩)
+      wrap.appendChild(buildCard(id,d));
+      wrap.appendChild(buildCard(paired,INFO_DATA[paired]));
+      rendered.add(id);
+      rendered.add(paired);
+    } else {
+      wrap.appendChild(buildCard(id,d));
+      rendered.add(id);
+    }
   });
 }
 
@@ -2238,15 +2539,35 @@ function buildCard(id,d){
   </div>
   <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">`;
 
-  // ── KPI 4개 가로 ──
-  html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:8px;overflow:hidden">`;
-  (d.kpis||[]).forEach((k,i)=>{
-    html+=`<div style="padding:9px 10px;${i>0?'border-left:1px solid var(--border);':''}">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:${k.color};line-height:1">${k.num}</div>
-      <div style="font-size:11px;color:var(--t2);margin-top:4px;line-height:1.4">${k.desc}</div>
-    </div>`;
-  });
-  html+=`</div>`;
+  // ── KPI 4개 + kpiNote(있으면 우측 배치) ──
+  if(d.kpiNote){
+    // KPI 3칸 + 주의사항 1칸 (2:1 분할)
+    html+=`<div style="display:grid;grid-template-columns:3fr 2fr;gap:6px;align-items:stretch;">`;
+    html+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--border);border-radius:8px;overflow:hidden">`;
+    (d.kpis||[]).slice(0,4).forEach((k,i)=>{
+      html+=`<div style="padding:9px 10px;${i%2!==0?'border-left:1px solid var(--border);':''}${i>=2?'border-top:1px solid var(--border);':''}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:${k.color};line-height:1">${k.num}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:3px;line-height:1.4">${k.desc}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+    // 주의사항 박스
+    html+=`<div style="padding:10px 12px;background:#fef2f2;border-radius:8px;border:1px solid rgba(220,38,38,.15);display:flex;flex-direction:column;justify-content:center;gap:5px;">`;
+    html+=`<div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:3px;border-bottom:1px solid rgba(220,38,38,.15);padding-bottom:4px;">⚠️ 주의사항</div>`;
+    d.kpiNote.forEach(line=>{
+      html+=`<div style="font-size:11px;color:#475569;line-height:1.5;padding-left:8px;border-left:2px solid rgba(220,38,38,.3);">${line}</div>`;
+    });
+    html+=`</div></div>`;
+  } else {
+    html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:8px;overflow:hidden">`;
+    (d.kpis||[]).forEach((k,i)=>{
+      html+=`<div style="padding:9px 10px;${i>0?'border-left:1px solid var(--border);':''}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700;color:${k.color};line-height:1">${k.num}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:4px;line-height:1.4">${k.desc}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
 
   // ── 보장범위 비교 (뇌/심장) ──
   if(d.coverageNote){
@@ -2282,17 +2603,17 @@ function buildCard(id,d){
     html+=`</div></div>`;
   }
 
-  // ── extra (입원/통원/비급여 등) — 2열 ──
+  // ── extra — 4칸 1줄 (입원/통원/비급여/주요치료비) ──
   if(d.extra&&d.extra.length){
-    html+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">`;
+    html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">`;
     d.extra.forEach(e=>{
-      html+=`<div style="padding:8px 10px;border-radius:7px;background:${e.bg};border-left:3px solid ${e.color}">
-        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
-          <span style="font-size:15px">${e.icon}</span>
-          <span style="font-size:13px;font-weight:800;color:${e.color}">${e.label}</span>
+      html+=`<div style="padding:7px 9px;border-radius:7px;background:${e.bg};border-top:3px solid ${e.color}">
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+          <span style="font-size:13px">${e.icon}</span>
+          <span style="font-size:12px;font-weight:800;color:${e.color}">${e.label}</span>
         </div>
-        <div style="font-family:'Noto Serif KR',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:2px">${e.val}</div>
-        <div style="font-size:12px;color:var(--t2)">${e.note}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px;line-height:1.3">${e.val}</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.4">${e.note}</div>
       </div>`;
     });
     html+=`</div>`;
@@ -2379,17 +2700,17 @@ function buildCard(id,d){
     html+=`</div></div>`;
   }
 
-  // ── 중입자치료 ──
+  // ── 중입자치료 — 4열 컴팩트 ──
   if(d.heavyIon){
-    html+=`<div style="border:1.5px solid rgba(124,58,237,.2);border-radius:8px;overflow:hidden">
-      <div style="padding:7px 11px;background:rgba(124,58,237,.07)">
-        <span style="font-size:13px;font-weight:700;color:var(--acc)">${d.heavyIon.title}</span>
+    html+=`<div style="border:1.5px solid rgba(124,58,237,.2);border-radius:7px;overflow:hidden">
+      <div style="padding:6px 11px;background:rgba(124,58,237,.07);display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;font-weight:700;color:var(--acc)">${d.heavyIon.title}</span>
       </div>
-      <div style="padding:8px 11px;display:grid;grid-template-columns:1fr 1fr;gap:5px">`;
+      <div style="padding:6px 10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px">`;
     d.heavyIon.items.forEach(p=>{
-      html+=`<div style="display:flex;gap:6px;align-items:flex-start">
-        <span style="font-size:13px;flex-shrink:0">${p.icon}</span>
-        <span style="font-size:12px;color:var(--t1);line-height:1.5">${p.text}</span>
+      html+=`<div style="display:flex;gap:5px;align-items:flex-start;padding:5px 7px;background:#f8f5ff;border-radius:5px">
+        <span style="font-size:12px;flex-shrink:0">${p.icon}</span>
+        <span style="font-size:11px;color:var(--t1);line-height:1.45">${p.text}</span>
       </div>`;
     });
     html+=`</div></div>`;
@@ -2472,86 +2793,121 @@ function buildCard(id,d){
   }
   if(d.mapSvg){
     html+=`<div style="margin-bottom:6px">
-      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border)">
-        📍 진료권역별 상급종합병원 지정 현황 <span style="font-size:11px;font-weight:400;color:var(--t3)">(2023년 12월 29일 신규 지정 · 제5기 2024~2026년)</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
 
-        <!-- 왼쪽: 권역 목록 -->
-        <div style="display:flex;flex-direction:column;gap:5px">
-          ${[
-            {region:'서울권',cnt:14,color:'#1e40af',bg:'#eff6ff',hospitals:['강북삼성병원','건국대학교병원','경희대학교병원','고려대구로병원','고려대안암병원','삼성서울병원','서울대학교병원','연세대세브란스병원','연세대강남세브란스','이화여대목동병원','재단법인아산사회복지재단서울아산병원','중앙대학교병원','한양대학교병원','가톨릭대서울성모병원']},
-            {region:'경기서북부권',cnt:4,color:'#7c3aed',bg:'#f3eeff',hospitals:['가톨릭대인천성모병원','순천향대부천병원','의료법인길의료재단길병원','인하대의과대학부속병원']},
-            {region:'경기남부권',cnt:5,color:'#0369a1',bg:'#e0f2fe',hospitals:['가톨릭대성빈센트병원','고려대안산병원','분당서울대학교병원','아주대학교병원','한림대성심병원']},
-            {region:'강원권',cnt:2,color:'#0f766e',bg:'#f0fdfa',hospitals:['강릉아산병원','연세대원주세브란스기독병원']},
-            {region:'충북권',cnt:1,color:'#92400e',bg:'#fef3c7',hospitals:['충북대학교병원']},
-            {region:'충남권',cnt:3,color:'#b45309',bg:'#fef9e7',hospitals:['건양대학교병원','단국대의과대학부속병원','충남대학교병원']},
-          ].map(r=>`
-            <div style="border-radius:7px;overflow:hidden;border:1px solid ${r.color}33">
-              <div style="padding:5px 10px;background:${r.bg};display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:12px;font-weight:700;color:${r.color}">${r.region}</span>
-                <span style="font-size:11px;font-weight:700;background:${r.color};color:#fff;padding:1px 7px;border-radius:10px">${r.cnt}개</span>
-              </div>
-              <div style="padding:5px 10px;display:flex;flex-wrap:wrap;gap:3px">
-                ${r.hospitals.map(h=>`<span style="font-size:11px;color:var(--t2)">· ${h}</span>`).join('')}
-              </div>
-            </div>
-          `).join('')}
+      <!-- 상단: 비교표(좌) + 보험활용 tip(우) 나란히 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
+        <!-- 비교표 -->
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px;">🏥 종합병원 vs 상급종합병원 비교</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead><tr>
+              ${d.compareTable.headers.map((h,i)=>`<th style="padding:4px 6px;background:var(--navy);color:rgba(255,255,255,.8);text-align:${i===0?'left':'center'};font-size:10px;">${h}</th>`).join('')}
+            </tr></thead>
+            <tbody>
+              ${d.compareTable.rows.map((row,ri)=>`<tr style="background:${ri%2===0?'#fff':'#f8fafc'}">
+                ${row.map((cell,ci)=>`<td style="padding:4px 6px;border-bottom:1px solid var(--border);text-align:${ci===0?'left':'center'};font-weight:${ci===0?'700':'400'};font-size:10px;">${cell}</td>`).join('')}
+              </tr>`).join('')}
+            </tbody>
+          </table>
         </div>
+        <!-- 보험 활용 tip -->
+        <div style="padding:8px 10px;border-radius:7px;border-left:3px solid ${d.tip.color};background:${d.tip.bg};font-size:10px;color:var(--t1);line-height:1.7;display:flex;align-items:center;">
+          ${d.tip.text}
+        </div>
+      </div>
 
-        <!-- 오른쪽: 권역 목록 -->
-        <div style="display:flex;flex-direction:column;gap:5px">
-          ${[
-            {region:'전북권',cnt:2,color:'#15803d',bg:'#f0fdf4',hospitals:['원광대학교병원','전북대학교병원']},
-            {region:'전남권',cnt:3,color:'#16a34a',bg:'#dcfce7',hospitals:['전남대학교병원','조선대학교병원','화순전남대학교병원']},
-            {region:'경북권',cnt:5,color:'#d97706',bg:'#fef3c7',hospitals:['경북대학교병원','계명대동산병원','대구가톨릭대학교병원','영남대학교병원','칠곡경북대학교병원']},
-            {region:'경남동부권',cnt:6,color:'#dc2626',bg:'#fef2f2',hospitals:['고신대복음병원','동아대학교병원','부산대학교병원','양산부산대병원','울산공업학원울산대병원','인제대부산백병원']},
-            {region:'경남서부권',cnt:2,color:'#be185d',bg:'#fce7f3',hospitals:['경상국립대학교병원','인제대학교경남성가병원']},
-          ].map(r=>`
-            <div style="border-radius:7px;overflow:hidden;border:1px solid ${r.color}33">
-              <div style="padding:5px 10px;background:${r.bg};display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:12px;font-weight:700;color:${r.color}">${r.region}</span>
-                <span style="font-size:11px;font-weight:700;background:${r.color};color:#fff;padding:1px 7px;border-radius:10px">${r.cnt}개</span>
-              </div>
-              <div style="padding:5px 10px;display:flex;flex-wrap:wrap;gap:3px">
-                ${r.hospitals.map(h=>`<span style="font-size:11px;color:var(--t2)">· ${h}</span>`).join('')}
-              </div>
+      <!-- 진료권역 제목 -->
+      <div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid var(--border);">
+        📍 진료권역별 상급종합병원 지정 현황
+        <span style="font-size:9px;font-weight:400;color:var(--t3);margin-left:5px;">(2023년 12월 29일 신규 지정 · 제5기 2024~2026년)</span>
+      </div>
+
+      <!-- 진료권역 — 4열 그리드 (3→4열로 더 컴팩트) -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+        ${[
+          {region:'서울권',cnt:14,color:'#1e40af',bg:'#eff6ff',hospitals:['강북삼성','건국대','경희대','고려대구로','고려대안암','삼성서울','서울대','세브란스','강남세브란스','이화여대목동','서울아산','중앙대','한양대','서울성모']},
+          {region:'경기서북부권',cnt:4,color:'#7c3aed',bg:'#f3eeff',hospitals:['인천성모','순천향부천','길병원','인하대']},
+          {region:'경기남부권',cnt:5,color:'#0369a1',bg:'#e0f2fe',hospitals:['성빈센트','고려대안산','분당서울대','아주대','한림대성심']},
+          {region:'강원권',cnt:2,color:'#0f766e',bg:'#f0fdfa',hospitals:['강릉아산','원주세브란스']},
+          {region:'충북권',cnt:1,color:'#92400e',bg:'#fef3c7',hospitals:['충북대']},
+          {region:'충남권',cnt:3,color:'#b45309',bg:'#fef9e7',hospitals:['건양대','단국대','충남대']},
+          {region:'전북권',cnt:2,color:'#15803d',bg:'#f0fdf4',hospitals:['원광대','전북대']},
+          {region:'전남권',cnt:3,color:'#16a34a',bg:'#dcfce7',hospitals:['전남대','조선대','화순전남대']},
+          {region:'경북권',cnt:5,color:'#d97706',bg:'#fef3c7',hospitals:['경북대','계명대동산','대구가톨릭','영남대','칠곡경북대']},
+          {region:'경남동부권',cnt:6,color:'#dc2626',bg:'#fef2f2',hospitals:['고신대복음','동아대','부산대','양산부산대','울산대','인제부산백']},
+          {region:'경남서부권',cnt:2,color:'#be185d',bg:'#fce7f3',hospitals:['경상국립대','인제경남성가']},
+        ].map(r=>`
+          <div style="border-radius:5px;overflow:hidden;border:1px solid ${r.color}33;">
+            <div style="padding:3px 7px;background:${r.bg};display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:10px;font-weight:700;color:${r.color};">${r.region}</span>
+              <span style="font-size:9px;font-weight:700;background:${r.color};color:#fff;padding:1px 5px;border-radius:7px;">${r.cnt}개</span>
             </div>
-          `).join('')}
-          <!-- 요약 박스 -->
-          <div style="border-radius:7px;background:var(--navy);padding:10px 12px;margin-top:2px">
-            <div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:4px">📊 전국 합계</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;text-align:center">
-              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:#fbbf24">47</div><div style="font-size:11px;color:rgba(255,255,255,.5)">총 병원</div></div>
-              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:#86efac">11</div><div style="font-size:11px;color:rgba(255,255,255,.5)">진료권역</div></div>
-              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:#93c5fd">3년</div><div style="font-size:11px;color:rgba(255,255,255,.5)">지정기간</div></div>
+            <div style="padding:3px 7px;display:flex;flex-wrap:wrap;gap:2px;">
+              ${r.hospitals.map(h=>`<span style="font-size:9px;color:var(--t2);">· ${h}</span>`).join('')}
             </div>
+          </div>`).join('')}
+
+        <!-- 전국 합계 -->
+        <div style="border-radius:5px;background:var(--navy);padding:6px 8px;display:flex;flex-direction:column;justify-content:center;">
+          <div style="font-size:10px;font-weight:700;color:#fbbf24;margin-bottom:4px;">📊 전국 합계</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;text-align:center;">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#fbbf24;">47</div><div style="font-size:9px;color:rgba(255,255,255,.5);">총 병원</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#86efac;">11</div><div style="font-size:9px;color:rgba(255,255,255,.5);">진료권역</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:#93c5fd;">3년</div><div style="font-size:9px;color:rgba(255,255,255,.5);">지정기간</div></div>
           </div>
         </div>
-
       </div>
     </div>`;
   }
 
-  // ── 명의 리스트 ──
+  // ── 명의 리스트 — 좌컬럼(암·뇌혈관) / 우컬럼(심장·소아) 각각 2열 테이블 ──
   if(d.specialists){
-    html+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">`;
-    d.specialists.forEach(sf=>{
-      html+=`<div style="border-radius:7px;border:1.5px solid ${sf.color}33;overflow:hidden">
-        <div style="padding:6px 10px;background:${sf.bg};font-size:12px;font-weight:700;color:${sf.color}">${sf.field}</div>
-        <table style="width:100%;font-size:11px;border-collapse:collapse">`;
-      sf.doctors.forEach((doc,i)=>{
-        html+=`<tr style="background:${i%2===0?'var(--white)':'var(--slate)'}">
-          <td style="padding:4px 7px;font-weight:700;border-bottom:1px solid var(--border)">${doc.name}</td>
-          <td style="padding:4px 7px;color:var(--t2);border-bottom:1px solid var(--border)">${doc.hospital}</td>
-          <td style="padding:4px 7px;color:var(--t3);border-bottom:1px solid var(--border)">${doc.note}</td>
-        </tr>`;
-      });
-      html+=`</table></div>`;
-    });
-    html+=`</div>
-    <div style="padding:7px 10px;background:var(--orange-l);border-radius:7px;font-size:12px;color:#7c2d12;border-left:3px solid var(--orange)">
-      ⚠️ 위 명의 정보는 참고용입니다. 의료진 소속·진료 여부는 변경될 수 있으므로 <strong>해당 병원으로 직접 문의 부탁드립니다.</strong>
+    const half=Math.ceil(d.specialists.length/2);
+    const leftFields=d.specialists.slice(0,half);
+    const rightFields=d.specialists.slice(half);
+
+    // 분야 내부: 이름·병원·전문분야를 2열로 나란히 배치 (컬럼 좌측 정렬)
+    const buildFieldBlock=(sf)=>{
+      const docs=sf.doctors;
+      // 홀수면 마지막에 빈 셀 추가
+      const cells=[...docs];
+      if(cells.length%2!==0) cells.push(null);
+      const rows=[];
+      for(let i=0;i<cells.length;i+=2){
+        rows.push([cells[i],cells[i+1]]);
+      }
+      const tdStyle=(isLeft)=>`padding:3px ${isLeft?'4px 3px 8px':'4px 3px 0'};border-bottom:1px solid #f0f4f8;vertical-align:top;`;
+      return `
+      <div style="border-radius:6px;border:1.5px solid ${sf.color}33;overflow:hidden;margin-bottom:5px;break-inside:avoid;page-break-inside:avoid;">
+        <div style="padding:5px 9px;background:${sf.bg};font-size:11px;font-weight:700;color:${sf.color};letter-spacing:.3px;">${sf.field}</div>
+        <table style="width:100%;font-size:11px;border-collapse:collapse;table-layout:fixed;">
+          <colgroup>
+            <col style="width:13%"><col style="width:27%"><col style="width:10%">
+            <col style="width:4px">
+            <col style="width:13%"><col style="width:27%"><col style="width:10%">
+          </colgroup>
+          <tbody>
+          ${rows.map((pair,ri)=>{
+            const [a,b]=pair;
+            return `<tr style="background:${ri%2===0?'#fff':'#f8f9fc'};">
+              <td style="${tdStyle(true)}font-weight:700;color:#0f1e3c;white-space:nowrap;">${a?a.name:''}</td>
+              <td style="${tdStyle(true)}color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a?a.hospital:''}</td>
+              <td style="${tdStyle(true)}color:#94a3b8;white-space:nowrap;">${a?a.note:''}</td>
+              <td style="background:#f0f4f8;width:4px;"></td>
+              <td style="${tdStyle(false)}font-weight:700;color:#0f1e3c;white-space:nowrap;">${b?b.name:''}</td>
+              <td style="${tdStyle(false)}color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b?b.hospital:''}</td>
+              <td style="${tdStyle(false)}color:#94a3b8;white-space:nowrap;">${b?b.note:''}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    };
+
+    html+=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start;">
+      <div>${leftFields.map(sf=>buildFieldBlock(sf)).join('')}</div>
+      <div>${rightFields.map(sf=>buildFieldBlock(sf)).join('')}</div>
     </div>`;
   }
 
@@ -2573,8 +2929,28 @@ function buildCard(id,d){
     html+=`</div></div>`;
   }
 
-  // ── 팁 박스 ──
-  html+=`<div style="padding:9px 12px;border-radius:7px;border-left:3px solid ${d.tip.color};background:${d.tip.bg};font-size:13px;color:var(--t1);line-height:1.7">${d.tip.text}</div>`;
+  // ── 다빈도 수술 TOP 10 ──
+  if(d.freqSurgery){
+    html+=`<div>
+      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${d.freqSurgery.title}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">`;
+    d.freqSurgery.rows.forEach(r=>{
+      html+=`<div style="display:flex;align-items:flex-start;gap:7px;padding:6px 8px;background:#f8fdfc;border-radius:6px;border-left:3px solid ${r.color};">
+        <div style="min-width:18px;height:18px;border-radius:50%;background:${r.color};color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${r.rank}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:#0f1e3c;margin-bottom:1px;">${r.name}</div>
+          <div style="font-size:11px;font-weight:700;color:${r.color};">${r.cost}</div>
+          <div style="font-size:10px;color:#64748b;line-height:1.4;">${r.note}</div>
+        </div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  // ── 팁 박스 — hospital·specialist는 상단에 이미 배치했으므로 생략 ──
+  if(!d.mapSvg && !d.kpiNote){
+    html+=`<div style="padding:9px 12px;border-radius:7px;border-left:3px solid ${d.tip.color};background:${d.tip.bg};font-size:12px;color:var(--t1);line-height:1.7">${d.tip.text}</div>`;
+  }
 
   html+=`</div>`; // end body padding
   card.innerHTML=html;
@@ -2600,20 +2976,41 @@ function clearAll(){
 // ════════════════════════════════════════
 function updateCoverPage(){
   const name     = document.getElementById('custName')?.value||'—';
+  const birth    = document.getElementById('custBirth')?.value||'';
+  const gender   = document.getElementById('custGender')?.value||'';
+  const job      = document.getElementById('custJob')?.value||'';
   const advName  = document.getElementById('advName')?.value||'';
   const advPhone = document.getElementById('advPhone')?.value||'';
   const advCo    = document.getElementById('advCompany')?.value||'';
   const now = new Date();
-  const dateStr = `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일`;
-  const nameParts = [advCo, advName ? advName+' 담당 설계사' : ''].filter(Boolean);
-  const fullLine = nameParts.length ? nameParts.join(' ') : '담당 설계사';
+  const dateStr = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일';
+  const advFull = [advCo, advName ? advName+' 담당 설계사' : ''].filter(Boolean).join(' ') || '담당 설계사';
   const el=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+
+  // 기본 정보
   el('coverCustName', name);
+  el('coverCustMeta', [birth, gender, job].filter(Boolean).join(' · ') || '—');
   el('coverDate', dateStr);
-  el('coverAdvFull', fullLine);
-  el('coverAdvPhone', advPhone);
+  el('coverDateBottom', dateStr+' 작성');
+  el('coverAdvFull', advFull);
+  el('coverAdvMeta', [advPhone].filter(Boolean).join(' | ') || '—');
+
+  // 분석 결과 반영 (분석 후)
+  const d = S.result;
+  if(d){
+    const sb = d.scores?.before || d.scores || {};
+    const cs = d.contract_summary || {};
+    const rec = d.recommendation || {};
+    const total = cs.total_monthly_premium || d.before?.total_premium || 0;
+    el('coverScore', sb.total || '—');
+    el('coverGrade', rec.overall_grade || '—');
+    el('coverScoreDesc', rec.summary ? rec.summary.slice(0,40)+'...' : '분석 완료');
+    el('coverContractCnt', cs.normal_count || S.products.length || '—');
+    el('coverMonthly', total ? total.toLocaleString() : '—');
+    el('coverAnnual', total ? (total*12).toLocaleString() : '—');
+  }
 }
-// intercept print to update cover first
+// 인쇄 전 커버 업데이트
 const _origPrint = window.print.bind(window);
 window.print = function(){ updateCoverPage(); setTimeout(()=>_origPrint(),100); };
 
