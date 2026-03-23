@@ -1163,6 +1163,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
       <button class="tab-btn" onclick="switchTab(2)">💰 보험료</button>
       <button class="tab-btn" onclick="switchTab(3)">💡 의견</button>
       <button class="tab-btn" id="prodMgmtTab" onclick="switchTab(4)">✏️ 보장편집</button>
+      <button class="tab-btn" style="background:var(--navy);color:#fbbf24;" onclick="switchTab(5)">📝 의견·고지</button>
     </div>
     <div class="tc on" id="tc0">
       <div class="scard"><div class="scard-title">📈 항목별 보험점수</div><div id="scoreBreakdown"></div></div>
@@ -1382,6 +1383,76 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 
       </div>
     </div>
+    <!-- tc5: 담당자 의견 + 고지사항 + 실손 확인 -->
+    <div class="tc" id="tc5">
+
+      <!-- 실손보험 재가입 알림 -->
+      <div id="silsonAlert" style="display:none;margin-bottom:12px;padding:12px 15px;background:#fef3c7;border-radius:9px;border-left:4px solid #f59e0b;">
+        <div style="font-size:13px;font-weight:700;color:#b45309;margin-bottom:6px;">⚠️ 실손의료비보험 재가입 확인 필요</div>
+        <div id="silsonAlertBody" style="font-size:12px;color:#475569;line-height:1.8;"></div>
+      </div>
+
+      <!-- 담당자 의견 -->
+      <div class="scard">
+        <div class="scard-title">✍️ 담당자 종합 의견</div>
+        <textarea id="advisorOpinion2" placeholder="고객에게 전달할 상담 의견, 제안 이유, 주의사항 등을 기록해주세요.&#10;&#10;예) 현재 암·뇌혈관 보장이 부족하여 리모델링을 제안드립니다..." 
+          style="width:100%;min-height:100px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;line-height:1.8;"></textarea>
+      </div>
+
+      <!-- 가입 유형 + 고지사항 -->
+      <div class="scard">
+        <div class="scard-title">📋 계약 전 알릴 의무 (고지사항)</div>
+
+        <!-- 가입 유형 선택 -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;">🔖 가입 유형</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div id="dsCard_std" onclick="setDsType2('std')" style="padding:13px 15px;border-radius:9px;border:2px solid var(--pri);background:var(--pri-l);cursor:pointer;">
+              <div style="font-size:18px;margin-bottom:5px;">✅</div>
+              <div style="font-size:13px;font-weight:700;color:var(--pri);">표준체 (일반 심사)</div>
+              <div style="font-size:11px;color:var(--t2);margin-top:3px;line-height:1.5;">건강한 가입자 · 보험료 저렴<br>3개월·1년·5년 이내 병력 고지</div>
+            </div>
+            <div id="dsCard_simp" onclick="setDsType2('simp')" style="padding:13px 15px;border-radius:9px;border:2px solid var(--border);background:#fff;cursor:pointer;">
+              <div style="font-size:18px;margin-bottom:5px;">🩺</div>
+              <div style="font-size:13px;font-weight:700;color:var(--t2);">간편심사 (유병자 3·2·5)</div>
+              <div style="font-size:11px;color:var(--t2);margin-top:3px;line-height:1.5;">만성질환자·병력자 가입 가능<br>3개월·2년·5년 핵심 항목만 고지</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 고지 항목 -->
+        <div id="dsQWrap2">
+          <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px;" id="dsQLabel2">📋 표준체 고지사항</div>
+          <div id="dsQGrid2" style="display:flex;flex-direction:column;gap:7px;"></div>
+        </div>
+
+        <!-- 고지 요약 -->
+        <div style="margin-top:14px;padding:12px 15px;background:var(--navy);border-radius:9px;color:#fff;">
+          <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:8px;">고지사항 현황</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;">
+            <div><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;" id="ds2Total">0</div><div style="font-size:10px;color:rgba(255,255,255,.4);">전체</div></div>
+            <div><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#fca5a5;" id="ds2Yes">0</div><div style="font-size:10px;color:rgba(255,255,255,.4);">해당있음</div></div>
+            <div><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#86efac;" id="ds2No">0</div><div style="font-size:10px;color:rgba(255,255,255,.4);">해당없음</div></div>
+            <div><div style="font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:rgba(255,255,255,.3);" id="ds2Unanswered">0</div><div style="font-size:10px;color:rgba(255,255,255,.4);">미응답</div></div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;">
+            ⚠️ 고지의무는 청약서에 사실대로 기재해야 합니다. 설계사 구두 고지는 효력 없음. 고지 위반 시 계약 해지·보험금 미지급 가능.
+          </div>
+        </div>
+      </div>
+
+      <!-- 저장 + 출력 버튼 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button onclick="saveAndPrint()" style="padding:14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          💾 저장 후 출력
+        </button>
+        <button onclick="saveOnly()" style="padding:14px;border:1.5px solid var(--navy);border-radius:9px;background:#fff;color:var(--navy);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          ✅ 저장만 하기
+        </button>
+      </div>
+
+    </div>
+
     <div id="policyResults"></div>
     <div id="infoSections"></div>
   </div>
@@ -1699,6 +1770,7 @@ function checkReady(mode){
 function switchTab(i){
   document.querySelectorAll('.tab-btn').forEach((b,j)=>b.classList.toggle('on',j===i));
   document.querySelectorAll('.tc').forEach((t,j)=>t.classList.toggle('on',j===i));
+  if(i===5) initTc5();
 }
 
 // ════════════════════════════════════════
@@ -1716,6 +1788,43 @@ async function runAnalysis(mode){
   if(!Object.values(S.slots[mode]||{}).some(s=>s.b64&&s.b64.length>0)){
     alert('파일을 먼저 업로드해주세요.');
     return;
+  }
+
+  // ③ 고객/설계사 미입력 확인
+  const missing=[];
+  if(!v('custName').trim()) missing.push('고객명');
+  if(!v('custBirth').trim()) missing.push('생년월일');
+  if(!v('advName').trim()) missing.push('담당자 이름');
+  if(missing.length>0){
+    const ok=confirm(`⚠️ 입력되지 않은 항목이 있습니다:\n\n• ${missing.join('\n• ')}\n\n이대로 진행하시겠습니까?`);
+    if(!ok) return;
+  }
+
+  // ④ 입력 패널 접기 (분석 시작 시 위로 숨김)
+  const inputPanel=document.querySelector('.input-panel');
+  if(inputPanel){
+    inputPanel.style.transition='all .4s ease';
+    inputPanel.style.maxHeight='0';
+    inputPanel.style.overflow='hidden';
+    inputPanel.style.opacity='0';
+    inputPanel.style.marginBottom='0';
+    // 다시 펼치기 버튼 표시
+    let toggleBtn=document.getElementById('inputToggleBtn');
+    if(!toggleBtn){
+      toggleBtn=document.createElement('button');
+      toggleBtn.id='inputToggleBtn';
+      toggleBtn.className='no-print';
+      toggleBtn.style.cssText='width:100%;padding:8px;background:var(--slate);color:var(--t2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;margin-bottom:8px;font-family:"Noto Sans KR",sans-serif;';
+      toggleBtn.innerHTML='▼ 입력 화면 다시 펼치기';
+      toggleBtn.onclick=()=>{
+        const isHidden=inputPanel.style.maxHeight==='0px'||inputPanel.style.maxHeight==='0';
+        inputPanel.style.maxHeight=isHidden?'2000px':'0';
+        inputPanel.style.opacity=isHidden?'1':'0';
+        toggleBtn.innerHTML=isHidden?'▲ 입력 화면 접기':'▼ 입력 화면 다시 펼치기';
+      };
+      inputPanel.parentNode.insertBefore(toggleBtn, inputPanel);
+    }
+    toggleBtn.style.display='block';
   }
 
   const titles=['현재 보장 분석 중...','비교·리모델링 분석 중...','약관 검색 중...'];
@@ -1753,6 +1862,9 @@ async function runAnalysis(mode){
         } else {
           renderAll(res,mode);
           renderProductMgmt(res);
+          // 실손보험 감지
+          checkSilsonInsurance(res);
+          // 분석 완료 → 보장편집(tc4) 탭으로 이동
           switchTab(4);
           document.getElementById('resultWrap').scrollIntoView({behavior:'smooth',block:'start'});
         }
@@ -1761,7 +1873,7 @@ async function runAnalysis(mode){
       }catch(renderErr){
         document.getElementById('loadingBox').style.display='none';
         console.error('렌더링 오류:', renderErr);
-        alert('⚠️ 화면 렌더링 오류\n\n'+renderErr.message+'\n\n분석은 완료됐습니다. 새로고침 후 다시 시도해주세요.');
+        alert('⚠️ 화면 렌더링 오류\n\n'+renderErr.message);
       }
     },300);
   }catch(err){
@@ -2429,41 +2541,47 @@ function renderCovStatusGrid(d){
     </div>
 
     ${missing.length?`
-    <!-- 미가입 항목 -->
     <div style="margin-bottom:12px;">
-      <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:7px;padding:6px 10px;background:var(--red-l);border-radius:6px;border-left:3px solid var(--red);">❌ 미가입 항목 — 즉시 보완 검토 (${missing.length}건)</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:7px;padding:6px 10px;background:var(--red-l);border-radius:6px;border-left:3px solid var(--red);">❌ 미가입 항목 — 클릭하여 즉시 수정 (${missing.length}건)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;">
         ${missing.map(i=>`
-        <div style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(220,38,38,.25);position:relative;">
-          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px;">${i.item}</div>
-          <div style="font-size:11px;color:var(--red);">현재: 미가입</div>
-          ${i.recommend?`<div style="font-size:11px;color:var(--t2);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억원':i.recommend.toLocaleString()+'만원'}</div>`:''}
-          <button onclick="addCovRowItem('${i.item}',${i.recommend},'미가입')" style="margin-top:6px;width:100%;padding:4px;background:var(--red-l);color:var(--red);border:1px solid rgba(220,38,38,.3);border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;">+ 담보 추가</button>
+        <div onclick="openCovEditPopup('${i.item}',${i.recommend||0},'미가입')"
+          style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(220,38,38,.25);cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(220,38,38,.15)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">${i.item}</div>
+          <div style="font-size:11px;color:var(--red);">❌ 미가입</div>
+          ${i.recommend?`<div style="font-size:10px;color:var(--t3);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억':i.recommend.toLocaleString()+'만'}원</div>`:''}
+          <div style="font-size:10px;color:var(--pri);margin-top:3px;">✏️ 클릭하여 수정</div>
         </div>`).join('')}
       </div>
     </div>`:''}
 
     ${lacking.length?`
-    <!-- 부족 항목 -->
     <div style="margin-bottom:12px;">
-      <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:7px;padding:6px 10px;background:var(--orange-l);border-radius:6px;border-left:3px solid var(--orange);">⚠️ 부족 항목 — 증액 검토 (${lacking.length}건)</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;">
+      <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:7px;padding:6px 10px;background:var(--orange-l);border-radius:6px;border-left:3px solid var(--orange);">⚠️ 부족 항목 — 클릭하여 증액 수정 (${lacking.length}건)</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;">
         ${lacking.map(i=>`
-        <div style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(234,88,12,.25);">
-          <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px;">${i.item}</div>
-          <div style="font-size:11px;color:var(--orange);">현재: ${i.amount?i.amount.toLocaleString()+'만원':'확인필요'}</div>
-          ${i.recommend?`<div style="font-size:11px;color:var(--t2);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억원':i.recommend.toLocaleString()+'만원'}</div>`:''}
+        <div onclick="openCovEditPopup('${i.item}',${i.amount||0},'부족')"
+          style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(234,88,12,.25);cursor:pointer;transition:all .15s;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(234,88,12,.15)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">${i.item}</div>
+          <div style="font-size:11px;color:var(--orange);">⚠️ ${i.amount?i.amount.toLocaleString()+'만원':'확인필요'}</div>
+          ${i.recommend?`<div style="font-size:10px;color:var(--t3);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억':i.recommend.toLocaleString()+'만'}원</div>`:''}
+          <div style="font-size:10px;color:var(--pri);margin-top:3px;">✏️ 클릭하여 수정</div>
         </div>`).join('')}
       </div>
     </div>`:''}
 
     ${enough.length?`
-    <!-- 충분 항목 -->
     <div>
-      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:7px;padding:6px 10px;background:var(--green-l);border-radius:6px;border-left:3px solid var(--green);">✅ 충분 항목 (${enough.length}건)</div>
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:7px;padding:6px 10px;background:var(--green-l);border-radius:6px;border-left:3px solid var(--green);">✅ 충분 항목 — 클릭하여 수정 가능 (${enough.length}건)</div>
       <div style="display:flex;flex-wrap:wrap;gap:5px;">
         ${enough.map(i=>`
-        <div style="padding:5px 11px;background:var(--green-l);border-radius:20px;border:1px solid rgba(22,163,74,.2);font-size:12px;font-weight:600;color:var(--green);">
+        <div onclick="openCovEditPopup('${i.item}',${i.amount||0},'충분')"
+          style="padding:5px 11px;background:var(--green-l);border-radius:20px;border:1px solid rgba(22,163,74,.2);font-size:12px;font-weight:600;color:var(--green);cursor:pointer;"
+          onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
           ${i.item} ${i.amount?i.amount.toLocaleString()+'만':''}</div>`).join('')}
       </div>
     </div>`:''}
@@ -4365,6 +4483,323 @@ function applySetting(){
   }
   // 알림
   alert('✅ 보장 기준이 저장되었습니다.\n다음 분석부터 적용됩니다.');
+}
+
+// ════════════════════════════════════════
+// 실손보험 자동 감지 (1~4세대 + 재가입 체크)
+// ════════════════════════════════════════
+function checkSilsonInsurance(d){
+  const prems=d.before?.premiums||[];
+  const silsonList=[];
+
+  prems.forEach(p=>{
+    const prodName=(p.product||'').toLowerCase();
+    const insurerName=(p.name||'');
+    // 실손보험 키워드 감지
+    const isSilson=/(실손|의료비|질병의료비|상해의료비|실비|실손의료|실비보험)/i.test(p.product||'');
+    if(!isSilson) return;
+
+    // 가입일 파싱
+    const startStr=p.start||p.period||'';
+    let year=0,month=0;
+    const m1=startStr.match(/(\d{4})[.\-\/](\d{1,2})/);
+    if(m1){year=parseInt(m1[1]);month=parseInt(m1[2]);}
+    else{const m2=startStr.match(/(\d{4})/);if(m2)year=parseInt(m2[1]);}
+
+    // 세대 판별
+    let gen='',reapply=false,genColor='';
+    if(year>0){
+      if(year<2009||(year===2009&&month<=9)){gen='1세대';reapply=false;genColor='#16a34a';}
+      else if(year<2013||(year===2013&&month<=3)){gen='2세대';reapply=false;genColor='#0369a1';}
+      else if(year<2017||(year===2017&&month<=3)){gen='3세대';reapply=true;genColor='#d97706';}
+      else if(year<2021||(year===2021&&month<=6)){gen='4세대';reapply=true;genColor='#dc2626';}
+      else{gen='4세대(최신)';reapply=false;genColor='#7c3aed';}
+    }
+
+    silsonList.push({
+      insurer:p.name||'',product:p.product||'',
+      start:p.start||'',premium:p.premium||0,
+      gen,reapply,genColor,year,month
+    });
+  });
+
+  // 담보에서도 실손 감지 (coverage_detail 기준)
+  const cd=d.coverage_detail||{};
+  const hasSilsonCov=['질병입원의료비','질병통원의료비','상해입원의료비','상해통원의료비']
+    .some(k=>(cd[k]||0)>0);
+
+  const alertEl=document.getElementById('silsonAlert');
+  const alertBody=document.getElementById('silsonAlertBody');
+  if(!alertEl||!alertBody) return;
+
+  if(silsonList.length===0&&!hasSilsonCov){alertEl.style.display='none';return;}
+
+  const reapplyList=silsonList.filter(s=>s.reapply);
+  alertEl.style.display='';
+
+  let html=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-top:8px;">`;
+  silsonList.forEach(s=>{
+    html+=`<div style="padding:9px 12px;background:#fff;border-radius:7px;border-left:3px solid ${s.genColor};">
+      <div style="font-size:12px;font-weight:700;color:#0f1e3c;">${s.insurer} — ${s.product}</div>
+      <div style="font-size:11px;margin-top:3px;">
+        <span style="background:${s.genColor}22;color:${s.genColor};padding:2px 7px;border-radius:10px;font-weight:700;font-size:11px;">${s.gen}</span>
+        <span style="margin-left:6px;color:#64748b;">가입: ${s.start||'확인필요'}</span>
+      </div>
+      <div style="font-size:11px;margin-top:4px;color:${s.reapply?'#dc2626':'#16a34a'};font-weight:700;">
+        ${s.reapply?'🔄 재가입 대상 (2013년 4월 이후)':'✅ 재가입 불필요'}
+      </div>
+      ${s.reapply?`<div style="font-size:10px;color:#dc2626;margin-top:2px;">→ 4세대 실손으로 전환 가능 여부 확인 필요</div>`:''}
+    </div>`;
+  });
+  html+=`</div>`;
+
+  if(hasSilsonCov&&silsonList.length===0){
+    html=`<div style="font-size:12px;color:#7c2d12;">실손의료비 담보가 감지되었습니다. 계약 정보를 직접 확인하여 세대를 판별해주세요.</div>`+html;
+  }
+
+  if(reapplyList.length>0){
+    html=`<div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:6px;">⚠️ 총 ${reapplyList.length}건이 재가입 검토 대상입니다. (2013년 4월 이후 가입)</div>`+html;
+  } else {
+    html=`<div style="font-size:12px;color:#166534;font-weight:700;margin-bottom:6px;">✅ 감지된 실손보험 ${silsonList.length}건 — 재가입 대상 없음</div>`+html;
+  }
+  alertBody.innerHTML=html;
+}
+
+// ════════════════════════════════════════
+// 고지사항 (tc5) — 표준체 / 유병자
+// ════════════════════════════════════════
+const DS_STANDARD=[
+  {id:'s01',q:'최근 3개월 이내 의사로부터 진찰·검사를 통해 새로 진단받은 질병이나 증상이 있습니까?'},
+  {id:'s02',q:'최근 3개월 이내 질병이나 사고로 입원·수술·투약한 사실이 있습니까?'},
+  {id:'s03',q:'최근 1년 이내 정기적으로 의사의 진찰·치료·투약을 받고 있습니까?'},
+  {id:'s04',q:'최근 5년 이내 암·백혈병·고혈압·당뇨·심장질환·뇌질환 등으로 진단·치료·수술·투약을 받은 사실이 있습니까?'},
+  {id:'s05',q:'최근 5년 이내 질병 또는 사고로 7일 이상 입원하거나 수술을 받은 사실이 있습니까?'},
+  {id:'s06',q:'현재 임신 중이거나 임신 가능성이 있습니까? (여성의 경우)'},
+  {id:'s07',q:'현재 장애인복지법에 의한 신체·정신적 장애상태에 있습니까?'},
+];
+const DS_SIMPLE=[
+  {id:'si01',q:'최근 3개월 이내 입원·수술·추가검사(재검사)가 필요하다는 의사 소견을 받은 사실이 있습니까?'},
+  {id:'si02',q:'최근 2년 이내 암·뇌혈관질환·심장질환·당뇨병·고혈압으로 진단받거나 치료(수술·투약 포함)를 받은 사실이 있습니까?'},
+  {id:'si03',q:'최근 5년 이내 암·백혈병으로 진단받거나 입원·수술 치료를 받은 사실이 있습니까?'},
+];
+
+let dsType2='std';
+const dsAnswers2={};
+
+function setDsType2(type){
+  dsType2=type;
+  const std=document.getElementById('dsCard_std');
+  const simp=document.getElementById('dsCard_simp');
+  const label=document.getElementById('dsQLabel2');
+  if(std&&simp){
+    if(type==='std'){
+      std.style.borderColor='var(--pri)';std.style.background='var(--pri-l)';
+      simp.style.borderColor='var(--border)';simp.style.background='#fff';
+    } else {
+      simp.style.borderColor='var(--pri)';simp.style.background='var(--pri-l)';
+      std.style.borderColor='var(--border)';std.style.background='#fff';
+    }
+  }
+  if(label) label.textContent=type==='std'?'📋 표준체 고지사항':'📋 간편심사 (유병자 3·2·5) 고지사항';
+  renderDsGrid2();
+}
+
+function renderDsGrid2(){
+  const grid=document.getElementById('dsQGrid2');
+  if(!grid) return;
+  const list=dsType2==='std'?DS_STANDARD:DS_SIMPLE;
+  grid.innerHTML=list.map(q=>{
+    const ans=dsAnswers2[q.id]||'';
+    return `<div style="padding:10px 13px;background:${ans==='Y'?'#fef2f2':ans==='N'?'#f0fdf4':'#f8fafc'};border-radius:8px;border:1.5px solid ${ans==='Y'?'rgba(220,38,38,.3)':ans==='N'?'rgba(22,163,74,.3)':'var(--border)'};">
+      <div style="font-size:12px;color:var(--t1);line-height:1.6;margin-bottom:8px;">${q.q}</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="setDs2('${q.id}','Y')" style="flex:1;padding:7px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${ans==='Y'?'#dc2626':'var(--border)'};background:${ans==='Y'?'#fef2f2':'#fff'};color:${ans==='Y'?'#dc2626':'var(--t2)'};">
+          예 (해당)
+        </button>
+        <button onclick="setDs2('${q.id}','N')" style="flex:1;padding:7px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${ans==='N'?'#16a34a':'var(--border)'};background:${ans==='N'?'#f0fdf4':'#fff'};color:${ans==='N'?'#16a34a':'var(--t2)'};">
+          아니오 (해당없음)
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+  updateDs2Summary();
+}
+
+function setDs2(id,val){
+  dsAnswers2[id]=val;
+  renderDsGrid2();
+}
+
+function updateDs2Summary(){
+  const list=dsType2==='std'?DS_STANDARD:DS_SIMPLE;
+  const total=list.length;
+  const yes=list.filter(q=>dsAnswers2[q.id]==='Y').length;
+  const no=list.filter(q=>dsAnswers2[q.id]==='N').length;
+  const un=total-yes-no;
+  const el=(id)=>document.getElementById(id);
+  if(el('ds2Total'))el('ds2Total').textContent=total;
+  if(el('ds2Yes'))el('ds2Yes').textContent=yes;
+  if(el('ds2No'))el('ds2No').textContent=no;
+  if(el('ds2Unanswered'))el('ds2Unanswered').textContent=un;
+}
+
+// ════════════════════════════════════════
+// 보장 항목 인라인 편집 팝업
+// ════════════════════════════════════════
+function openCovEditPopup(itemName, currentAmount, currentStatus){
+  // 기존 팝업 제거
+  document.getElementById('covEditPopup')?.remove();
+
+  const rec=CUR_SETTING[itemName]||0;
+  const popup=document.createElement('div');
+  popup.id='covEditPopup';
+  popup.style.cssText=`position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:9999;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.25);
+    width:min(420px,94vw);padding:24px;font-family:'Noto Sans KR',sans-serif;`;
+
+  popup.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:var(--navy);">🛡️ ${itemName} 수정</div>
+      <button onclick="document.getElementById('covEditPopup').remove();document.getElementById('covPopupOverlay').remove();"
+        style="width:28px;height:28px;border-radius:50%;border:none;background:#f1f5f9;color:#64748b;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;">💰 보장 금액 (만원)</div>
+      <input type="number" id="popupAmount" value="${currentAmount||0}" min="0" step="100"
+        style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:16px;font-family:'IBM Plex Mono',monospace;text-align:right;">
+      ${rec?`<div style="font-size:11px;color:var(--t3);margin-top:4px;">권장 기준: ${rec>=10000?(rec/10000)+'억원':rec.toLocaleString()+'만원'}</div>`:''}
+      <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+        ${[500,1000,2000,3000,5000,10000].map(v=>`
+        <button onclick="document.getElementById('popupAmount').value=${v}"
+          style="padding:4px 10px;background:#f1f5f9;border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;">${v>=10000?(v/10000)+'억':v.toLocaleString()}만</button>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;">📊 보장 상태</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;" id="popupStatusBtns">
+        ${['미가입','부족','충분'].map(s=>`
+        <button onclick="selectPopupStatus('${s}')" id="pst_${s}"
+          style="padding:8px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${s==='미가입'?'rgba(220,38,38,.3)':s==='부족'?'rgba(234,88,12,.3)':'rgba(22,163,74,.3)'};background:${currentStatus===s?(s==='미가입'?'#fef2f2':s==='부족'?'#fff7ed':'#f0fdf4'):'#fff'};color:${s==='미가입'?'#dc2626':s==='부족'?'#ea580c':'#16a34a'};">
+          ${s==='미가입'?'❌':s==='부족'?'⚠️':'✅'} ${s}
+        </button>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;">📝 변경/추가 보장 메모</div>
+      <input type="text" id="popupMemo" placeholder="예) 2025년 신규 가입 예정, 증액 필요"
+        style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="document.getElementById('covEditPopup').remove();document.getElementById('covPopupOverlay').remove();"
+        style="padding:10px;background:#f1f5f9;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:var(--t2);">취소</button>
+      <button onclick="saveCovPopup('${itemName}')"
+        style="padding:10px;background:linear-gradient(135deg,var(--pri),#6366f1);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;">✅ 저장</button>
+    </div>`;
+
+  // 오버레이
+  const overlay=document.createElement('div');
+  overlay.id='covPopupOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;';
+  overlay.onclick=()=>{popup.remove();overlay.remove();};
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+  selectPopupStatus(currentStatus||'미가입');
+}
+
+let popupSelectedStatus='미가입';
+function selectPopupStatus(s){
+  popupSelectedStatus=s;
+  ['미가입','부족','충분'].forEach(st=>{
+    const btn=document.getElementById('pst_'+st);
+    if(!btn) return;
+    const active=st===s;
+    btn.style.background=active?(st==='미가입'?'#fef2f2':st==='부족'?'#fff7ed':'#f0fdf4'):'#fff';
+    btn.style.fontWeight=active?'800':'700';
+    btn.style.transform=active?'scale(1.04)':'scale(1)';
+  });
+}
+
+function saveCovPopup(itemName){
+  const amount=parseInt(document.getElementById('popupAmount')?.value||0)||0;
+  const memo=document.getElementById('popupMemo')?.value||'';
+
+  // coverage_detail + status 업데이트
+  if(S.result){
+    if(!S.result.coverage_detail) S.result.coverage_detail={};
+    if(!S.result.coverage_status) S.result.coverage_status={};
+    S.result.coverage_detail[itemName]=amount;
+    S.result.coverage_status[itemName]=popupSelectedStatus;
+    if(memo) S.result._memos=S.result._memos||{};
+    if(memo) S.result._memos[itemName]=memo;
+  }
+  // covEditRows 업데이트
+  if(S.covEditRows){
+    const idx=S.covEditRows.findIndex(r=>r.item===itemName);
+    if(idx>=0){S.covEditRows[idx].amount=amount;S.covEditRows[idx].status=popupSelectedStatus;}
+    else S.covEditRows.push({item:itemName,amount,status:popupSelectedStatus,category:'기타'});
+    renderCovEditTable();
+  }
+  // 화면 재렌더
+  renderCovStatusGrid(S.result);
+  document.getElementById('covEditPopup')?.remove();
+  document.getElementById('covPopupOverlay')?.remove();
+}
+
+// ════════════════════════════════════════
+// 저장 & 출력
+// ════════════════════════════════════════
+function saveOnly(){
+  syncOpinionToDs();
+  // localStorage에 현재 결과 저장
+  try{
+    const saveData={
+      result:S.result,
+      advisorOpinion:document.getElementById('advisorOpinion2')?.value||'',
+      dsType:dsType2,
+      dsAnswers:dsAnswers2,
+      savedAt:new Date().toLocaleString('ko-KR')
+    };
+    localStorage.setItem('ins_saved',JSON.stringify(saveData));
+    // 저장 완료 토스트
+    showToast('✅ 저장 완료');
+  }catch(e){
+    alert('저장 오류: '+e.message);
+  }
+}
+
+function saveAndPrint(){
+  saveOnly();
+  // 고지사항 원본 섹션에도 반영
+  syncOpinionToDs();
+  setTimeout(()=>window.print(),300);
+}
+
+function syncOpinionToDs(){
+  // tc5의 의견을 원본 disclosureSection에도 동기화 (출력 반영)
+  const op2=document.getElementById('advisorOpinion2')?.value||'';
+  const op1=document.getElementById('advisorOpinion');
+  if(op1&&op2) op1.value=op2;
+  // disclosureSection 표시
+  const ds=document.getElementById('disclosureSection');
+  if(ds) ds.style.display='';
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:30px;right:30px;background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);font-family:"Noto Sans KR",sans-serif;';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+// tc5 초기화
+function initTc5(){
+  renderDsGrid2();
 }
 
 // ════════════════════════════════════════
