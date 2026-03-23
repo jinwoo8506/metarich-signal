@@ -163,7 +163,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         
         {[
           { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
-          { id: 'show_insu', label: '보장분석 탭', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
+          { id: 'show_insu', label: '보장분석 PRO(유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
           { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/...', color: 'border-orange-500' },
           { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/...', color: 'border-emerald-500' },
           { id: 'show_cafe', label: '성장연구소 카페', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' }

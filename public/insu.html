@@ -1019,6 +1019,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
         </div>
         <div class="notice notice-blue"><span>💡</span><span>보험증권·보장내역서를 업로드하면 보험점수·보장 항목을 분석하고, 결과에서 상품별 <strong>유지/해지</strong>를 선택해 보험료를 조정할 수 있습니다.</span></div>
         <button class="run-btn rb-analyze" id="runBtn0" onclick="runAnalysis(0)" disabled><span class="run-icon">🔍</span> 보장분석 시작</button>
+        <button onclick="runDemo()" style="width:100%;margin-top:8px;padding:12px;border:2px dashed #94a3b8;border-radius:10px;background:#f8fafc;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;">
+          🧪 샘플 데이터로 테스트 (API 불필요)
+        </button>
       </div>
 
       <!-- MODE 1 -->
@@ -4800,6 +4803,161 @@ function showToast(msg){
 // tc5 초기화
 function initTc5(){
   renderDsGrid2();
+}
+
+// ════════════════════════════════════════
+// 데모 모드 — API 없이 샘플 데이터 테스트
+// ════════════════════════════════════════
+function runDemo(){
+  // 고객·설계사 정보 자동 채우기
+  const fillIfEmpty=(id,val)=>{ if(!document.getElementById(id)?.value) document.getElementById(id).value=val; };
+  fillIfEmpty('custName','정다혜');
+  fillIfEmpty('custBirth','1990.05');
+  fillIfEmpty('custGender','여');
+  fillIfEmpty('custJob','직장인(사무직)');
+  fillIfEmpty('advName','배진우');
+  fillIfEmpty('advPhone','010-3430-2565');
+  fillIfEmpty('advCompany','메타리치 시그널2본부 GA3-7지점');
+
+  // 샘플 결과 데이터 (이미지 기반 — 정다혜 고객)
+  const DEMO = {
+    customer:{name:'정다혜',age:'35세',gender:'여',birth:'1990.05',summary:'직장인·30대 여성'},
+    advisor:{name:'배진우',phone:'010-3430-2565',company:'메타리치 시그널2본부 GA3-7지점'},
+    contract_summary:{normal_count:9,lapsed_count:0,total_monthly_premium:740264,analysis_date:'2026-03-23'},
+    before:{
+      insurers:['MG손해보험','DB손해보험','삼성화재','DB손해보험','동양생명','푸본현대생명','라이나생명','메트라이프생명'],
+      total_premium:740264,
+      premiums:[
+        {name:'MG손해보험',product:'MG손해보험 종합보험(예별)',premium:72376,period:'20년',maturity:'135세',start:'2014-12-01',end:''},
+        {name:'DB손해보험',product:'참든운전자보험',premium:15770,period:'20년',maturity:'43세',start:'2022-08-16',end:''},
+        {name:'삼성화재',product:'참든운전자전자 천만안심',premium:10000,period:'20년남만기',maturity:'49세',start:'2022-02-08',end:''},
+        {name:'DB손해보험',product:'아이러브건강보험',premium:105618,period:'20년남만기',maturity:'100세',start:'2018-12-07',end:''},
+        {name:'동양생명',product:'더좋은암치아보험',premium:29100,period:'10년',maturity:'101세',start:'2017-09-28',end:''},
+        {name:'푸본현대생명',product:'기단인P보험',premium:300300,period:'5년',maturity:'24세',start:'2024-03-11',end:''},
+        {name:'라이나생명',product:'기납입P유종신',premium:107100,period:'12년',maturity:'86세',start:'2018-12-31',end:''},
+        {name:'메트라이프생명',product:'메트라이프생명',premium:100000,period:'12년',maturity:'42세',start:'2022-09-13',end:''},
+      ],
+      coverages:[
+        {item:'질병입원의료비',category:'입원',amount:'50,000,000원(1년갱신)'},
+        {item:'질병통원의료비',category:'입원',amount:'300,000원(1년갱신)'},
+        {item:'상해입원의료비',category:'입원',amount:'50,000,000원(1년갱신)'},
+        {item:'상해통원의료비',category:'입원',amount:'300,000원(1년갱신)'},
+        {item:'일반암진단비',category:'암',amount:'50,000,000원'},
+        {item:'유사암진단비',category:'암',amount:'20,000,000원'},
+        {item:'암수술비',category:'암',amount:'5,000,000원'},
+        {item:'항암방사선',category:'암',amount:'5,000,000원'},
+        {item:'뇌혈관진단비',category:'뇌심장',amount:'18,000,000원'},
+        {item:'뇌졸중진단비',category:'뇌심장',amount:'5,000,000원'},
+        {item:'심장질환진단비',category:'뇌심장',amount:'20,000,000원'},
+        {item:'허혈성심장진단비',category:'뇌심장',amount:'10,000,000원'},
+        {item:'후유장해(3%~80%)',category:'장해',amount:'30,000,000원'},
+        {item:'상해후유장해80%',category:'장해',amount:'100,000,000원'},
+        {item:'상해사망',category:'사망',amount:'50,000,000원'},
+        {item:'일반사망',category:'사망',amount:'22,000,000원+35,000,000원'},
+        {item:'수술비1-3종',category:'수술비',amount:'1,000,000원'},
+        {item:'수술비40대질병',category:'수술비',amount:'5,000,000원'},
+        {item:'교통사고처리지원금',category:'운전자',amount:'200,000,000원'},
+        {item:'변호사선임비용',category:'운전자',amount:'30,000,000원'},
+        {item:'벌금',category:'운전자',amount:'30,000,000원'},
+        {item:'일상생활배상책임',category:'화재',amount:'100,000,000원'},
+      ],
+      products:[]
+    },
+    after:{insurers:[],total_premium:0,premiums:[],coverages:[]},
+    coverage_detail:{
+      '질병사망':0,'상해사망':5000,'상해후유장해':10000,
+      '일반암진단비':5000,'유사암진단비':2000,'고액항암치료비':0,
+      '암주요치료비':0,'암수술비':500,
+      '뇌혈관진단비':1800,'뇌졸중진단비':500,'뇌출혈진단비':0,
+      '허혈성심장질환진단비':1000,'급성심근경색진단비':0,
+      '질병입원의료비':5000,'질병통원의료비':30,'상해입원의료비':5000,'상해통원의료비':30,
+      '교통사고처리지원금':20000,'변호사선임비용':3000,'벌금':3000,
+      '일상생활배상책임':10000,'간병인사용입원일당':0,'중증치매진단':0,
+    },
+    coverage_status:{
+      '질병사망':'미가입','상해사망':'충분','상해후유장해':'충분',
+      '일반암진단비':'부족','유사암진단비':'충분','고액항암치료비':'미가입',
+      '암주요치료비':'미가입','암수술비':'부족',
+      '뇌혈관진단비':'부족','뇌졸중진단비':'부족','뇌출혈진단비':'미가입',
+      '허혈성심장질환진단비':'부족','급성심근경색진단비':'미가입',
+      '질병입원의료비':'충분','질병통원의료비':'충분','교통사고처리지원금':'충분',
+      '변호사선임비용':'부족','벌금':'충분','일상생활배상책임':'충분',
+      '간병인사용입원일당':'미가입','중증치매진단':'미가입',
+    },
+    scores:{
+      before:{total:62,death:45,cancer:58,ci:52,surgery:70,accident:85,reason:'암진단비 부족, 뇌심장 보강 필요'},
+      after:{total:0,death:0,cancer:0,ci:0,surgery:0,accident:0,reason:''}
+    },
+    venn:{only_before:[],both:[],only_after:[]},
+    coverage_table:[
+      {item:'일반암진단비',category:'암',before_amount:'5,000만원',after_amount:'—',change:'SAME',change_detail:'권장 3,000만 충족'},
+      {item:'고액항암치료비',category:'암',before_amount:'—',after_amount:'—',change:'SAME',change_detail:'미가입 — 보완 필요'},
+      {item:'뇌혈관진단비',category:'뇌심장',before_amount:'1,800만원',after_amount:'—',change:'SAME',change_detail:'권장 3,000만 미달'},
+      {item:'허혈성심장질환진단비',category:'뇌심장',before_amount:'1,000만원',after_amount:'—',change:'SAME',change_detail:'권장 3,000만 미달'},
+      {item:'질병사망',category:'사망',before_amount:'—',after_amount:'—',change:'SAME',change_detail:'미가입'},
+      {item:'간병인사용입원일당',category:'간병',before_amount:'—',after_amount:'—',change:'SAME',change_detail:'미가입'},
+      {item:'교통사고처리지원금',category:'운전자',before_amount:'2억원',after_amount:'—',change:'SAME',change_detail:'충분'},
+    ],
+    premium_analysis:{monthly_diff:0,annual_diff:0,assessment:'월 740,264원 납입 중. 40대 권장 기준 대비 다소 높은 수준이나 보장 구성 보완 필요.',cost_per_score:'11,940원/점'},
+    recommendation:{
+      overall_grade:'B',
+      summary:'현재 실손·운전자·사망 보장은 양호하나 암 치료비(고액항암·주요치료비)와 뇌혈관·심장 진단비가 권장 기준에 미달합니다. 질병사망·간병 보장이 전혀 없어 리모델링이 필요합니다.',
+      strengths:['교통사고처리지원금 2억 충분','실손의료비 현행 유지','일상생활배상책임 1억 가입'],
+      cautions:['고액항암치료비 미가입 — 면역·표적항암 대비 필요','뇌혈관진단비 1,800만 → 3,000만 보강','질병사망 전혀 없음','간병인사용일당 없음'],
+      why_change:['암 치료 패러다임 변화 — 통원 항암 비중 증가','뇌심장 진단비 권장 기준 상향'],
+      notes:'※ 샘플 데이터 기반 테스트입니다.',
+      remodeling_suggestion:'고액항암치료비 1억, 뇌혈관진단비 증액(1,200만 추가), 질병사망 신규 가입을 우선 검토하세요.'
+    }
+  };
+
+  // 로딩 애니메이션 (짧게)
+  const loadingBox=document.getElementById('loadingBox');
+  const resultWrap=document.getElementById('resultWrap');
+  const inputPanel=document.querySelector('.input-panel');
+
+  // 입력 패널 접기
+  if(inputPanel){
+    inputPanel.style.transition='all .4s ease';
+    inputPanel.style.maxHeight='0';
+    inputPanel.style.overflow='hidden';
+    inputPanel.style.opacity='0';
+    inputPanel.style.marginBottom='0';
+    let toggleBtn=document.getElementById('inputToggleBtn');
+    if(!toggleBtn){
+      toggleBtn=document.createElement('button');
+      toggleBtn.id='inputToggleBtn';
+      toggleBtn.className='no-print';
+      toggleBtn.style.cssText='width:100%;padding:8px;background:var(--slate);color:var(--t2);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;margin-bottom:8px;font-family:"Noto Sans KR",sans-serif;';
+      toggleBtn.innerHTML='▼ 입력 화면 다시 펼치기';
+      toggleBtn.onclick=()=>{
+        const isHidden=inputPanel.style.maxHeight==='0px'||inputPanel.style.maxHeight==='0';
+        inputPanel.style.maxHeight=isHidden?'2000px':'0';
+        inputPanel.style.opacity=isHidden?'1':'0';
+        toggleBtn.innerHTML=isHidden?'▲ 입력 화면 접기':'▼ 입력 화면 다시 펼치기';
+      };
+      inputPanel.parentNode.insertBefore(toggleBtn,inputPanel);
+    }
+    toggleBtn.style.display='block';
+  }
+
+  loadingBox.style.display='block';
+  resultWrap.classList.remove('show');
+  document.getElementById('lTitle').textContent='🧪 샘플 데이터 로딩 중...';
+  document.getElementById('lSub').textContent='API 없이 테스트 데이터를 불러옵니다';
+
+  // 0.8초 후 결과 표시
+  setTimeout(()=>{
+    loadingBox.style.display='none';
+    S.result=DEMO; S.currentMode=0;
+    renderAll(DEMO,0);
+    renderProductMgmt(DEMO);
+    checkSilsonInsurance(DEMO);
+    resultWrap.classList.add('show');
+    switchTab(4);
+    resultWrap.scrollIntoView({behavior:'smooth',block:'start'});
+    renderInfoSections();
+    showToast('🧪 샘플 데이터 로드 완료 — 실제 분석과 동일하게 테스트하세요');
+  },800);
 }
 
 // ════════════════════════════════════════
