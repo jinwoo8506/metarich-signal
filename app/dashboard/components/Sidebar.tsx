@@ -5,7 +5,6 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
-// ✅ 상위 컴포넌트에서 mode와 onBack(모드 전환용)을 받아옵니다.
 export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack }: any) {
   const router = useRouter();
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
@@ -13,11 +12,9 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
-  // ✅ 마스터/관리자 권한 확인
   const isAdmin = user.role === 'admin' || user.role === 'master';
   const isMaster = user.role === 'master';
 
-  // ✅ 마스터용 메뉴 관리 상태
   const [menuStatus, setMenuStatus] = useState<any>({
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, show_cont: true
   });
@@ -26,12 +23,10 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
   useEffect(() => {
     fetchDailyData();
     fetch3MonthAvg();
-    fetchMenuSettings(); // 메뉴 설정 로드
+    fetchMenuSettings();
     const savedPrivate = localStorage.getItem(`memo_${user.id}`);
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
-
-  // --- 데이터 로직 (기존 코드 100% 유지) ---
 
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");
@@ -64,6 +59,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     }
   }
 
+  // 📈 [수정 핵심] 실적 계산 로직 보정
   async function fetch3MonthAvg() {
     const d = new Date(selectedDate);
     const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
@@ -84,8 +80,9 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
       const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
-      const uniqueMonths = new Set(data.map(item => item.date.substring(0, 7))).size;
-      const divisor = uniqueMonths > 0 ? uniqueMonths : 3;
+      
+      // ✅ 기존 uniqueMonths를 무시하고 3개월 평균이므로 무조건 3으로 나눕니다.
+      const divisor = 3; 
 
       setThreeMonthAvg({ 
         amt: Math.round(totalAmt / divisor), 
@@ -98,10 +95,9 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
 
   const saveDailyNotice = async (val: string) => {
     setDailyAdminNotice(val);
-    const { error } = await supabase
+    await supabase
       .from("team_settings")
       .upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
-    if (error) console.error("Error saving daily notice:", error);
   };
 
   const savePrivateMemo = (val: string) => {
@@ -112,7 +108,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
   return (
     <aside className="w-full lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm z-10 font-black overflow-y-auto min-h-screen">
       
-      {/* 🔄 모드 전환 뒤로가기 버튼 */}
       <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all">
         ← BACK TO SELECTOR
       </button>
@@ -121,7 +116,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         <h2 className="text-2xl italic uppercase tracking-tighter font-black">
           {mode === 'office' ? 'History' : 'Consult'}
         </h2>
-        {/* 마스터 전용 설정 버튼 */}
         {isMaster && (
           <button 
             onClick={() => setIsEditMode(!isEditMode)} 
@@ -132,7 +126,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         )}
       </div>
       
-      {/* 오피스 모드일 때만 달력과 실적 표시 */}
       {mode === 'office' && (
         <>
           <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
@@ -165,7 +158,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         </>
       )}
       
-      {/* 🚀 퀵 링크 섹션 (마스터 관리 기능 통합) */}
       <div className="px-1 space-y-3">
         <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Links</p>
         
@@ -198,7 +190,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         ))}
       </div>
 
-      {/* 📝 메모 영역 (오피스 모드 전용) */}
       {mode === 'office' && (
         <div className="flex flex-col gap-4">
           <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-40">
