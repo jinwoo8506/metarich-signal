@@ -821,6 +821,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     <button class="tbtn tbtn-policy" onclick="openPolicyModal()">📊 상품공시실</button>
     <button class="tbtn tbtn-disease" onclick="window.open('https://www.kcdcode.kr','_blank')">🔬 질병분류</button>
     <button class="tbtn" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;" onclick="openSettingModal()">⚙️ 보장 기준 설정</button>
+    <button class="tbtn" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;" onclick="saveWorkJSON()" title="현재 작업을 JSON 파일로 저장">💾 저장</button>
+    <button class="tbtn" style="background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff;" onclick="openWorkList()" title="저장된 작업 목록 보기">📂 불러오기</button>
     <button class="tbtn tbtn-out" onclick="clearAll()">↺ 초기화</button>
     <button class="tbtn tbtn-out" onclick="checkAndPrint()">🖨 인쇄 / PDF</button>
   </div>
@@ -1543,6 +1545,37 @@ function init(){
   initQueryChips();
   renderPolicyGrid('life');
   document.getElementById('policyQuery').addEventListener('input',()=>checkReady(2));
+  // 자동 저장본 확인
+  checkAutoSave();
+}
+
+function checkAutoSave(){
+  try{
+    const data=JSON.parse(localStorage.getItem(WORK_AUTO_KEY)||'null');
+    if(!data) return;
+    const custName=data.custName||'고객';
+    const savedAt=new Date(data.savedAt).toLocaleString('ko-KR');
+    // 상단에 복원 알림 배너 표시
+    const banner=document.createElement('div');
+    banner.id='autoSaveBanner';
+    banner.className='no-print';
+    banner.style.cssText=`position:fixed;bottom:20px;right:20px;z-index:800;
+      background:var(--navy);color:#fff;padding:14px 18px;border-radius:12px;
+      box-shadow:0 4px 24px rgba(0,0,0,.3);font-family:'Noto Sans KR',sans-serif;
+      display:flex;align-items:center;gap:14px;max-width:420px;`;
+    banner.innerHTML=`
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:3px;">🔄 이전 작업이 있습니다</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);">${custName} 님 · ${savedAt}</div>
+      </div>
+      <div style="display:flex;gap:7px;flex-shrink:0;">
+        <button onclick="loadAutoWork();document.getElementById('autoSaveBanner')?.remove();"
+          style="padding:7px 14px;background:#22c55e;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">불러오기</button>
+        <button onclick="document.getElementById('autoSaveBanner').remove();"
+          style="padding:7px 10px;background:rgba(255,255,255,.15);border:none;border-radius:7px;color:#fff;font-size:12px;cursor:pointer;">✕</button>
+      </div>`;
+    document.body.appendChild(banner);
+  }catch(e){}
 }
 
 function initQueryChips(){
@@ -1823,6 +1856,7 @@ async function runAnalysis(mode){
         document.getElementById('resultWrap').classList.add('show');
         renderInfoSections();
         renderPrintCompliance(); // 9p 완전판매
+        autoSaveAfterAnalysis(); // 자동 저장
       }catch(renderErr){
         document.getElementById('loadingBox').style.display='none';
         console.error('렌더링 오류:', renderErr);
@@ -4205,6 +4239,7 @@ function generateCompareReport(){
   document.getElementById('compareResultCard').scrollIntoView({behavior:'smooth',block:'start'});
   showToast('✅ 전·후 비교 리포트가 생성되었습니다');
   setTimeout(renderCovBarChart, 300);
+  autoSaveAfterAnalysis(); // 자동 저장
 }
 
 function applyCompareGrid(){generateCompareReport();}
@@ -6186,8 +6221,261 @@ function clearAll(){
 }
 
 // ════════════════════════════════════════
-// COVER PAGE
+// 작업 저장 / 불러오기
 // ════════════════════════════════════════
+const WORK_STORAGE_KEY = 'ins_work_list'; // localStorage 키
+const WORK_AUTO_KEY    = 'ins_work_auto'; // 자동 저장
+
+// 현재 상태를 직렬화 가능한 객체로
+function serializeWork(){
+  return {
+    version: '11',
+    savedAt: new Date().toISOString(),
+    custName:   document.getElementById('custName')?.value||'',
+    custBirth:  document.getElementById('custBirth')?.value||'',
+    custGender: document.getElementById('custGender')?.value||'',
+    custJob:    document.getElementById('custJob')?.value||'',
+    advName:    document.getElementById('advName')?.value||'',
+    advPhone:   document.getElementById('advPhone')?.value||'',
+    advCompany: document.getElementById('advCompany')?.value||'',
+    result:           S.result,
+    existingContracts:S.existingContracts||[],
+    newProposals:     S.newProposals||[],
+    advisorOpinion:   document.getElementById('advisorOpinion2')?.value||'',
+    advisorMemo:      document.getElementById('advisorMemo')?.value||'',
+    designMemo:       document.getElementById('designMemo')?.value||'',
+    designChecks:     [0,1,2,3,4].map(i=>document.getElementById('chkDesign'+i)?.checked||false),
+    dsType:    dsType2,
+    dsAnswers: {...dsAnswers2},
+  };
+}
+
+// 복원
+function restoreWork(data){
+  if(!data||data.version!=='11') return false;
+  // 고객·설계사 정보
+  const fields={custName:'custName',custBirth:'custBirth',custGender:'custGender',custJob:'custJob',
+    advName:'advName',advPhone:'advPhone',advCompany:'advCompany'};
+  Object.entries(fields).forEach(([k,id])=>{
+    const el=document.getElementById(id);
+    if(el&&data[k]) el.value=data[k];
+  });
+  // S 상태
+  S.result            = data.result||null;
+  S.existingContracts = data.existingContracts||[];
+  S.newProposals      = data.newProposals||[];
+  // 의견 복원
+  const op2=document.getElementById('advisorOpinion2'); if(op2&&data.advisorOpinion) op2.value=data.advisorOpinion;
+  const am=document.getElementById('advisorMemo');      if(am&&data.advisorMemo)     am.value=data.advisorMemo;
+  const dm=document.getElementById('designMemo');       if(dm&&data.designMemo)      dm.value=data.designMemo;
+  if(data.designChecks) data.designChecks.forEach((v,i)=>{const el=document.getElementById('chkDesign'+i);if(el)el.checked=v;});
+  if(data.dsType){dsType2=data.dsType;setDsType2(data.dsType);}
+  if(data.dsAnswers) Object.assign(dsAnswers2,data.dsAnswers);
+  // 화면 렌더
+  if(S.result){
+    try{
+      renderAll(S.result,0);
+      renderProductMgmt(S.result);
+      checkSilsonInsurance(S.result);
+      renderPrintCompliance();
+      // 입력 패널 접기
+      const inputPanel=document.querySelector('.input-panel');
+      if(inputPanel){inputPanel.style.maxHeight='0';inputPanel.style.overflow='hidden';inputPanel.style.opacity='0';}
+      document.getElementById('resultWrap').classList.add('show');
+      switchTab(4);
+      setTimeout(renderCovBarChart,600);
+    }catch(e){console.error('복원 렌더 오류:',e);}
+  }
+  return true;
+}
+
+// ── JSON 파일로 저장 (다운로드) ──
+function saveWorkJSON(){
+  if(!S.result&&!(document.getElementById('custName')?.value)){
+    showToast('⚠️ 저장할 분석 데이터가 없습니다.');
+    return;
+  }
+  const data = serializeWork();
+  const custName = data.custName||'고객';
+  const dateStr  = new Date().toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}).replace(/\. /g,'-').replace('.','')+'-'+new Date().getHours();
+  const filename = `보장분석_${custName}_${dateStr}.json`;
+
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+
+  // localStorage에도 목록 저장 (최근 10건)
+  saveToLocalList(data, custName, filename);
+  showToast('💾 저장 완료: '+filename);
+}
+
+function saveToLocalList(data, custName, filename){
+  try{
+    const list = JSON.parse(localStorage.getItem(WORK_STORAGE_KEY)||'[]');
+    const item = {
+      id: Date.now().toString(),
+      custName, filename,
+      savedAt: data.savedAt,
+      scoreTotal: data.result?.scores?.before?.total||0,
+      prem: data.result?.before?.total_premium||0,
+      data: data  // 로컬 목록에도 전체 저장 (최근 10건)
+    };
+    list.unshift(item);
+    if(list.length>10) list.length=10;
+    localStorage.setItem(WORK_STORAGE_KEY, JSON.stringify(list));
+  }catch(e){console.warn('목록 저장 실패:',e);}
+}
+
+// ── 자동 저장 ──
+function autoSaveWork(){
+  if(!S.result) return;
+  try{
+    const data=serializeWork();
+    localStorage.setItem(WORK_AUTO_KEY, JSON.stringify(data));
+    showToast('🔄 자동 저장 완료');
+  }catch(e){}
+}
+
+// ── 불러오기 팝업 ──
+function openWorkList(){
+  document.getElementById('workListPopup')?.remove();
+  document.getElementById('workListOverlay')?.remove();
+
+  const list = (() => { try{ return JSON.parse(localStorage.getItem(WORK_STORAGE_KEY)||'[]'); }catch(e){return [];} })();
+  const auto = (() => { try{ return JSON.parse(localStorage.getItem(WORK_AUTO_KEY)||'null'); }catch(e){return null;} })();
+
+  const overlay=document.createElement('div');
+  overlay.id='workListOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;';
+
+  const popup=document.createElement('div');
+  popup.id='workListPopup';
+  popup.style.cssText=`position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:9999;background:#fff;border-radius:16px;box-shadow:0 8px 48px rgba(0,0,0,.28);
+    width:min(580px,94vw);max-height:80vh;overflow-y:auto;
+    font-family:'Noto Sans KR',sans-serif;`;
+
+  const autoRow = auto ? `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;letter-spacing:.5px;">🔄 자동 저장본</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f0fdf4;border-radius:9px;border:1px solid rgba(22,163,74,.3);">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--navy);">${auto.custName||'고객'} 님</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">${new Date(auto.savedAt).toLocaleString('ko-KR')} 저장</div>
+        </div>
+        <button onclick="loadAutoWork()" style="padding:8px 16px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">불러오기</button>
+      </div>
+    </div>` : '';
+
+  const listRows = list.length ? list.map((item,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:${i%2===0?'#fff':'#f8fafc'};border-radius:8px;border:1px solid var(--border);margin-bottom:6px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.custName} 님</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:2px;">${new Date(item.savedAt).toLocaleString('ko-KR')} · 점수 ${item.scoreTotal||0}점 · ${item.prem?(item.prem/10000).toFixed(0)+'만원/월':'-'}</div>
+        <div style="font-size:10px;color:var(--t3);">${item.filename||''}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:10px;">
+        <button onclick="loadLocalWork('${item.id}')" style="padding:6px 12px;background:var(--pri-l);color:var(--pri);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">불러오기</button>
+        <button onclick="deleteLocalWork('${item.id}')" style="padding:6px 10px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:6px;font-size:12px;cursor:pointer;">✕</button>
+      </div>
+    </div>`).join('') : '<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px;">저장된 작업이 없습니다.</div>';
+
+  popup.innerHTML=`
+    <div style="padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--navy);">📂 작업 불러오기</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">저장된 분석 작업을 불러옵니다</div>
+      </div>
+      <button onclick="document.getElementById('workListPopup').remove();document.getElementById('workListOverlay').remove();"
+        style="width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div style="padding:20px 22px;">
+      ${autoRow}
+      <!-- JSON 파일 불러오기 -->
+      <div style="margin-bottom:16px;padding:12px 14px;background:#eff6ff;border-radius:9px;border:1px solid #bfdbfe;display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#1e40af;">📄 JSON 파일에서 불러오기</div>
+          <div style="font-size:11px;color:#3b82f6;margin-top:2px;">이전에 저장한 .json 파일을 선택하세요</div>
+        </div>
+        <label style="padding:8px 16px;background:#1e40af;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">
+          파일 선택
+          <input type="file" accept=".json" style="display:none;" onchange="loadFromFile(this)">
+        </label>
+      </div>
+      <!-- 로컬 목록 -->
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px;letter-spacing:.5px;">📋 최근 저장 목록 (최대 10건)</div>
+      ${listRows}
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+  overlay.onclick=e=>{if(e.target===overlay){popup.remove();overlay.remove();}};
+}
+
+function closeWorkList(){
+  document.getElementById('workListPopup')?.remove();
+  document.getElementById('workListOverlay')?.remove();
+}
+
+function loadAutoWork(){
+  try{
+    const data=JSON.parse(localStorage.getItem(WORK_AUTO_KEY)||'null');
+    if(!data){showToast('⚠️ 자동 저장본이 없습니다.');return;}
+    closeWorkList();
+    if(restoreWork(data)) showToast('✅ 자동 저장본을 불러왔습니다.');
+    else showToast('⚠️ 불러오기 실패 — 버전이 맞지 않습니다.');
+  }catch(e){alert('불러오기 오류: '+e.message);}
+}
+
+function loadLocalWork(id){
+  try{
+    const list=JSON.parse(localStorage.getItem(WORK_STORAGE_KEY)||'[]');
+    const item=list.find(i=>i.id===id);
+    if(!item?.data){showToast('⚠️ 데이터를 찾을 수 없습니다.');return;}
+    closeWorkList();
+    if(restoreWork(item.data)) showToast('✅ '+item.custName+'님 작업을 불러왔습니다.');
+    else showToast('⚠️ 불러오기 실패');
+  }catch(e){alert('불러오기 오류: '+e.message);}
+}
+
+function deleteLocalWork(id){
+  if(!confirm('이 작업을 목록에서 삭제할까요?')) return;
+  try{
+    let list=JSON.parse(localStorage.getItem(WORK_STORAGE_KEY)||'[]');
+    list=list.filter(i=>i.id!==id);
+    localStorage.setItem(WORK_STORAGE_KEY,JSON.stringify(list));
+    closeWorkList();
+    openWorkList();
+  }catch(e){}
+}
+
+function loadFromFile(input){
+  const file=input.files?.[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      closeWorkList();
+      if(restoreWork(data)){
+        saveToLocalList(data, data.custName||'고객', file.name);
+        showToast('✅ 파일을 성공적으로 불러왔습니다: '+file.name);
+      } else {
+        alert('⚠️ 불러오기 실패\n\n파일 형식이 맞지 않거나 버전이 다릅니다.');
+      }
+    }catch(err){alert('파일 파싱 오류: '+err.message);}
+  };
+  reader.readAsText(file);
+}
+
+// ── 분석 완료 시 자동 저장 연결 ──
+// (renderAll 이후 호출)
+function autoSaveAfterAnalysis(){
+  setTimeout(autoSaveWork, 500);
+}
 function updateCoverPage(){
   const name     = document.getElementById('custName')?.value||'—';
   const birth    = document.getElementById('custBirth')?.value||'';
