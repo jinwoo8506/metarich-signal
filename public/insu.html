@@ -193,9 +193,11 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 /* TABS */
 .tab-bar{
   display:flex;gap:3px;background:var(--white);
-  border-radius:12px;padding:4px;box-shadow:var(--sh);
+  border-radius:12px;padding:4px;
+  box-shadow:0 2px 12px rgba(0,0,0,.1);
   position:sticky;top:60px;z-index:200;
   margin-bottom:12px;
+  backdrop-filter:blur(8px);
 }
 .tab-btn{
   flex:1;padding:10px 8px;border:none;background:transparent;
@@ -498,46 +500,58 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
   #tc4{display:none!important;}
   #compareResultCard{display:none!important;}
   #printContractSummary{display:none!important;}
-  #policyResults,#infoSections{display:none!important;}
+  #policyResults{display:none!important;}
+  #infoSections{display:block!important;}
 
   /* 2p: scoreHero + tc0 한 페이지 */
   #scoreHero{page-break-inside:avoid;break-inside:avoid;}
-  .score-hero{padding:10px 14px!important;margin-bottom:4px!important;border-radius:5px;}
-  .sh-row{gap:8px!important;}
-  .sh-left h2{font-size:16px!important;}
-  .sh-meta{font-size:11px!important;}
-  .sh-adv{font-size:11px!important;}
-  .sh-kpis{gap:4px!important;margin-top:6px!important;}
-  .sh-kpi{padding:6px 8px!important;}
-  .sh-kpi-v{font-size:16px!important;}
-  .sh-kpi-l{font-size:9px!important;}
-  .sc-box{padding:8px 12px!important;}
-  .sc-num{font-size:28px!important;}
+  .score-hero{padding:8px 12px!important;margin-bottom:4px!important;border-radius:5px;}
+  .sh-row{gap:6px!important;}
+  .sh-left h2{font-size:13px!important;margin-bottom:2px!important;}
+  .sh-meta{font-size:10px!important;}
+  .sh-adv{font-size:10px!important;}
+  .sh-kpis{gap:3px!important;margin-top:4px!important;}
+  .sh-kpi{padding:4px 7px!important;}
+  .sh-kpi-v{font-size:13px!important;}
+  .sh-kpi-l{font-size:8px!important;}
+  .sc-box{padding:6px 10px!important;}
+  .sc-num{font-size:24px!important;}
+  .sc-lbl{font-size:9px!important;}
+  .sc-diff{font-size:11px!important;}
+  .sc-arr{font-size:14px!important;}
 
   /* tc0: 보험점수(상) + [벤다/차트](하) */
-  #tc0{display:flex!important;flex-direction:column;gap:5px;page-break-inside:avoid;break-inside:avoid;}
-  #tc0 > .scard:first-child{margin-bottom:4px!important;}
-  #tc0 > div:last-child{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px;align-items:start;}
+  /* 2p: tc0 전체 압축 - 점수+현황카드(좌) + 차트(우) */
+  #tc0{display:flex!important;flex-direction:column;gap:4px;page-break-inside:avoid;break-inside:avoid;}
+  #tc0 > .scard:first-child{margin-bottom:3px!important;padding:6px 9px!important;}
+  #tc0 > div:last-child{display:grid!important;grid-template-columns:1fr 1.4fr!important;gap:8px;align-items:stretch;}
+  #vennCard{display:flex!important;flex-direction:column;gap:0!important;}
+  #vennCard .scard-title{margin-bottom:4px!important;}
   #barChartCard{display:block!important;}
-  #covBarChart{display:block!important;max-height:180px!important;}
+  #covBarChart{display:block!important;max-height:160px!important;}
   #barChartEmpty{display:none!important;}
-  /* 점수 막대 압축 */
-  .sg{padding:6px 8px!important;}
-  .sb-row{margin-bottom:4px!important;}
-  .sb-track{height:5px!important;}
-  .sg-total{font-size:20px!important;}
-  /* 벤다이어그램 svg 축소 */
-  #vennCard svg{max-height:160px;}
-  .venn-leg{gap:3px!important;}
-  .vl{padding:4px 8px!important;}
-  .vl-h{font-size:10px!important;}
-  .vl-body{font-size:9px!important;}
+  .sg{padding:4px 7px!important;}
+  .sb-row{margin-bottom:3px!important;}
+  .sb-track{height:4px!important;}
+  .sg-total{font-size:18px!important;}
+  .sg-head{margin-bottom:3px!important;}
+  /* vennCard 3칸 압축 */
+  #vennCard .scard-title{font-size:10px!important;margin-bottom:5px!important;}
+  #vennCard > div > div{margin-bottom:4px!important;}
+  #vennCard > div > div > div{padding:6px 9px!important;}
+  #vennCard > div > div > div > div:first-child{font-size:20px!important;min-width:28px!important;}
+  #vennCard > div > div > div > div > div:first-child{font-size:10px!important;}
+  #vennCard > div > div > div > div > div:last-child{font-size:9px!important;}
 
-  /* 3p: 현 보장 */
-  #tc1{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;align-items:start;}
+  /* 3p: 현 보장 - 최대 압축 */
+  #tc1{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;align-items:start;}
   #tc1 .scard:first-child{grid-column:1/-1;}
-  #tc1 .cov-table{font-size:9px;}
-  #tc1 .cov-table th,#tc1 .cov-table td{padding:2px 4px;}
+  #tc1 .cov-table{font-size:8.5px;}
+  #tc1 .cov-table th,#tc1 .cov-table td{padding:1px 3px;line-height:1.3;}
+  #tc1 .sum-boxes{gap:4px!important;margin-bottom:6px!important;}
+  #tc1 .sum-box{padding:6px 8px!important;}
+  #tc1 .sum-num{font-size:18px!important;}
+  #tc1 .sum-lbl{font-size:9px!important;}
 
   /* 4p: 보험료 */
   .prem-layout{font-size:10px;}
@@ -1105,37 +1119,26 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 
       <!-- MODE 3: 수동 입력 -->
       <div class="mode-panel" id="mp3">
-        <div style="padding:10px 13px;background:linear-gradient(135deg,#f0fdf4,#fff);border-radius:9px;border:1.5px solid rgba(22,163,74,.2);margin-bottom:10px;">
+        <div style="padding:10px 13px;background:linear-gradient(135deg,#f0fdf4,#fff);border-radius:9px;border:1.5px solid rgba(22,163,74,.2);margin-bottom:12px;">
           <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:3px;">✍️ 수동 입력 분석 — API 없이 즉시 분석</div>
-          <div style="font-size:12px;color:var(--t2);line-height:1.6;">보험 서류 없이 계약·담보 정보를 직접 입력하면 <strong>API 없이도</strong> 보장 분석이 바로 실행됩니다.</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.6;">보험 서류 없이 계약·담보 정보를 직접 입력합니다. 보장내용 버튼을 눌러 담보를 선택하세요.</div>
+          <button onclick="fillManualSample()" style="margin-top:8px;padding:5px 12px;background:#f0fdf4;color:var(--green);border:1px solid var(--green);border-radius:6px;font-size:11px;cursor:pointer;">🧪 샘플 데이터로 채우기</button>
         </div>
 
-        <!-- 계약 입력 -->
-        <div style="margin-bottom:12px;">
+        <!-- 계약 목록 -->
+        <div style="margin-bottom:10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
             <div style="font-size:12px;font-weight:700;color:var(--t2);">📋 보험 계약 목록</div>
             <button onclick="addManualContract()" style="padding:4px 11px;background:var(--green-l);color:var(--green);border:1.5px solid var(--green);border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">+ 계약 추가</button>
           </div>
-          <div id="manualContracts">
-            <!-- JS로 렌더 -->
+          <!-- 컬럼 헤더 -->
+          <div style="display:grid;grid-template-columns:1.4fr 1.8fr 1fr 0.9fr 0.9fr 80px 36px;gap:5px;padding:5px 10px;font-size:10px;font-weight:700;color:var(--t3);">
+            <span>보험사</span><span>상품명</span><span>월보험료(원)</span><span>납입기간</span><span>만기</span><span style="text-align:center;">보장내용</span><span></span>
           </div>
+          <div id="manualContracts"></div>
         </div>
 
-        <!-- 담보 입력 -->
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="font-size:12px;font-weight:700;color:var(--t2);">🛡️ 담보별 가입 금액 (만원 단위)</div>
-            <div style="display:flex;gap:6px;">
-              <button onclick="fillManualAll(0)" style="padding:4px 10px;background:var(--slate);color:var(--t2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;">전체 초기화</button>
-              <button onclick="fillManualFromSetting()" style="padding:4px 10px;background:var(--pri-l);color:var(--pri);border:1px solid var(--border2);border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;">⚙️ 설정 기준값 채우기</button>
-            </div>
-          </div>
-          <div id="manualCovGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <!-- JS로 렌더 -->
-          </div>
-        </div>
-
-        <div class="notice notice-blue"><span>💡</span><span>담보 금액을 0으로 두면 <strong>미가입</strong>으로 처리됩니다. 설정된 권장 기준과 비교해 미가입/부족/충분이 자동 판정됩니다.</span></div>
+        <div class="notice notice-blue"><span>💡</span><span>보장내용 버튼을 누르면 담보를 선택·금액을 입력할 수 있습니다. 실손·운전자는 세대/기본값이 자동 설정됩니다.</span></div>
         <button class="run-btn" id="runBtn3" onclick="runManualAnalysis()" style="background:linear-gradient(135deg,var(--green),#22c55e);box-shadow:0 4px 16px rgba(22,163,74,.3);">
           <span class="run-icon">✍️</span> 수동 분석 실행 (API 불필요)
         </button>
@@ -1198,7 +1201,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     </div>
     <div class="tc on" id="tc0">
       <!-- 상단: 보험점수 -->
-      <div class="scard"><div class="scard-title">📈 항목별 보험점수</div><div id="scoreBreakdown"></div></div>
+      <div class="scard">
+        <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>📈 항목별 보험점수</span>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="toggleScoreDisplay()" id="scoreToggleBtn" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border2);background:#fff;color:var(--t2);">👁 숨기기</button>
+            <button onclick="showScoreGuide()" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--pri);background:var(--pri-l);color:var(--pri);">📊 점수 기준</button>
+          </div>
+        </div>
+        <div id="scoreBreakdown"></div>
+      </div>
       <!-- 하단: 벤다이어그램(좌) + 막대차트(우) -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
         <div class="scard" id="vennCard"></div>
@@ -1929,6 +1941,7 @@ async function callAnalysisAPI(mode){
 5. 담보별 가입금액(만원단위): 질병사망,상해사망,상해후유장해,일반암진단비,유사암진단비,뇌혈관진단비,뇌졸중진단비,뇌출혈진단비,허혈성심장질환진단비,급성심근경색진단비,중증치매진단,고액항암치료비,암주요치료비,2대질환주요치료비,질병입원의료비,질병통원의료비,상해입원의료비,상해통원의료비,암수술비,뇌혈관수술비,허혈심장수술비,질병수술비,상해수술비,간병인사용입원일당,1인실입원일당,교통사고처리지원금,변호사선임비용,벌금,일상생활배상책임
 6. 각 담보 보장상태(미가입/부족/충분) — 권장기준: 일반암진단비 3000만이상=충분, 뇌혈관/심장 각 3000만이상=충분, 나머지는 0=미가입
 7. 보험점수(0-100): 사망(death)/암(cancer)/CI뇌심장(ci)/수술입원(surgery)/재해운전자(accident) 각각 + 총점(total)
+   ※ CI(뇌심장) 점수 계층 규칙: 뇌혈관질환진단비(factor1.0) > 뇌졸중진단비(factor0.9) > 뇌출혈진단비(factor0.75), 특정심장질환(factor1.0) > 허혈성심장(factor0.88) > 급성심근경색(factor0.70). 더 넓은 범위 담보가 있으면 동일 금액이라도 점수 유지/향상. 기준금액 대비 미달이 없으면 점수 하락 금지.
 8. 종합권고: 등급(A+/A/B+/B/C)/요약/강점배열/취약점배열/리모델링제안
 ※억원=10000만원 ※PDF실제값만사용 ※JSON외텍스트절대불포함`;
 
@@ -2364,67 +2377,59 @@ function renderVenn(d){
   const vennCard=document.getElementById('vennCard');
   if(!vennCard) return;
 
-  // venn 데이터가 있으면 사용, 없으면 coverage_detail 기반으로 생성
   let vn=d.venn||{only_before:[],both:[],only_after:[]};
 
-  // venn 데이터가 비어있을 경우 coverage_detail → coverage_status 기반으로 생성
   if(!vn.both.length&&!vn.only_before.length&&!vn.only_after.length){
     const cd=d.coverage_detail||{};
     const cs=d.coverage_status||{};
     const items=Object.entries(cd).filter(([,v])=>v>0).map(([k])=>k);
-    // 상태 기반 분류
-    vn.only_before=items.filter(k=>cs[k]==='부족'||cs[k]==='');
+    vn.only_before=items.filter(k=>cs[k]==='부족'||cs[k]==='미가입');
     vn.both=items.filter(k=>cs[k]==='충분');
     vn.only_after=[];
-    // 리모델링 후 신규 담보
     (S.newProposals||[]).forEach(p=>(p.coverages||[]).forEach(cv=>{
-      if(!items.includes(cv.item)) vn.only_after.push(cv.item);
+      if(!items.includes(cv.item)&&cv.amount>0) vn.only_after.push(cv.item);
     }));
     vn.only_after=[...new Set(vn.only_after)];
   }
 
-  const cx1=175,cx2=335,cy=130,r=115;
   const trim=(a,n)=>a.slice(0,n).join(', ')+(a.length>n?` 외 ${a.length-n}건`:'');
+  const total=vn.only_before.length+vn.both.length+vn.only_after.length;
 
   vennCard.innerHTML=`
-    <div class="scard-title">🔵 보장 항목 벤다이어그램</div>
-    <div class="venn-sec">
-      <div style="display:flex;justify-content:center;overflow:hidden;">
-        <svg width="100%" viewBox="0 0 520 270" style="max-width:520px;">
-          <defs>
-            <radialGradient id="ga3" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#fee2e2" stop-opacity=".9"/>
-              <stop offset="100%" stop-color="#fecaca" stop-opacity=".6"/>
-            </radialGradient>
-            <radialGradient id="gb3" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#dcfce7" stop-opacity=".9"/>
-              <stop offset="100%" stop-color="#bbf7d0" stop-opacity=".6"/>
-            </radialGradient>
-            <clipPath id="ca3"><circle cx="${cx1}" cy="${cy}" r="${r}"/></clipPath>
-          </defs>
-          <!-- 배경 원 -->
-          <circle cx="${cx1}" cy="${cy}" r="${r}" fill="url(#ga3)" stroke="#fca5a5" stroke-width="2"/>
-          <circle cx="${cx2}" cy="${cy}" r="${r}" fill="url(#gb3)" stroke="#86efac" stroke-width="2"/>
-          <!-- 교집합 강조 -->
-          <circle cx="${cx2}" cy="${cy}" r="${r}" fill="#fef9c3" opacity=".35" clip-path="url(#ca3)"/>
-          <!-- 레이블 -->
-          <text x="${cx1-30}" y="22" font-size="11" font-weight="700" fill="#dc2626" font-family="Noto Sans KR,sans-serif" text-anchor="middle">현재 보장</text>
-          <text x="${cx2+30}" y="22" font-size="11" font-weight="700" fill="#16a34a" font-family="Noto Sans KR,sans-serif" text-anchor="middle">리모델링 후</text>
-          <!-- 숫자 -->
-          <text x="${cx1-55}" y="${cy}" text-anchor="middle" font-size="30" font-weight="800" fill="#dc2626" font-family="IBM Plex Mono,monospace">${vn.only_before.length}</text>
-          <text x="${cx1-55}" y="${cy+22}" text-anchor="middle" font-size="10" fill="#dc2626" font-family="Noto Sans KR,sans-serif">보완필요</text>
-          <text x="${(cx1+cx2)/2}" y="${cy}" text-anchor="middle" font-size="30" font-weight="800" fill="#d97706" font-family="IBM Plex Mono,monospace">${vn.both.length}</text>
-          <text x="${(cx1+cx2)/2}" y="${cy+22}" text-anchor="middle" font-size="10" fill="#d97706" font-family="Noto Sans KR,sans-serif">충분·유지</text>
-          <text x="${cx2+55}" y="${cy}" text-anchor="middle" font-size="30" font-weight="800" fill="#16a34a" font-family="IBM Plex Mono,monospace">${vn.only_after.length}</text>
-          <text x="${cx2+55}" y="${cy+22}" text-anchor="middle" font-size="10" fill="#16a34a" font-family="Noto Sans KR,sans-serif">신규추가</text>
-          <!-- 총계 -->
-          <text x="260" y="258" text-anchor="middle" font-size="11" fill="#64748b" font-family="Noto Sans KR,sans-serif">총 ${vn.only_before.length+vn.both.length+vn.only_after.length}개 담보 항목</text>
-        </svg>
+    <div class="scard-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>🛡️ 보장 현황 요약</span>
+      <span style="font-size:11px;color:var(--t3);">총 ${total}개 담보</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <!-- 보완필요 -->
+      <div style="border-radius:9px;overflow:hidden;border:1.5px solid #fca5a5;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff5f5;">
+          <div style="font-size:28px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:#dc2626;min-width:36px;text-align:center;">${vn.only_before.length}</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#dc2626;">🟠 보완 필요</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.5;">${trim(vn.only_before,5)||'없음'}</div>
+          </div>
+        </div>
       </div>
-      <div class="venn-leg">
-        <div class="vl vl-r"><div class="vl-h">🟠 보완 필요 (${vn.only_before.length}건)</div><div class="vl-body">${trim(vn.only_before,4)||'없음'}</div></div>
-        <div class="vl vl-y"><div class="vl-h">🟡 충분·유지 (${vn.both.length}건)</div><div class="vl-body">${trim(vn.both,5)||'없음'}</div></div>
-        <div class="vl vl-g"><div class="vl-h">🟢 신규 추가 (${vn.only_after.length}건)</div><div class="vl-body">${trim(vn.only_after,4)||'없음'}</div></div>
+      <!-- 충분·유지 -->
+      <div style="border-radius:9px;overflow:hidden;border:1.5px solid #fde68a;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;">
+          <div style="font-size:28px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:#d97706;min-width:36px;text-align:center;">${vn.both.length}</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#d97706;">🟡 충분·유지</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.5;">${trim(vn.both,5)||'없음'}</div>
+          </div>
+        </div>
+      </div>
+      <!-- 신규추가 -->
+      <div style="border-radius:9px;overflow:hidden;border:1.5px solid #86efac;">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0fdf4;">
+          <div style="font-size:28px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:#16a34a;min-width:36px;text-align:center;">${vn.only_after.length}</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#16a34a;">🟢 신규 추가</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.5;">${trim(vn.only_after,5)||'없음'}</div>
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -2433,7 +2438,7 @@ function renderCoverage(d,isSolo){
   const rows=d.coverage_table||[];
   const catM={암:'cat-cancer',수술:'cat-surgery',사망:'cat-death',재해:'cat-accident',CI:'cat-ci',입원:'cat-surgery',기타:'cat-other'};
   const chgM={UP:'<span class="chg-pill chg-up">↑ 확대</span>',DOWN:'<span class="chg-pill chg-dn">↓ 축소</span>',SAME:'<span class="chg-pill chg-sm">→ 유지</span>',NEW:'<span class="chg-pill chg-nw">✦ 신규</span>',REMOVED:'<span class="chg-pill chg-del">✕ 삭제</span>'};
-  document.getElementById('covBody').innerHTML=rows.map(r=>`<tr><td style="font-weight:600;font-size:13px">${r.item}</td><td><span class="cat-pill ${catM[r.category]||'cat-other'}">${r.category||''}</span></td><td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r.before_amount||'—'}</td><td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--green)">${r.after_amount||'—'}</td><td>${isSolo?'':chgM[r.change]||''}</td><td style="font-size:13px;color:var(--t2)">${r.change_detail||''}</td></tr>`).join('');
+  document.getElementById('covBody').innerHTML=rows.map(r=>`<tr><td style="font-weight:600;font-size:13px">${r.item}${getRangeBadge(r.item)}</td><td><span class="cat-pill ${catM[r.category]||'cat-other'}">${r.category||''}</span></td><td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r.before_amount||'—'}</td><td style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--green)">${r.after_amount||'—'}</td><td>${isSolo?'':chgM[r.change]||''}</td><td style="font-size:13px;color:var(--t2)">${r.change_detail||''}</td></tr>`).join('');
   const up=rows.filter(r=>r.change==='UP').length,nw=rows.filter(r=>r.change==='NEW').length,sm=rows.filter(r=>r.change==='SAME').length,dn=rows.filter(r=>r.change==='DOWN'||r.change==='REMOVED').length;
   document.getElementById('sumBoxes').innerHTML=isSolo
     ?`<div class="sum-box" style="background:var(--pri-l);grid-column:span 2"><div class="sum-num" style="color:var(--pri)">${rows.length}</div><div class="sum-lbl">전체 보장 항목</div></div><div class="sum-box sb-up"><div class="sum-num">${rows.filter(r=>r.before_amount&&r.before_amount!=='없음'&&r.before_amount!=='—').length}</div><div class="sum-lbl">보장 있음</div></div><div class="sum-box sb-dn"><div class="sum-num">${rows.filter(r=>!r.before_amount||r.before_amount==='없음').length}</div><div class="sum-lbl">미보장</div></div>`
@@ -2500,6 +2505,26 @@ function renderProductMgmt(d){
 }
 
 // ★ 담보별 보장 현황 — 미가입/부족/충분 한눈에 보기
+// ── 보장범위 계층 배지 ──
+const RANGE_BADGE={
+  '일반사망':      {label:'최광범위',color:'#1e40af',bg:'#dbeafe'},
+  '재해사망':      {label:'광범위',  color:'#2563eb',bg:'#eff6ff'},
+  '상해사망':      {label:'협소',    color:'#64748b',bg:'#f1f5f9'},
+  '질병사망':      {label:'질병한정',color:'#7c3aed',bg:'#f3eeff'},
+  '뇌혈관진단비':      {label:'최광범위',color:'#b45309',bg:'#fef3c7'},
+  '뇌졸중진단비':      {label:'광범위',  color:'#92400e',bg:'#fef9e7'},
+  '뇌출혈진단비':      {label:'협소',    color:'#64748b',bg:'#f1f5f9'},
+  '심장질환진단비':        {label:'최광범위',color:'#dc2626',bg:'#fef2f2'},
+  '특정심장질환진단비':    {label:'최광범위',color:'#dc2626',bg:'#fef2f2'},
+  '허혈성심장질환진단비':  {label:'광범위',  color:'#be185d',bg:'#fdf2f8'},
+  '급성심근경색진단비':    {label:'협소',    color:'#64748b',bg:'#f1f5f9'},
+};
+function getRangeBadge(item){
+  const b=RANGE_BADGE[item];
+  if(!b) return '';
+  return `<span style="font-size:9px;font-weight:700;color:${b.color};background:${b.bg};padding:1px 5px;border-radius:8px;margin-left:4px;vertical-align:middle">${b.label}</span>`;
+}
+
 function renderCovStatusGrid(d){
   const el=document.getElementById('covStatusGrid');
   if(!el) return;
@@ -2571,7 +2596,7 @@ function renderCovStatusGrid(d){
           style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(220,38,38,.25);cursor:pointer;transition:all .15s;"
           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(220,38,38,.15)'"
           onmouseout="this.style.transform='';this.style.boxShadow=''">
-          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">${i.item}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">${i.item}${getRangeBadge(i.item)}</div>
           <div style="font-size:11px;color:var(--red);">❌ 미가입</div>
           ${i.recommend?`<div style="font-size:10px;color:var(--t3);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억':i.recommend.toLocaleString()+'만'}원</div>`:''}
           <div style="font-size:10px;color:var(--pri);margin-top:3px;">✏️ 클릭하여 수정</div>
@@ -2588,7 +2613,7 @@ function renderCovStatusGrid(d){
           style="padding:9px 12px;background:#fff;border-radius:8px;border:1.5px solid rgba(234,88,12,.25);cursor:pointer;transition:all .15s;"
           onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 12px rgba(234,88,12,.15)'"
           onmouseout="this.style.transform='';this.style.boxShadow=''">
-          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">${i.item}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px;">${i.item}${getRangeBadge(i.item)}</div>
           <div style="font-size:11px;color:var(--orange);">⚠️ ${i.amount?i.amount.toLocaleString()+'만원':'확인필요'}</div>
           ${i.recommend?`<div style="font-size:10px;color:var(--t3);">권장: ${i.recommend>=10000?(i.recommend/10000)+'억':i.recommend.toLocaleString()+'만'}원</div>`:''}
           <div style="font-size:10px;color:var(--pri);margin-top:3px;">✏️ 클릭하여 수정</div>
@@ -2860,6 +2885,7 @@ const INFO_DATA={
       {num:'55%',       desc:'유가족 생계 위기 경험 비율',     color:'#d97706'},
       {num:'1/3',       desc:'사망보험 미가입·보장 부족',      color:'#7c3aed'},
     ],
+    deathVenn:true,
     bars:[{l:'30대',v:75,c:'#3b82f6'},{l:'40대',v:88,c:'#1d4ed8'},{l:'50대',v:100,c:'#1e3a8a'},{l:'60대+',v:92,c:'#172554'}],
     barTitle:'연령대별 사망보험 필요도 지수',
     tip:{color:'#1e40af',bg:'#eff6ff',text:'💡 <strong>보장 포인트</strong> : 최소 3~5억 이상. 대출 + 자녀 교육비 + 생활비 10년치 합산. 정기·종신 혼합 구성 검토.'}
@@ -2884,6 +2910,7 @@ const INFO_DATA={
       {num:'4,200만원', desc:'평균 총치료비',          color:'#d97706'},
       {num:'70.7%',     desc:'5년 생존율',             color:'#16a34a'},
     ],
+    chemoVenn:true,
     extra:[
       {icon:'🏥',label:'입원 치료',val:'전체의 약 28%',note:'점점 감소 추세',color:'#0369a1',bg:'#e0f2fe'},
       {icon:'🚶',label:'통원 치료',val:'전체의 약 72%',note:'★ 통원이 압도적으로 많음',color:'#16a34a',bg:'#f0fdf4'},
@@ -3455,6 +3482,209 @@ function buildCard(id,d){
     html+=`</div></div>`;
   }
 
+  // ── 사망 종류 벤다이어그램 ──
+  if(d.deathVenn){
+    html+=`<div style="margin-top:2px">
+      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">⚠️ 사망 보험금 지급 기준 — 범위 이해</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start">
+        <!-- 벤다이어그램 SVG -->
+        <div style="background:linear-gradient(135deg,#eff6ff,#fff);border-radius:10px;border:1px solid #bfdbfe;padding:12px;display:flex;flex-direction:column;align-items:center">
+          <div style="font-size:11px;font-weight:700;color:#1e40af;margin-bottom:8px">사망 보험금 지급 구조</div>
+          <svg viewBox="0 0 260 160" width="100%" style="max-width:240px">
+            <!-- 외곽: 일반사망 -->
+            <rect x="4" y="4" width="252" height="152" rx="18" ry="18" fill="#fef9f0" stroke="#f59e0b" stroke-width="2.5"/>
+            <text x="130" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">일반사망</text>
+            <!-- 좌: 질병사망 -->
+            <circle cx="82" cy="95" r="56" fill="rgba(239,68,68,0.82)" />
+            <text x="82" y="91" text-anchor="middle" font-size="12" font-weight="700" fill="white">질병사망</text>
+            <text x="82" y="106" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">질병·노환</text>
+            <!-- 우: 재해사망 -->
+            <circle cx="182" cy="95" r="46" fill="rgba(251,191,36,0.75)" />
+            <text x="182" y="87" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">재해사망</text>
+            <!-- 우안쪽: 상해사망 -->
+            <circle cx="188" cy="100" r="28" fill="rgba(255,237,213,0.92)" stroke="#f97316" stroke-width="1.5"/>
+            <text x="188" y="97" text-anchor="middle" font-size="10" font-weight="700" fill="#c2410c">상해</text>
+            <text x="188" y="110" text-anchor="middle" font-size="9" fill="#c2410c">사망</text>
+          </svg>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px;text-align:center">재해사망 ⊃ 상해사망 (상해는 재해의 부분집합)</div>
+        </div>
+        <!-- 설명 테이블 -->
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="padding:7px 10px;border-radius:7px;background:#eff6ff;border-left:3px solid #1e40af">
+            <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:2px">🔵 일반사망 (최광범위)</div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">질병사망 + 재해사망 모두 포함<br><span style="color:var(--t3)">어떤 원인으로 사망해도 지급</span></div>
+          </div>
+          <div style="padding:7px 10px;border-radius:7px;background:#fef2f2;border-left:3px solid #dc2626">
+            <div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:2px">🔴 질병사망</div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">암·심장·뇌혈관 등 질병으로 인한 사망<br><span style="color:var(--t3)">상해·재해 사망 시 미지급</span></div>
+          </div>
+          <div style="padding:7px 10px;border-radius:7px;background:#fff7ed;border-left:3px solid #f97316">
+            <div style="font-size:12px;font-weight:700;color:#ea580c;margin-bottom:2px">🟠 재해사망 ⊃ 상해사망</div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">재해사망은 상해사망보다 더 넓은 범위<br><span style="color:var(--t3)">교통사고·재난·산재 등 외부 요인</span></div>
+          </div>
+          <div style="padding:6px 10px;border-radius:6px;background:var(--gold-l);border:1px solid rgba(200,148,26,.2)">
+            <div style="font-size:11px;color:#92400e;line-height:1.6">💡 <strong>일반사망</strong> 담보가 있으면 재해·질병 구분 없이 지급 → 가장 유리</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── 뇌혈관 계층 시각화 (brain 카드) ──
+  if(id==='brain'){
+    html+=`<div style="margin-top:2px">
+      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">🧠 뇌혈관 보장 범위 계층도 — 넓을수록 有利</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start">
+        <!-- 계층 벤다이어그램 -->
+        <div style="background:linear-gradient(135deg,#fefce8,#fff);border-radius:10px;border:1px solid #fde68a;padding:10px;display:flex;flex-direction:column;align-items:center">
+          <svg viewBox="0 0 240 150" width="100%" style="max-width:220px">
+            <!-- 가장 넓음: 뇌혈관질환 -->
+            <ellipse cx="120" cy="75" rx="112" ry="66" fill="rgba(180,83,9,0.10)" stroke="#b45309" stroke-width="2.5"/>
+            <text x="120" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309">뇌혈관질환 (전체)</text>
+            <text x="120" y="32" text-anchor="middle" font-size="9" fill="#b45309">100% 포함</text>
+            <!-- 중간: 뇌졸중 -->
+            <ellipse cx="120" cy="82" rx="78" ry="46" fill="rgba(16,185,129,0.18)" stroke="#059669" stroke-width="2"/>
+            <text x="120" y="60" text-anchor="middle" font-size="10.5" font-weight="700" fill="#065f46">뇌졸중 52.2%</text>
+            <!-- 가장 좁음: 뇌출혈 / 뇌경색 -->
+            <ellipse cx="95" cy="90" rx="36" ry="26" fill="rgba(6,95,70,0.25)" stroke="#065f46" stroke-width="1.5"/>
+            <text x="95" y="87" text-anchor="middle" font-size="9" font-weight="700" fill="#022c22">뇌경색</text>
+            <text x="95" y="98" text-anchor="middle" font-size="8" fill="#022c22">44.4%</text>
+            <ellipse cx="152" cy="95" rx="24" ry="18" fill="rgba(180,83,9,0.28)" stroke="#b45309" stroke-width="1.5"/>
+            <text x="152" y="93" text-anchor="middle" font-size="8.5" font-weight="700" fill="#7c2d12">뇌출혈</text>
+            <text x="152" y="104" text-anchor="middle" font-size="8" fill="#7c2d12">8.5%</text>
+          </svg>
+          <div style="font-size:9px;color:var(--t3);text-align:center;margin-top:2px">출처: 건보공단 2023, 뇌혈관 환자 117만명 기준</div>
+        </div>
+        <!-- 보장 계층 설명 -->
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="padding:6px 9px;border-radius:7px;background:#fef3c7;border-left:3px solid #b45309">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:700;color:#b45309">✅✅ 뇌혈관질환 진단비</span>
+              <span style="font-size:10px;background:#b45309;color:#fff;padding:1px 6px;border-radius:9px">최우선</span>
+            </div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">전체 뇌혈관 질환 포함 (TIA 등)<br>가장 넓은 범위 → <strong>점수 최고</strong></div>
+          </div>
+          <div style="padding:6px 9px;border-radius:7px;background:#f0fdf4;border-left:3px solid #16a34a">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:700;color:#16a34a">✅ 뇌졸중 진단비</span>
+              <span style="font-size:10px;background:#16a34a;color:#fff;padding:1px 6px;border-radius:9px">권장</span>
+            </div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">뇌출혈 + 뇌경색 합산 보장<br>뇌혈관질환보다 협소</div>
+          </div>
+          <div style="padding:6px 9px;border-radius:7px;background:var(--slate);border-left:3px solid var(--t3)">
+            <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:2px">⚠️ 뇌출혈 / 뇌경색 (각각)</div>
+            <div style="font-size:11px;color:var(--t2);line-height:1.5">가장 좁은 범위. 뇌출혈만 = 8.5%만 해당<br>나머지 91.5% 미보장</div>
+          </div>
+          <div style="padding:5px 9px;border-radius:6px;background:#fef9e7;border:1px solid rgba(200,148,26,.2);font-size:11px;color:#92400e;line-height:1.5">
+            💡 뇌혈관질환 &gt; 뇌졸중 &gt; 뇌출혈<br>범위 넓을수록 보장 유리 → <strong>점수 높음</strong>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── 심장 계층 시각화 (heart 카드) ──
+  if(id==='heart'){
+    html+=`<div style="margin-top:2px">
+      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">❤️ 심장 보장 범위 계층도 — 넓을수록 有利</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start">
+        <!-- 계층 벤다이어그램 -->
+        <div style="background:linear-gradient(135deg,#fff1f2,#fff);border-radius:10px;border:1px solid #fecdd3;padding:10px;display:flex;flex-direction:column;align-items:center">
+          <svg viewBox="0 0 240 150" width="100%" style="max-width:220px">
+            <!-- 최광범위: 특정심장질환 -->
+            <ellipse cx="120" cy="75" rx="112" ry="66" fill="rgba(220,38,38,0.08)" stroke="#dc2626" stroke-width="2.5"/>
+            <text x="120" y="18" text-anchor="middle" font-size="10.5" font-weight="700" fill="#dc2626">특정심장질환 (전체)</text>
+            <text x="120" y="30" text-anchor="middle" font-size="9" fill="#dc2626">33.4% — 부정맥·심부전·판막 포함</text>
+            <!-- 중간: 허혈성심장질환 -->
+            <ellipse cx="115" cy="85" rx="80" ry="48" fill="rgba(190,24,93,0.15)" stroke="#be185d" stroke-width="2"/>
+            <text x="115" y="60" text-anchor="middle" font-size="10" font-weight="700" fill="#9d174d">허혈성심장질환 55.7%</text>
+            <!-- 가장 좁음: 급성심근경색 -->
+            <ellipse cx="115" cy="95" rx="46" ry="32" fill="rgba(157,23,77,0.25)" stroke="#9d174d" stroke-width="1.5"/>
+            <text x="115" y="90" text-anchor="middle" font-size="9.5" font-weight="700" fill="#500724">급성심근경색</text>
+            <text x="115" y="103" text-anchor="middle" font-size="8.5" fill="#500724">10.9%</text>
+          </svg>
+          <div style="font-size:9px;color:var(--t3);text-align:center;margin-top:2px">출처: 건보공단 2023, 심장질환 환자 183만명 기준</div>
+        </div>
+        <!-- 보장 계층 설명 -->
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="padding:6px 9px;border-radius:7px;background:#fef2f2;border-left:3px solid #dc2626">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:700;color:#dc2626">✅✅ 특정심장질환 진단비</span>
+              <span style="font-size:10px;background:#dc2626;color:#fff;padding:1px 6px;border-radius:9px">최우선</span>
+            </div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">허혈성 + 부정맥·심부전·판막질환 포함<br>가장 넓은 범위 → <strong>점수 최고</strong></div>
+          </div>
+          <div style="padding:6px 9px;border-radius:7px;background:#fdf2f8;border-left:3px solid #be185d">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:700;color:#be185d">✅ 허혈성심장질환 진단비</span>
+              <span style="font-size:10px;background:#be185d;color:#fff;padding:1px 6px;border-radius:9px">권장</span>
+            </div>
+            <div style="font-size:11px;color:var(--t1);line-height:1.5">심근경색 + 협심증 등 혈류 부족 질환<br>특정심장질환보다 협소</div>
+          </div>
+          <div style="padding:6px 9px;border-radius:7px;background:var(--slate);border-left:3px solid var(--t3)">
+            <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:2px">⚠️ 급성심근경색 진단비</div>
+            <div style="font-size:11px;color:var(--t2);line-height:1.5">가장 좁은 범위. 10.9%만 해당<br>나머지 89.1% 심장 질환 미보장</div>
+          </div>
+          <div style="padding:5px 9px;border-radius:6px;background:#fef2f2;border:1px solid rgba(220,38,38,.2);font-size:11px;color:#9d174d;line-height:1.5">
+            💡 특정심장질환 &gt; 허혈성 &gt; 급성심근경색<br>범위 넓을수록 보장 유리 → <strong>점수 높음</strong>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── 항암치료 계층 시각화 (cancer 카드) ──
+  if(d.chemoVenn){
+    html+=`<div style="margin-top:2px">
+      <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">💊 항암치료 보장 계층도 — 광범위 담보가 더 유리</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start">
+        <!-- 항암약물 계층 -->
+        <div style="background:linear-gradient(135deg,#fdf4ff,#fff);border-radius:10px;border:1px solid #e9d5ff;padding:10px">
+          <div style="font-size:11px;font-weight:700;color:#7c3aed;text-align:center;margin-bottom:6px">💊 항암약물치료 계층</div>
+          <svg viewBox="0 0 200 140" width="100%">
+            <!-- 최광범위: 일반항암약물 -->
+            <ellipse cx="100" cy="70" rx="92" ry="60" fill="rgba(124,58,237,0.08)" stroke="#7c3aed" stroke-width="2.5"/>
+            <text x="100" y="20" text-anchor="middle" font-size="10" font-weight="700" fill="#7c3aed">일반항암약물·방사선</text>
+            <text x="100" y="32" text-anchor="middle" font-size="8.5" fill="#7c3aed">100% 보장 (1~4세대)</text>
+            <!-- 중간: 표적항암 -->
+            <ellipse cx="100" cy="82" rx="62" ry="40" fill="rgba(5,150,105,0.15)" stroke="#059669" stroke-width="2"/>
+            <text x="100" y="58" text-anchor="middle" font-size="9.5" font-weight="700" fill="#065f46">표적항암·면역항암</text>
+            <text x="100" y="70" text-anchor="middle" font-size="8" fill="#065f46">유전자 변이 확인 필요</text>
+            <!-- 가장 좁음: 항암방사선 특수 -->
+            <ellipse cx="100" cy="95" rx="38" ry="26" fill="rgba(6,95,70,0.25)" stroke="#065f46" stroke-width="1.5"/>
+            <text x="100" y="91" text-anchor="middle" font-size="9" font-weight="700" fill="#022c22">항암방사선</text>
+            <text x="100" y="103" text-anchor="middle" font-size="8" fill="#022c22">양성자·중입자</text>
+          </svg>
+          <div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">
+            <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t2)">
+              <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;flex-shrink:0"></span>
+              <span>일반항암약물 ⊃ 표적항암 ⊃ 중입자</span>
+            </div>
+            <div style="font-size:10px;color:#7c3aed;font-weight:600;padding:3px 6px;background:#fdf4ff;border-radius:4px">넓을수록 → 보장 범위 ↑ 점수 ↑</div>
+          </div>
+        </div>
+        <!-- 설명 테이블 -->
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="padding:6px 9px;border-radius:7px;background:#fdf4ff;border-left:3px solid #7c3aed">
+            <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:2px">✅✅ 일반항암약물·방사선 (최광범위)</div>
+            <div style="font-size:10.5px;color:var(--t1);line-height:1.5">1~4세대 모든 항암 약물 보장<br>新 약물도 방사선도 보장 가능</div>
+          </div>
+          <div style="padding:6px 9px;border-radius:7px;background:#f0fdf4;border-left:3px solid #16a34a">
+            <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px">✅ 표적항암·면역항암</div>
+            <div style="font-size:10.5px;color:var(--t1);line-height:1.5">유전자 변이 확인된 환자만 적용<br>변이 없으면 치료 불가 → 보장 불가</div>
+          </div>
+          <div style="padding:6px 9px;border-radius:7px;background:var(--slate);border-left:3px solid var(--t3)">
+            <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:2px">⚠️ 항암방사선 (양성자·중입자)</div>
+            <div style="font-size:10.5px;color:var(--t2);line-height:1.5">간암·췌장암·폐암 등 일부 암종만 적용<br>가장 좁은 범위</div>
+          </div>
+          <div style="padding:5px 9px;border-radius:6px;background:#fdf4ff;border:1px solid rgba(124,58,237,.2);font-size:10.5px;color:#6d28d9;line-height:1.5">
+            💡 중입자·양성자 &lt; 표적항암 &lt; 일반항암약물<br>→ 상위 담보일수록 하위 치료도 포함
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // ── 중입자치료 — 4열 컴팩트 ──
   if(d.heavyIon){
     html+=`<div style="border:1.5px solid rgba(124,58,237,.2);border-radius:7px;overflow:hidden">
@@ -3937,12 +4167,102 @@ function openContractDetail(i){
   const idx=isNew?i-1000:i;
   const c=isNew?(S.newProposals||[])[idx]:(S.existingContracts||[])[idx];
   if(!c) return;
-  const covs=c.coverages||[];
 
+  // 신규제안 → 수정 팝업 (openNewProposalPopup과 동일 UI)
+  if(isNew){
+    document.getElementById('covEditPopup')?.remove();
+    document.getElementById('covPopupOverlay')?.remove();
+    // 기존 데이터를 S._npCovs에 로드
+    S._npCovs=[...(c.coverages||[]).map(cv=>({...cv}))];
+    const cats=[...new Set(COV_MASTER.map(x=>x.cat))];
+    const popup=document.createElement('div');
+    popup.id='covEditPopup';
+    popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.25);width:min(560px,94vw);max-height:88vh;overflow-y:auto;padding:24px;font-family:"Noto Sans KR",sans-serif;';
+    popup.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">✏️ 신규제안 수정 — ${c.insurer||'보험사'} ${c.product||'상품명'}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">카테고리 선택 → 담보 클릭 → 금액 입력</div>
+        </div>
+        <button onclick="document.getElementById('covEditPopup').remove();document.getElementById('covPopupOverlay').remove();"
+          style="width:28px;height:28px;border-radius:50%;border:none;background:#f1f5f9;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <!-- 계약 기본 정보 수정 -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--slate);border-radius:9px;">
+        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:8px;">📋 계약 기본 정보</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div><label style="font-size:10px;color:var(--t3);display:block;margin-bottom:2px;">보험사</label>
+            <input id="ep_insurer" class="fc" value="${c.insurer||''}" style="font-size:12px;"></div>
+          <div><label style="font-size:10px;color:var(--t3);display:block;margin-bottom:2px;">상품명</label>
+            <input id="ep_product" class="fc" value="${c.product||''}" style="font-size:12px;"></div>
+          <div><label style="font-size:10px;color:var(--t3);display:block;margin-bottom:2px;">월보험료(원)</label>
+            <input id="ep_premium" class="fc" type="number" value="${c.premium||0}" style="font-size:12px;"></div>
+          <div><label style="font-size:10px;color:var(--t3);display:block;margin-bottom:2px;">납입기간</label>
+            <input id="ep_period" class="fc" value="${c.period||''}" style="font-size:12px;" placeholder="20년납"></div>
+          <div><label style="font-size:10px;color:var(--t3);display:block;margin-bottom:2px;">보장기간</label>
+            <input id="ep_maturity" class="fc" value="${c.maturity||''}" style="font-size:12px;" placeholder="100세"></div>
+          <div style="display:flex;align-items:flex-end;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#fff;border-radius:7px;border:1.5px solid ${c.isRenewal?'#f59e0b':'var(--border)'};width:100%;">
+              <input type="checkbox" id="ep_renewal" ${c.isRenewal?'checked':''} style="width:13px;height:13px;accent-color:#f59e0b;">
+              <span style="font-size:11px;font-weight:700;color:#b45309;">🔄 갱신형</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <!-- 빠른설정 -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:#f8fafc;border-radius:7px;">
+        <span style="font-size:10px;font-weight:700;color:var(--t3);align-self:center;">⚡ 빠른설정</span>
+        <span style="font-size:10px;color:var(--t3);align-self:center;">실손</span>
+        ${['1세대','2세대','3세대','4세대'].map(gen=>`
+        <button onclick="applyManualPreset('silson','${gen}')"
+          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #0369a1;background:#e0f2fe;color:#0369a1;">${gen}</button>`).join('')}
+        <span style="font-size:10px;color:var(--t3);align-self:center;margin-left:4px;">운전자</span>
+        <button onclick="applyManualPreset('driver','')"
+          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #d97706;background:#fef9c7;color:#d97706;">기본값</button>
+        <span style="font-size:10px;color:var(--t3);align-self:center;margin-left:4px;">납입면제</span>
+        <button onclick="applyManualPreset('waiver','')"
+          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #7c3aed;background:#f5f3ff;color:#7c3aed;">기본값</button>
+      </div>
+      <!-- 카테고리 탭 -->
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;" id="npCatBtns">
+        ${cats.map(cat=>{const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9',icon:'🛡'};return `<button onclick="npFilterCat('${cat}')" id="npCat_${cat.replace(/[^가-힣a-z]/gi,'_')}" style="padding:4px 9px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${cs.color}33;background:${cs.bg};color:${cs.color};">${cs.icon} ${cat}</button>`;}).join('')}
+        <button onclick="npFilterCat('기타')" id="npCat___" style="padding:4px 9px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #64748b33;background:#f8fafc;color:#64748b;">📝 기타</button>
+      </div>
+      <div id="npItemGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:140px;overflow-y:auto;margin-bottom:8px;"></div>
+      <div id="npEtcInput" style="display:none;margin-bottom:8px;padding:10px;background:#f8fafc;border-radius:7px;">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:5px;">📝 기타 담보 직접 입력</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="npEtcName" class="fc" placeholder="담보명" style="flex:1;font-size:12px;">
+          <input id="npEtcAmt" class="fc" type="number" placeholder="금액(만원)" style="width:90px;font-size:12px;">
+          <button onclick="addNpEtcCov()" style="padding:6px 12px;background:var(--pri);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">추가</button>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:5px;">선택된 담보</div>
+        <div id="npSelectedCovs"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="document.getElementById('covEditPopup').remove();document.getElementById('covPopupOverlay').remove();"
+          style="padding:11px;background:#f1f5f9;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--t2);">취소</button>
+        <button onclick="saveEditedProposal(${idx})"
+          style="padding:11px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--pri),#6366f1);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✅ 수정 저장</button>
+      </div>`;
+    const overlay=document.createElement('div');
+    overlay.id='covPopupOverlay';
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;';
+    overlay.onclick=()=>{popup.remove();overlay.remove();};
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+    npFilterCat('암');
+    renderNpSelectedCovs();
+    return;
+  }
+
+  // 기존 계약 → 기존 팝업 유지
+  const covs=c.coverages||[];
   const popup=document.createElement('div');
   popup.id='contractDetailPopup';
   popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.25);width:min(540px,94vw);max-height:85vh;overflow-y:auto;padding:24px;font-family:"Noto Sans KR",sans-serif;';
-
   popup.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div>
@@ -3958,7 +4278,7 @@ function openContractDetail(i){
         ${covs.length?covs.map((cv,ci)=>`
           <div style="display:grid;grid-template-columns:1fr 100px 40px auto;gap:6px;align-items:center;padding:7px 10px;background:${ci%2===0?'#fff':'#f8fafc'};border-radius:6px;border:1px solid var(--border);">
             <span style="font-size:12px;font-weight:600;">${cv.item||''}</span>
-            <input type="number" value="${cv.amount||cv.value||0}" min="0" style="border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace;"
+            <input type="number" value="${cv.amount||0}" min="0" style="border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace;"
               oninput="updateCovDetail(${i},${ci},this.value)">
             <span style="font-size:10px;color:var(--t3);">만원</span>
             <button onclick="removeCovDetail(${i},${ci})" style="padding:3px 6px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:4px;font-size:11px;cursor:pointer;">✕</button>
@@ -3974,13 +4294,29 @@ function openContractDetail(i){
       <button onclick="saveContractDetail(${i});"
         style="padding:10px;background:linear-gradient(135deg,var(--pri),#6366f1);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:#fff;">✅ 저장</button>
     </div>`;
-
   const overlay=document.createElement('div');
   overlay.id='contractOverlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;';
   overlay.onclick=()=>{popup.remove();overlay.remove();};
   document.body.appendChild(overlay);
   document.body.appendChild(popup);
+}
+
+// 신규제안 수정 저장
+function saveEditedProposal(idx){
+  const p=(S.newProposals||[])[idx];
+  if(!p) return;
+  p.insurer=document.getElementById('ep_insurer')?.value||p.insurer;
+  p.product=document.getElementById('ep_product')?.value||p.product;
+  p.premium=parseInt(document.getElementById('ep_premium')?.value)||p.premium;
+  p.period=document.getElementById('ep_period')?.value||p.period;
+  p.maturity=document.getElementById('ep_maturity')?.value||p.maturity;
+  p.isRenewal=document.getElementById('ep_renewal')?.checked||false;
+  p.coverages=[...(S._npCovs||[])];
+  document.getElementById('covEditPopup')?.remove();
+  document.getElementById('covPopupOverlay')?.remove();
+  renderRemodelingArea();
+  showToast(`✅ ${p.insurer} ${p.product} 수정 완료`);
 }
 
 function updateCovDetail(contractIdx,covIdx,val){
@@ -4077,7 +4413,7 @@ function renderRemodelingArea(){
     ${proposals.map((p,i)=>`
       <div onclick="openContractDetail(${1000+i})" style="display:grid;grid-template-columns:10px 1fr auto auto;gap:8px;align-items:center;padding:9px 12px;margin-bottom:5px;border-radius:8px;border:1.5px solid rgba(22,163,74,.4);background:#fff;cursor:pointer;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='#fff'">
         <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.2);"></div>
-        <div><div style="font-size:12px;font-weight:700;color:var(--green);">✨ ${p.insurer} — ${p.product}</div>
+        <div><div style="font-size:12px;font-weight:700;color:var(--green);">✨ ${p.insurer} — ${p.product}${p.isRenewal?'<span style="margin-left:5px;background:#fef9c7;color:#b45309;padding:1px 6px;border-radius:8px;font-size:10px;">🔄갱신형</span>':''}</div>
           <div style="font-size:10px;color:var(--t3);">${p.period||''} / ${p.maturity||''} · ${(p.coverages||[]).length}개 담보 · ${(p.premium||0).toLocaleString()}원/월</div></div>
         <div style="font-size:10px;color:var(--pri);">🛡 클릭→상세·수정</div>
         <button onclick="event.stopPropagation();removeProposal(${i})" style="padding:3px 7px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:4px;font-size:10px;cursor:pointer;">삭제</button>
@@ -4126,15 +4462,46 @@ function openNewProposalPopup(){
         <div><label style="font-size:11px;color:var(--t3);display:block;margin-bottom:3px;">상품명</label><input id="np_product" class="fc" style="font-size:13px;" placeholder="예) KB종합보험"></div>
         <div><label style="font-size:11px;color:var(--t3);display:block;margin-bottom:3px;">월보험료(원)</label><input id="np_premium" class="fc" type="number" style="font-size:13px;" placeholder="0"></div>
         <div><label style="font-size:11px;color:var(--t3);display:block;margin-bottom:3px;">납입기간</label><input id="np_period" class="fc" style="font-size:13px;" placeholder="20년납"></div>
-        <div style="grid-column:1/-1;"><label style="font-size:11px;color:var(--t3);display:block;margin-bottom:3px;">보장기간</label><input id="np_maturity" class="fc" style="font-size:13px;" placeholder="100세"></div>
+        <div><label style="font-size:11px;color:var(--t3);display:block;margin-bottom:3px;">보장기간</label><input id="np_maturity" class="fc" style="font-size:13px;" placeholder="100세"></div>
+        <div style="display:flex;align-items:center;">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;padding:8px 12px;background:#fff;border-radius:7px;border:1.5px solid var(--border);width:100%;">
+            <input type="checkbox" id="np_renewal" style="width:15px;height:15px;accent-color:#f59e0b;cursor:pointer;">
+            <span style="font-size:12px;font-weight:700;color:#b45309;">🔄 갱신형</span>
+          </label>
+        </div>
       </div>
     </div>
     <div style="margin-bottom:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--t3);margin-bottom:8px;">🛡️ 제안 담보 선택 <span style="font-weight:400;font-size:11px;">(카테고리 클릭 후 담보 선택 → 금액 입력)</span></div>
+      <!-- 빠른 설정 -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;background:#f8fafc;border-radius:7px;">
+        <span style="font-size:10px;font-weight:700;color:var(--t3);align-self:center;">⚡ 빠른설정</span>
+        <span style="font-size:10px;color:var(--t3);align-self:center;">실손</span>
+        ${['1세대','2세대','3세대','4세대'].map(gen=>`
+        <button onclick="applyManualPreset('silson','${gen}')"
+          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #0369a1;background:#e0f2fe;color:#0369a1;">${gen}</button>`).join('')}
+        <span style="font-size:10px;color:var(--t3);align-self:center;margin-left:4px;">운전자</span>
+        <button onclick="applyManualPreset('driver','')"
+          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #d97706;background:#fef9c7;color:#d97706;">기본값</button>
+        <span style="font-size:10px;color:var(--t3);align-self:center;margin-left:4px;">납입면제</span>
+        <button onclick="applyManualPreset('waiver','')"
+          style="padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #7c3aed;background:#f5f3ff;color:#7c3aed;">기본값</button>
+      </div>
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;" id="npCatBtns">
         ${cats.map(cat=>{const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9',icon:'🛡'};return `<button onclick="npFilterCat('${cat}')" id="npCat_${cat.replace(/[^가-힣a-z]/gi,'_')}" style="padding:4px 9px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${cs.color}33;background:${cs.bg};color:${cs.color};">${cs.icon} ${cat}</button>`;}).join('')}
+        <button onclick="npFilterCat('기타')" id="npCat___" style="padding:4px 9px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #64748b33;background:#f8fafc;color:#64748b;">📝 기타</button>
       </div>
-      <div id="npItemGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:160px;overflow-y:auto;"></div>
+      <div id="npItemGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:150px;overflow-y:auto;"></div>
+      <!-- 기타 직접입력 영역 -->
+      <div id="npEtcInput" style="display:none;margin-top:8px;padding:10px;background:#f8fafc;border-radius:7px;">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:5px;">📝 기타 담보 직접 입력</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="npEtcName" class="fc" placeholder="담보명 직접 입력" style="flex:1;font-size:12px;">
+          <input id="npEtcAmt" class="fc" type="number" placeholder="금액(만원)" style="width:90px;font-size:12px;">
+          <button onclick="addNpEtcCov()"
+            style="padding:6px 12px;background:var(--pri);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">추가</button>
+        </div>
+      </div>
     </div>
     <div style="margin-bottom:14px;">
       <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;">선택된 담보 (금액 수정 가능)</div>
@@ -4156,19 +4523,35 @@ function openNewProposalPopup(){
 let npActiveCat='암';
 function npFilterCat(cat){
   npActiveCat=cat;
-  document.querySelectorAll('[id^="npCat_"]').forEach(b=>{b.style.opacity=b.id==='npCat_'+cat.replace(/[^가-힣a-z]/gi,'_')?'1':'.5';});
+  document.querySelectorAll('[id^="npCat_"]').forEach(b=>{b.style.opacity='0.5';});
+  const activeBtn=document.getElementById('npCat_'+cat.replace(/[^가-힣a-z]/gi,'_'));
+  if(activeBtn) activeBtn.style.opacity='1';
+  // 기타 탭
+  const etcDiv=document.getElementById('npEtcInput');
+  if(cat==='기타'){
+    if(etcDiv) etcDiv.style.display='';
+    const grid=document.getElementById('npItemGrid');
+    if(grid) grid.innerHTML='';
+    return;
+  }
+  if(etcDiv) etcDiv.style.display='none';
   const items=COV_MASTER.filter(c=>c.cat===cat);
   const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9'};
   const grid=document.getElementById('npItemGrid');
   if(!grid) return;
-  grid.innerHTML=items.map(c=>`
-    <div onclick="npToggleCov('${c.item}')" id="npItem_${c.item.replace(/[^가-힣a-z0-9]/gi,'_')}"
+  // 저축 안내
+  let header='';
+  if(cat==='저축') header=`<div style="grid-column:1/-1;padding:8px 10px;background:#f0f9ff;border-radius:6px;font-size:10px;color:#0369a1;margin-bottom:3px;">💡 저축보험은 사망·후유장해가 주계약. 금액란에 납입보험료(원) 입력 후 메모 추가</div>`;
+  grid.innerHTML=header+items.map(c=>{
+    const isNType=c.nType;
+    return `<div onclick="npToggleCov('${c.item}')" id="npItem_${c.item.replace(/[^가-힣a-z0-9]/gi,'_')}"
       style="padding:7px 10px;border-radius:6px;border:1.5px solid ${(S._npCovs||[]).find(x=>x.item===c.item)?cs.color:'var(--border)'};cursor:pointer;background:${(S._npCovs||[]).find(x=>x.item===c.item)?cs.bg:'#fff'};"
       onmouseover="this.style.borderColor='${cs.color}';this.style.background='${cs.bg}'"
       onmouseout="if(!(S._npCovs||[]).find(x=>x.item==='${c.item}')){this.style.borderColor='var(--border)';this.style.background='#fff';}">
       <div style="font-size:11px;font-weight:700;color:${cs.color};">${c.item}</div>
-      <div style="font-size:10px;color:var(--t3);">${c.desc||''}</div>
-    </div>`).join('');
+      <div style="font-size:10px;color:var(--t3);">${c.desc||''}${isNType?'<span style="color:'+cs.color+';font-weight:700;"> ✏️숫자변경</span>':''}</div>
+    </div>`;
+  }).join('');
 }
 function npToggleCov(itemName){
   if(!S._npCovs) S._npCovs=[];
@@ -4183,14 +4566,44 @@ function renderNpSelectedCovs(){
   if(!wrap) return;
   const covs=S._npCovs||[];
   if(!covs.length){wrap.innerHTML='<div style="color:var(--t3);font-size:11px;padding:6px;">카테고리에서 담보를 선택하세요</div>';return;}
-  wrap.innerHTML=covs.map((c,i)=>`
-    <div style="display:grid;grid-template-columns:1fr 90px 40px auto;gap:6px;align-items:center;padding:6px 9px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);margin-bottom:4px;">
-      <span style="font-size:12px;font-weight:600;">${c.item}</span>
-      <input type="number" value="${c.amount||0}" min="0" style="border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace;"
-        oninput="S._npCovs[${i}].amount=parseInt(this.value)||0">
-      <span style="font-size:10px;color:var(--t3);">만원</span>
-      <button onclick="S._npCovs.splice(${i},1);renderNpSelectedCovs()" style="padding:2px 6px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:3px;font-size:10px;cursor:pointer;">✕</button>
-    </div>`).join('');
+  const grouped={};
+  covs.forEach((c,i)=>{
+    const cat=c.cat||'기타';
+    if(!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push({...c,_idx:i});
+  });
+  wrap.innerHTML=Object.entries(grouped).map(([cat,items])=>{
+    const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9',icon:'🛡'};
+    const isSaving=cat==='저축';
+    const isWaiver=cat==='납입면제';
+    return `<div style="margin-bottom:6px;">
+      <div style="font-size:10px;font-weight:700;color:${cs.color};padding:2px 8px;background:${cs.bg};border-radius:4px;margin-bottom:3px;display:inline-block;">${cs.icon} ${cat}</div>
+      ${items.map(c=>{
+        const isNType=COV_MASTER.find(m=>m.item===c.item)?.nType;
+        return `<div style="margin-bottom:3px;">
+          <div style="display:grid;grid-template-columns:${isNType?'1fr 110px 28px 28px':'1fr 86px 28px 28px'};gap:5px;align-items:center;
+            padding:5px 8px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);">
+            ${isNType?
+              `<input type="text" value="${c.item}" style="border:1px solid #fbbf24;border-radius:4px;padding:3px 6px;font-size:11px;font-weight:700;background:#fffbeb;"
+                oninput="S._npCovs[${c._idx}].item=this.value" placeholder="예) 115대수술비">`:
+              `<span style="font-size:11px;font-weight:600;">${c.item}</span>`}
+            <input type="number" value="${c.amount||0}" min="0"
+              style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace;width:100%;"
+              oninput="S._npCovs[${c._idx}].amount=parseInt(this.value)||0">
+            <span style="font-size:10px;color:var(--t3);">${isWaiver?'적용':'만'}</span>
+            <button onclick="S._npCovs.splice(${c._idx},1);renderNpSelectedCovs();npFilterCat(npActiveCat);"
+              style="padding:2px 5px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:3px;font-size:11px;cursor:pointer;line-height:1;">✕</button>
+          </div>
+          ${isSaving?`<div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#f0f9ff;border-radius:4px;border:1px dashed #0369a1;">
+            <span style="font-size:10px;color:#0369a1;">메모:</span>
+            <input type="text" value="${c.memo||''}" placeholder="예) 사망·후유장해 주계약, 납입기간 등"
+              style="flex:1;border:none;background:transparent;font-size:10px;color:var(--t1);outline:none;"
+              oninput="S._npCovs[${c._idx}].memo=this.value">
+          </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
 }
 function confirmNewProposal(){
   const insurer=document.getElementById('np_insurer')?.value.trim()||'';
@@ -4198,13 +4611,14 @@ function confirmNewProposal(){
   const premium=parseInt(document.getElementById('np_premium')?.value)||0;
   const period=document.getElementById('np_period')?.value.trim()||'';
   const maturity=document.getElementById('np_maturity')?.value.trim()||'';
+  const isRenewal=document.getElementById('np_renewal')?.checked||false;
   if(!insurer&&!product){alert('보험사명 또는 상품명을 입력해주세요.');return;}
   if(!S.newProposals) S.newProposals=[];
-  S.newProposals.push({insurer,product,premium,period,maturity,coverages:[...(S._npCovs||[])]});
+  S.newProposals.push({insurer,product,premium,period,maturity,isRenewal,coverages:[...(S._npCovs||[])]});
   document.getElementById('covEditPopup')?.remove();
   document.getElementById('covPopupOverlay')?.remove();
   renderRemodelingArea();
-  showToast('✅ '+insurer+' '+product+' 제안이 추가되었습니다');
+  showToast('✅ '+insurer+' '+product+' 제안이 추가되었습니다'+(isRenewal?' (갱신형)':''));
 }
 
 // STEP4: 비교 리포트 생성
@@ -4495,13 +4909,13 @@ function renderPrintContractSummary(contracts, beforePrem, afterPrem){
           <span style="font-size:10px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:10px;">유지</span>
         </div>`).join('')}
         ${newCs.map(c=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:6px;background:#f0fdf4;margin-bottom:4px;border-left:3px solid #16a34a;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:6px;background:#ecfdf5;margin-bottom:4px;border-left:3px solid #16a34a;">
           <div>
-            <div style="font-size:11px;font-weight:700;color:var(--green);">${c.insurer}</div>
+            <div style="font-size:11px;font-weight:700;color:#16a34a;">${c.insurer} <span style="font-weight:400;color:#64748b;">✦신규</span>${c.isRenewal?'<span style="margin-left:4px;background:#fef9c7;color:#b45309;padding:1px 5px;border-radius:8px;font-size:10px;">🔄갱신형</span>':''}</div>
             <div style="font-size:10px;color:var(--t3);">${c.product||''}</div>
           </div>
-          <div style="font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--green);">${(c.premium||0).toLocaleString()}원</div>
-          <span style="font-size:10px;background:var(--green-l);color:var(--green);padding:2px 6px;border-radius:10px;font-weight:700;">신규</span>
+          <div style="font-size:11px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:#16a34a;">${(c.premium||0).toLocaleString()}원</div>
+          <span style="font-size:10px;background:#dcfce7;color:#16a34a;padding:2px 6px;border-radius:10px;font-weight:700;">신규</span>
         </div>`).join('')}
         ${newCs.length===0&&deleted.length>0?`
         <div style="padding:12px;color:var(--t3);font-size:12px;text-align:center;">신규 제안 없음</div>`:''}
@@ -4534,13 +4948,31 @@ function renderFullCompareReport(rows, contracts, beforePrem, afterPrem){
       const vals=keys.map(k=>({v:covMap[k]||0,r:RECOMMEND_D[k]||0})).filter(x=>x.r>0);
       if(!vals.length) return 0;
       return Math.round(Math.min(vals.reduce((s,x)=>s+Math.min(x.v/x.r,1.5),0)/vals.length,1)*100);
-    }
-    const d=sg(['질병사망','상해사망']);
+    };
+    // 계층 점수: 넓은 범위 담보 우선 적용
+    const sh=(hierarchy, rec)=>{
+      for(const h of hierarchy){
+        const v=covMap[h.key]||0;
+        if(v>0) return Math.round(Math.min((v*h.factor)/rec,1.5)*100);
+      }
+      return 0;
+    };
+    const BRAIN_H=[{key:'뇌혈관진단비',factor:1.0},{key:'뇌졸중진단비',factor:0.9},{key:'뇌출혈진단비',factor:0.75}];
+    const HEART_H=[{key:'심장질환진단비',factor:1.0},{key:'특정심장질환진단비',factor:1.0},{key:'허혈성심장질환진단비',factor:0.88},{key:'급성심근경색진단비',factor:0.70}];
+    const DEATH_H=[{key:'일반사망',factor:1.0},{key:'재해사망',factor:0.9},{key:'상해사망',factor:0.85}];
+    const brainRec=RECOMMEND_D['뇌혈관진단비']||3000;
+    const heartRec=RECOMMEND_D['심장질환진단비']||RECOMMEND_D['허혈성심장질환진단비']||3000;
+    const deathRec=RECOMMEND_D['일반사망']||RECOMMEND_D['질병사망']||5000;
+    const ciBrain=sh(BRAIN_H,brainRec);
+    const ciHeart=sh(HEART_H,heartRec);
+    const ciScore=Math.round((ciBrain+ciHeart)/2);
+    const deathHier=sh(DEATH_H,deathRec);
+    const deathDisease=sg(['질병사망']);
+    const d=deathHier>0?Math.max(deathHier,deathDisease):deathDisease;
     const c=sg(['일반암진단비','고액항암치료비','암주요치료비']);
-    const ci=sg(['뇌혈관진단비','허혈성심장질환진단비']);
     const su=sg(['질병입원의료비','암수술비','뇌혈관수술비']);
     const ac=sg(['교통사고처리지원금','변호사선임비용']);
-    return {total:Math.round(d*0.15+c*0.25+ci*0.25+su*0.2+ac*0.15),death:d,cancer:c,ci,surgery:su,accident:ac};
+    return {total:Math.round(d*0.15+c*0.25+ciScore*0.25+su*0.2+ac*0.15),death:d,cancer:c,ci:ciScore,surgery:su,accident:ac};
   }
   // before 담보맵
   const beforeCovMap={};
@@ -4585,16 +5017,22 @@ function renderFullCompareReport(rows, contracts, beforePrem, afterPrem){
 
   // ── 계약 테이블 ──
   const contractRows=contracts.map(c=>`
-  <tr style="background:${c.isDel||c.action==='delete'?'#fff5f5':c.isNew?'#f0fdf4':'#fff'};">
-    <td style="padding:7px 10px;font-weight:700;color:${c.isDel||c.action==='delete'?'#dc2626':c.isNew?'var(--green)':'var(--navy)'};${c.isDel||c.action==='delete'?'text-decoration:line-through;':''}">${c.insurer}</td>
-    <td style="padding:7px 10px;font-size:11px;${c.isDel||c.action==='delete'?'text-decoration:line-through;color:#dc2626;':c.isNew?'color:var(--green);':''}">${c.product}${c.isNew?'<span style="margin-left:5px;background:var(--green-l);color:var(--green);padding:1px 5px;border-radius:4px;font-size:10px;">신규</span>':''}</td>
+  <tr style="background:${c.isDel||c.action==='delete'?'#fff5f5':c.isNew?'#ecfdf5':'#fff'};border-left:4px solid ${c.isNew?'#16a34a':c.isDel||c.action==='delete'?'#dc2626':'transparent'};">
+    <td style="padding:7px 10px;font-weight:700;color:${c.isDel||c.action==='delete'?'#dc2626':c.isNew?'#16a34a':'var(--navy)'};${c.isDel||c.action==='delete'?'text-decoration:line-through;':''}">${c.insurer||'-'}</td>
+    <td style="padding:7px 10px;font-size:11px;${c.isDel||c.action==='delete'?'text-decoration:line-through;color:#dc2626;':c.isNew?'color:#16a34a;font-weight:700;':''}">
+      ${c.product||'-'}
+      ${c.isNew?'<span style="margin-left:5px;background:#dcfce7;color:#16a34a;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;">✦ 신규</span>':''}
+      ${c.isRenewal?'<span style="margin-left:4px;background:#fef9c7;color:#b45309;padding:2px 6px;border-radius:10px;font-size:10px;font-weight:700;">🔄 갱신형</span>':''}
+    </td>
     <td style="padding:7px 10px;text-align:center;color:var(--t2);">${c.period||'-'}</td>
     <td style="padding:7px 10px;text-align:center;color:var(--t2);">${c.maturity||'-'}</td>
-    <td style="padding:7px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;">${(c.premium||0).toLocaleString()}</td>
+    <td style="padding:7px 10px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:${c.isNew?'#16a34a':'var(--t1)'};">${(c.premium||0).toLocaleString()}</td>
     <td style="padding:7px 10px;text-align:center;">
-      ${c.isDel||c.action==='delete'?'<span style="background:var(--red-l);color:var(--red);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;">해지</span>':
-        c.isNew?'<span style="background:var(--green-l);color:var(--green);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;">신규</span>':
-        '<span style="background:var(--slate);color:var(--t2);padding:3px 8px;border-radius:5px;font-size:11px;">유지</span>'}
+      ${c.isDel||c.action==='delete'
+        ?'<span style="background:var(--red-l);color:var(--red);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;">해지</span>'
+        :c.isNew
+          ?'<span style="background:#dcfce7;color:#16a34a;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;">신규</span>'
+          :'<span style="background:var(--slate);color:var(--t2);padding:3px 8px;border-radius:5px;font-size:11px;">유지</span>'}
     </td>
   </tr>`).join('');
 
@@ -4859,7 +5297,7 @@ function renderPropCovGrid(){
       const beforeVal=S.result?.coverage_detail?.[c.item]||0;
       return `<div style="display:flex;align-items:center;gap:5px;padding:5px 8px;background:#fff;border-radius:6px;border:1px solid var(--border);">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.item}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.item}${getRangeBadge(c.item)}</div>
           ${beforeVal?`<div style="font-size:10px;color:var(--t3);">현재: ${beforeVal.toLocaleString()}만</div>`:''}
         </div>
         <input type="number" id="pcov_${idSafe}" value="${curVal}" min="0" step="100"
@@ -4925,18 +5363,69 @@ function applyPropAndCompare(prop){
   const beforeTotal=S.result.before?.total_premium||0;
   const afterTotal=prop.contracts.reduce((s,c)=>s+(c.premium||0),0);
 
-  // 점수 계산
+  // 점수 계산 (보장범위 계층 반영)
+  // 뇌혈관: 뇌혈관질환 > 뇌졸중 > 뇌출혈 (더 넓은 범위 = 동일 금액도 더 높은 점수)
+  // 심장: 특정심장질환 > 허혈성심장질환 > 급성심근경색
+  // 항암: 일반항암약물 > 표적항암 > 중입자·양성자 (더 넓은 담보 = 더 유리)
+  const COVERAGE_HIERARCHY = {
+    // 뇌혈관: 범위계수 (뇌혈관=1.0, 뇌졸중=0.9, 뇌출혈=0.75)
+    brain: [
+      {key:'뇌혈관진단비',   factor:1.00},
+      {key:'뇌졸중진단비',   factor:0.90},
+      {key:'뇌출혈진단비',   factor:0.75},
+    ],
+    // 심장: 범위계수 (특정심장=1.0, 허혈성=0.88, 급성심근경색=0.70)
+    heart: [
+      {key:'심장질환진단비',        factor:1.00},
+      {key:'특정심장질환진단비',    factor:1.00},
+      {key:'허혈성심장질환진단비',  factor:0.88},
+      {key:'급성심근경색진단비',    factor:0.70},
+    ],
+    // 사망: 일반사망 > 재해사망 > 상해사망 / 질병사망 별도
+    death: [
+      {key:'일반사망',   factor:1.00},
+      {key:'재해사망',   factor:0.90},
+      {key:'상해사망',   factor:0.85},
+    ],
+  };
+  // 뇌혈관 계층 점수: 가장 넓은 범위의 담보 금액 × 해당 계수로 환산 후 권장 대비 달성률
+  const scoreHierarchy=(hierarchy, detail, recommend)=>{
+    for(const h of hierarchy){
+      const v=detail[h.key]||0;
+      if(v>0){
+        // 이 담보가 있으면: 금액 × 범위계수로 보정 후 최광범위(factor=1.0) 기준 달성률 계산
+        const effectiveVal = v * h.factor;
+        return Math.round(Math.min(effectiveVal / recommend, 1.5) * 100);
+      }
+    }
+    return 0;
+  };
+  const BRAIN_REC = RECOMMEND_D['뇌혈관진단비']||3000;
+  const HEART_REC = RECOMMEND_D['심장질환진단비']||RECOMMEND_D['특정심장질환진단비']||RECOMMEND_D['허혈성심장질환진단비']||3000;
+
   const scoreG=(keys,detail)=>{
     const vals=keys.map(k=>({v:detail[k]||0,r:RECOMMEND_D[k]||0})).filter(x=>x.r>0);
     if(!vals.length) return 0;
     return Math.round(Math.min(vals.reduce((s,x)=>s+Math.min(x.v/x.r,1.5),0)/vals.length,1)*100);
   }
+  // CI 점수: 뇌혈관 + 심장 각각 계층 점수 평균
+  const scoreCiBrain=scoreHierarchy(COVERAGE_HIERARCHY.brain, after_detail, BRAIN_REC);
+  const scoreCiHeart=scoreHierarchy(COVERAGE_HIERARCHY.heart, after_detail, HEART_REC);
+  const scoreCi=Math.round((scoreCiBrain+scoreCiHeart)/2);
+
+  // 사망 점수: 일반사망(넓음) > 재해사망 > 상해사망, 질병사망은 별도
+  const DEATH_REC = RECOMMEND_D['일반사망']||RECOMMEND_D['질병사망']||5000;
+  const scoreDeathHier=scoreHierarchy(COVERAGE_HIERARCHY.death, after_detail, DEATH_REC);
+  const scoreDeathDisease=scoreG(['질병사망'],after_detail);
+  // 일반사망이 있으면 계층점수, 없으면 질병사망 점수 사용
+  const scoreDeath = scoreDeathHier>0 ? Math.max(scoreDeathHier, scoreDeathDisease) : scoreDeathDisease;
+
   const sc_b=S.result.scores?.before||{};
   const sc_a={
     total:0,
-    death:scoreG(['질병사망','상해사망'],after_detail),
+    death:scoreDeath,
     cancer:scoreG(['일반암진단비','고액항암치료비','암주요치료비'],after_detail),
-    ci:scoreG(['뇌혈관진단비','허혈성심장질환진단비'],after_detail),
+    ci:scoreCi,
     surgery:scoreG(['질병입원의료비','암수술비'],after_detail),
     accident:scoreG(['교통사고처리지원금'],after_detail)
   };
@@ -5000,6 +5489,8 @@ const COV_MASTER = [
   // 암
   { item:'일반암진단비',        cat:'암', desc:'암 진단 일시금' },
   { item:'유사암진단비',        cat:'암', desc:'갑상선·경계성 등' },
+  { item:'소액암진단비',        cat:'암', desc:'소액암(갑상선·경계성·기타피부암 등)' },
+  { item:'고액암진단비',        cat:'암', desc:'고액암(백혈병·뇌·식도·뼈 등)' },
   { item:'전이재발암진단비',    cat:'암', desc:'전이·재발 시' },
   { item:'암수술비',            cat:'암', desc:'암 수술 1회당' },
   { item:'다빈치로봇수술비',    cat:'암', desc:'로봇 수술' },
@@ -5025,7 +5516,7 @@ const COV_MASTER = [
   { item:'허혈심장수술비',      cat:'2대질병', desc:'심장 수술' },
   { item:'2대질환주요치료비',   cat:'2대질병', desc:'뇌·심장 주요치료비 반복보장' },
   { item:'2대질환비급여본인부담주요치료비', cat:'2대질병', desc:'뇌·심장 비급여 본인부담 주요치료비' },
-  { item:'혈전용해치료비',      cat:'2대질병', desc:'혈전용해 처치' },
+  { item:'혈전용해치료비',      cat:'2대질병', desc:'혈전용해 처치 (rt-PA 등)' },
   { item:'중환자실입원일당',    cat:'2대질병', desc:'ICU 입원' },
   // 후유장해
   { item:'질병후유장해(80%↑)',  cat:'후유장해', desc:'질병 80% 이상' },
@@ -5033,21 +5524,25 @@ const COV_MASTER = [
   { item:'상해후유장해(80%↑)',  cat:'후유장해', desc:'상해 80% 이상' },
   { item:'상해후유장해(3~80%)', cat:'후유장해', desc:'상해 3~80%' },
   // 사망
-  { item:'일반사망',            cat:'사망', desc:'재해·질병 포함' },
+  { item:'일반사망',            cat:'사망', desc:'재해·질병 모두 포함' },
   { item:'질병사망',            cat:'사망', desc:'질병으로 인한 사망' },
-  { item:'상해사망',            cat:'사망', desc:'재해·상해 사망' },
+  { item:'재해사망',            cat:'사망', desc:'재해(사고)로 인한 사망' },
+  { item:'상해사망',            cat:'사망', desc:'상해 사망 (재해사망과 동일 범주)' },
   // 수술비
-  { item:'상해수술비',          cat:'수술비', desc:'상해 수술 1~5종' },
-  { item:'질병수술비',          cat:'수술비', desc:'질병 수술 1~5종' },
+  { item:'상해수술비',          cat:'수술비', desc:'상해 수술' },
+  { item:'질병수술비',          cat:'수술비', desc:'질병 수술' },
   { item:'상해종수술비',        cat:'수술비', desc:'상해 종별 수술비' },
   { item:'질병종수술비',        cat:'수술비', desc:'질병 종별 수술비' },
-  { item:'N대수술비',           cat:'수술비', desc:'특정 N대 질병 수술비' },
+  { item:'N대수술비',           cat:'수술비', desc:'특정 N대 질병 수술비 (회사별 상이)', nType:true },
   // 상해진단
   { item:'골절진단비',          cat:'상해진단', desc:'골절 진단 시' },
+  { item:'골절진단비(치아파절포함)', cat:'상해진단', desc:'치아파절 포함 골절' },
   { item:'화상진단비',          cat:'상해진단', desc:'화상 진단 시' },
   // 입원비
   { item:'질병입원일당',        cat:'입원비', desc:'질병 입원 1일당' },
   { item:'상해입원일당',        cat:'입원비', desc:'상해 입원 1일당' },
+  { item:'질병중환자실입원일당', cat:'입원비', desc:'질병 중환자실 입원' },
+  { item:'상해중환자실입원일당', cat:'입원비', desc:'상해 중환자실 입원' },
   { item:'병원사용료(1인실)',   cat:'입원비', desc:'1인실 사용 일당' },
   { item:'요양병원입원일당',    cat:'입원비', desc:'요양병원 일당' },
   // 간병
@@ -5074,6 +5569,17 @@ const COV_MASTER = [
   // 배상·화재
   { item:'일상생활배상책임',    cat:'배상·화재', desc:'일배책 손해배상' },
   { item:'화재벌금',            cat:'배상·화재', desc:'화재 관련 벌금' },
+  // 납입면제
+  { item:'암진단납입면제',      cat:'납입면제', desc:'암 진단 시 보험료 면제' },
+  { item:'뇌출혈납입면제',      cat:'납입면제', desc:'뇌출혈 진단 시 보험료 면제' },
+  { item:'급성심근경색납입면제', cat:'납입면제', desc:'급성심근경색 진단 시 보험료 면제' },
+  { item:'후유장해납입면제',    cat:'납입면제', desc:'후유장해 시 보험료 면제' },
+  { item:'종합납입면제',        cat:'납입면제', desc:'3대질병·후유장해 종합 면제' },
+  // 저축
+  { item:'연금(적격)',          cat:'저축', desc:'세액공제 적격 연금보험', savingType:true },
+  { item:'변액연금(비적격)',    cat:'저축', desc:'비과세 변액연금', savingType:true },
+  { item:'단기납저축',          cat:'저축', desc:'단기납 저축보험', savingType:true },
+  { item:'저축보험',            cat:'저축', desc:'일반 저축보험', savingType:true },
   // 태아보험
   { item:'선천질환보장',        cat:'태아보험', desc:'선천성 이상아 진단·수술' },
   { item:'태아실손의료비',      cat:'태아보험', desc:'출생 후 실손 보장' },
@@ -5098,8 +5604,11 @@ const CAT_STYLE = {
   '재가·치매': { color:'#0f766e', bg:'#f0fdfa', icon:'🏠' },
   '운전자':    { color:'#d97706', bg:'#fef9c7', icon:'🚗' },
   '배상·화재': { color:'#dc2626', bg:'#fef2f2', icon:'🔥' },
+  '납입면제':  { color:'#7c3aed', bg:'#f5f3ff', icon:'🎯' },
+  '저축':      { color:'#0284c7', bg:'#f0f9ff', icon:'💰' },
   '태아보험':  { color:'#ec4899', bg:'#fdf2f8', icon:'👶' },
   '치아보험':  { color:'#2563eb', bg:'#eff6ff', icon:'🦷' },
+  '기타':      { color:'#64748b', bg:'#f8fafc', icon:'📝' },
 };
 
 // 하위 호환
@@ -5107,7 +5616,21 @@ const MANUAL_COV_LIST = COV_MASTER.map(c=>({ item:c.item, cat:c.cat }));
 
 // 수동 계약 데이터
 let manualContracts=[
-  {id:'mc0',insurer:'',product:'',premium:0,period:'',maturity:''}
+  {id:'mc0',insurer:'',product:'',premium:0,period:'',maturity:'',coverages:[]}
+];
+
+// 실손 세대별 기본값
+const SILSON_DEFAULTS={
+  '1세대':[{item:'질병입원의료비',amount:5000},{item:'질병통원의료비',amount:30},{item:'상해입원의료비',amount:5000},{item:'상해통원의료비',amount:30}],
+  '2세대':[{item:'질병입원의료비',amount:5000},{item:'질병통원의료비',amount:30},{item:'상해입원의료비',amount:5000},{item:'상해통원의료비',amount:30}],
+  '3세대':[{item:'질병입원의료비',amount:5000},{item:'질병통원의료비',amount:30},{item:'상해입원의료비',amount:5000},{item:'상해통원의료비',amount:30},{item:'3대비급여의료비',amount:350}],
+  '4세대':[{item:'질병입원의료비',amount:5000},{item:'질병통원의료비',amount:30},{item:'상해입원의료비',amount:5000},{item:'상해통원의료비',amount:30},{item:'3대비급여의료비',amount:350}],
+};
+// 운전자 기본값
+const DRIVER_DEFAULTS=[
+  {item:'교통사고처리지원금',amount:20000},
+  {item:'벌금',amount:3000},
+  {item:'자부상치료비',amount:30},
 ];
 
 function setMode(m){
@@ -5122,39 +5645,47 @@ function setMode(m){
 }
 
 function initManualPanel(){
+  // 기존 계약에 coverages 필드 없으면 추가
+  manualContracts.forEach(c=>{ if(!c.coverages) c.coverages=[]; });
   renderManualContracts();
-  renderManualCovGrid();
 }
 
 function renderManualContracts(){
   const wrap=document.getElementById('manualContracts');
   if(!wrap) return;
-  wrap.innerHTML=manualContracts.map((c,i)=>`
-    <div style="display:grid;grid-template-columns:1.5fr 2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:8px 10px;background:${i%2===0?'#fff':'#f8fafc'};border-radius:7px;border:1px solid var(--border);margin-bottom:5px;">
+  wrap.innerHTML=manualContracts.map((c,i)=>{
+    const covCount=(c.coverages||[]).filter(cv=>cv.amount>0).length;
+    const premSum=(c.coverages||[]).reduce((s,cv)=>s,0); // 계약별 담보 개수
+    return `<div style="display:grid;grid-template-columns:1.4fr 1.8fr 1fr 0.9fr 0.9fr 80px 36px;gap:5px;align-items:center;padding:7px 10px;background:${i%2===0?'#fff':'#f8fafc'};border-radius:8px;border:1px solid var(--border);margin-bottom:5px;">
       <input class="fc" placeholder="보험사명" value="${c.insurer}" style="font-size:12px;"
         oninput="manualContracts[${i}].insurer=this.value">
       <input class="fc" placeholder="상품명" value="${c.product}" style="font-size:12px;"
         oninput="manualContracts[${i}].product=this.value">
-      <input class="fc" type="number" placeholder="월보험료(원)" value="${c.premium||''}" style="font-size:12px;"
+      <input class="fc" type="number" placeholder="0" value="${c.premium||''}" style="font-size:12px;"
         oninput="manualContracts[${i}].premium=Number(this.value);updateManualPremSum()">
-      <input class="fc" placeholder="납입기간" value="${c.period}" style="font-size:12px;"
+      <input class="fc" placeholder="20년납" value="${c.period||''}" style="font-size:12px;"
         oninput="manualContracts[${i}].period=this.value">
-      <input class="fc" placeholder="만기(예:90세)" value="${c.maturity}" style="font-size:12px;"
+      <input class="fc" placeholder="100세" value="${c.maturity||''}" style="font-size:12px;"
         oninput="manualContracts[${i}].maturity=this.value">
+      <button onclick="openManualCovPopup(${i})"
+        style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${covCount>0?'var(--green)':'var(--border)'};background:${covCount>0?'var(--green-l)':'#fff'};color:${covCount>0?'var(--green)':'var(--t3)'};white-space:nowrap;text-align:center;">
+        🛡 ${covCount>0?covCount+'개':'선택'}
+      </button>
       <button onclick="deleteManualContract(${i})" style="padding:5px 8px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:5px;font-size:12px;cursor:pointer;">✕</button>
-    </div>`).join('')+
-  `<div id="manualPremSum" style="padding:6px 12px;background:var(--navy);border-radius:6px;color:#fbbf24;font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:right;">
+    </div>`;
+  }).join('')+
+  `<div style="padding:6px 12px;background:var(--navy);border-radius:6px;color:#fbbf24;font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:right;margin-top:4px;" id="manualPremSum">
     월 합계: ${manualContracts.reduce((s,c)=>s+(c.premium||0),0).toLocaleString()}원
   </div>`;
 }
 
 function addManualContract(){
-  manualContracts.push({id:'mc'+Date.now(),insurer:'',product:'',premium:0,period:'',maturity:''});
+  manualContracts.push({id:'mc'+Date.now(),insurer:'',product:'',premium:0,period:'',maturity:'',coverages:[]});
   renderManualContracts();
 }
 function deleteManualContract(i){
   manualContracts.splice(i,1);
-  if(!manualContracts.length) manualContracts.push({id:'mc0',insurer:'',product:'',premium:0,period:'',maturity:''});
+  if(!manualContracts.length) manualContracts.push({id:'mc0',insurer:'',product:'',premium:0,period:'',maturity:'',coverages:[]});
   renderManualContracts();
 }
 function updateManualPremSum(){
@@ -5162,157 +5693,464 @@ function updateManualPremSum(){
   if(el) el.textContent='월 합계: '+manualContracts.reduce((s,c)=>s+(c.premium||0),0).toLocaleString()+'원';
 }
 
-function renderManualCovGrid(){
-  const wrap=document.getElementById('manualCovGrid');
-  if(!wrap) return;
-  // 카테고리별 섹션
-  const cats=[...new Set(MANUAL_COV_LIST.map(c=>c.cat))];
-  const catColors={'사망':'#1e40af','암':'#be185d','뇌심장':'#b45309','입원':'#0d9488','간병':'#16a34a','운전자':'#d97706','화재':'#ea580c'};
-  wrap.innerHTML='';
+// 수동 입력 담보 선택 팝업 (신규제안 팝업과 동일 방식)
+function openManualCovPopup(contractIdx){
+  const c=manualContracts[contractIdx];
+  if(!c) return;
+  document.getElementById('covEditPopup')?.remove();
+  document.getElementById('covPopupOverlay')?.remove();
 
-  cats.forEach(cat=>{
-    const items=MANUAL_COV_LIST.filter(c=>c.cat===cat);
-    const col=catColors[cat]||'#475569';
-    const section=document.createElement('div');
-    section.style.cssText='grid-column:1/-1;';
-    section.innerHTML=`<div style="font-size:11px;font-weight:700;color:${col};background:${col}18;padding:4px 10px;border-radius:5px;border-left:3px solid ${col};margin-bottom:6px;">${cat}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">
+  if(!c.coverages) c.coverages=[];
+  // _npCovs에 현재 담보 복사
+  S._npCovs=[...c.coverages.map(cv=>({...cv}))];
+
+  const cats=[...new Set(COV_MASTER.map(x=>x.cat))];
+  const popup=document.createElement('div');
+  popup.id='covEditPopup';
+  popup.style.cssText=`position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:9999;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.25);
+    width:min(580px,94vw);max-height:88vh;overflow-y:auto;padding:24px;
+    font-family:'Noto Sans KR',sans-serif;`;
+
+  popup.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);">🛡️ 보장내용 입력 — ${c.insurer||'보험사'} ${c.product||'상품명'}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:5px;">
+          <div style="font-size:11px;color:var(--t3);">카테고리 선택 → 담보 클릭 → 금액 입력</div>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:4px 10px;background:#fef3c7;border-radius:6px;border:1.5px solid #f59e0b;">
+            <input type="checkbox" id="mcRenewal" ${c.isRenewal?'checked':''} style="width:13px;height:13px;accent-color:#f59e0b;cursor:pointer;">
+            <span style="font-size:11px;font-weight:700;color:#b45309;">🔄 갱신형</span>
+          </label>
+        </div>
+      </div>
+      <button onclick="document.getElementById('covEditPopup').remove();document.getElementById('covPopupOverlay').remove();"
+        style="width:28px;height:28px;border-radius:50%;border:none;background:#f1f5f9;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+
+    <!-- 빠른 세팅 버튼 -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;background:#f8fafc;border-radius:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);width:100%;margin-bottom:4px;">⚡ 빠른 설정</div>
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-right:2px;">실손</div>
+      ${['1세대','2세대','3세대','4세대'].map(gen=>`
+      <button onclick="applyManualPreset('silson','${gen}')"
+        style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #0369a1;background:#e0f2fe;color:#0369a1;">${gen}</button>`).join('')}
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-left:6px;margin-right:2px;">운전자</div>
+      <button onclick="applyManualPreset('driver','')"
+        style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #d97706;background:#fef9c7;color:#d97706;">기본값</button>
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-left:6px;margin-right:2px;">납입면제</div>
+      <button onclick="applyManualPreset('waiver','')"
+        style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #7c3aed;background:#f5f3ff;color:#7c3aed;">기본값</button>
+    </div>
+
+    <!-- 카테고리 탭 -->
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;" id="mcCatBtns">
+      ${cats.map(cat=>{const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9',icon:'🛡'};return `
+      <button onclick="mcFilterCat('${cat}')" id="mcCat_${cat.replace(/[^가-힣a-z]/gi,'_')}"
+        style="padding:4px 9px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;
+          border:1.5px solid ${cs.color}33;background:${cs.bg};color:${cs.color};">
+        ${cs.icon} ${cat}</button>`;}).join('')}
+      <button onclick="mcFilterCat('기타')" id="mcCat___"
+        style="padding:4px 9px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid #64748b33;background:#f8fafc;color:#64748b;">📝 기타</button>
+    </div>
+
+    <!-- 담보 목록 -->
+    <div id="mcItemGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:150px;overflow-y:auto;margin-bottom:10px;"></div>
+    <!-- 기타 직접입력 -->
+    <div id="mcEtcInput" style="display:none;margin-bottom:10px;padding:10px;background:#f8fafc;border-radius:7px;">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:5px;">📝 기타 담보 직접 입력</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="mcEtcName" class="fc" placeholder="담보명 직접 입력" style="flex:1;font-size:12px;">
+        <input id="mcEtcAmt" class="fc" type="number" placeholder="금액(만원)" style="width:90px;font-size:12px;">
+        <button onclick="addMcEtcCov()"
+          style="padding:6px 12px;background:var(--pri);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">추가</button>
+      </div>
+    </div>
+
+    <!-- 선택된 담보 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px;">선택된 담보 (금액 수정 가능)</div>
+      <div id="mcSelectedList"></div>
+    </div>
+
+    <button onclick="confirmManualCov(${contractIdx})"
+      style="width:100%;padding:13px;border:none;border-radius:9px;
+        background:linear-gradient(135deg,var(--green),#22c55e);
+        color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+      ✅ 보장내용 저장 완료
+    </button>`;
+
+  const overlay=document.createElement('div');
+  overlay.id='covPopupOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;';
+  overlay.onclick=()=>{popup.remove();overlay.remove();};
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+  mcFilterCat('암');
+  renderMcSelectedList();
+}
+
+let mcActiveCat='암';
+function mcFilterCat(cat){
+  mcActiveCat=cat;
+  document.querySelectorAll('[id^="mcCat_"]').forEach(b=>{b.style.opacity='0.5';});
+  const activeBtn=document.getElementById('mcCat_'+cat.replace(/[^가-힣a-z]/gi,'_'));
+  if(activeBtn) activeBtn.style.opacity='1';
+  // 기타 탭
+  const etcDiv=document.getElementById('mcEtcInput');
+  if(cat==='기타'){
+    if(etcDiv) etcDiv.style.display='';
+    const grid=document.getElementById('mcItemGrid');
+    if(grid) grid.innerHTML='';
+    return;
+  }
+  if(etcDiv) etcDiv.style.display='none';
+
+  const items=COV_MASTER.filter(c=>c.cat===cat);
+  const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9'};
+  const grid=document.getElementById('mcItemGrid');
+  if(!grid) return;
+
+  // 저축 탭 안내
+  if(cat==='저축'){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:10px;background:#f0f9ff;border-radius:7px;font-size:11px;color:#0369a1;margin-bottom:4px;">
+      💡 저축보험은 사망·후유장해가 주계약입니다. 선택 후 <strong>금액란에 납입보험료(원)</strong>를 입력하고, 비고란에 메모를 추가하세요.
+    </div>`+items.map(cv=>{
+      const isSelected=(S._npCovs||[]).find(x=>x.item===cv.item);
+      return `<div onclick="mcToggleCov('${cv.item}')" id="mcItem_${cv.item.replace(/[^가-힣a-z0-9]/gi,'_')}"
+        style="padding:7px 10px;border-radius:6px;cursor:pointer;
+          border:1.5px solid ${isSelected?cs.color:'var(--border)'};
+          background:${isSelected?cs.bg:'#fff'};">
+        <div style="font-size:11px;font-weight:700;color:${cs.color};">${cv.item}</div>
+        <div style="font-size:10px;color:var(--t3);">${cv.desc||''}</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  grid.innerHTML=items.map(cv=>{
+    const isSelected=(S._npCovs||[]).find(x=>x.item===cv.item);
+    const isNType=cv.nType; // N대수술비 - 숫자변경 가능
+    return `<div onclick="mcToggleCov('${cv.item}')" id="mcItem_${cv.item.replace(/[^가-힣a-z0-9]/gi,'_')}"
+      style="padding:7px 10px;border-radius:6px;cursor:pointer;
+        border:1.5px solid ${isSelected?cs.color:'var(--border)'};
+        background:${isSelected?cs.bg:'#fff'};">
+      <div style="font-size:11px;font-weight:700;color:${cs.color};">${cv.item}</div>
+      <div style="font-size:10px;color:var(--t3);">${cv.desc||''}${isNType?'<span style="color:'+cs.color+';font-weight:700;"> ✏️숫자변경가능</span>':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function mcToggleCov(itemName){
+  if(!S._npCovs) S._npCovs=[];
+  const exists=S._npCovs.find(c=>c.item===itemName);
+  if(exists){S._npCovs=S._npCovs.filter(c=>c.item!==itemName);}
+  else{const cov=COV_MASTER.find(c=>c.item===itemName);S._npCovs.push({item:itemName,cat:cov?.cat||'',amount:0});}
+  mcFilterCat(mcActiveCat);
+  renderMcSelectedList();
+}
+
+function renderMcSelectedList(){
+  const wrap=document.getElementById('mcSelectedList');
+  if(!wrap) return;
+  const covs=S._npCovs||[];
+  if(!covs.length){
+    wrap.innerHTML='<div style="color:var(--t3);font-size:12px;padding:6px 0;">카테고리에서 담보를 선택하세요</div>';
+    return;
+  }
+  // 카테고리별 그룹핑
+  const grouped={};
+  covs.forEach((c,i)=>{
+    const cat=c.cat||'기타';
+    if(!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push({...c,_idx:i});
+  });
+  wrap.innerHTML=Object.entries(grouped).map(([cat,items])=>{
+    const cs=CAT_STYLE[cat]||{color:'#475569',bg:'#f1f5f9',icon:'🛡'};
+    const isSaving=cat==='저축';
+    const isWaiver=cat==='납입면제';
+    return `<div style="margin-bottom:6px;">
+      <div style="font-size:10px;font-weight:700;color:${cs.color};padding:2px 8px;background:${cs.bg};border-radius:4px;margin-bottom:4px;display:inline-block;">${cs.icon} ${cat}</div>
       ${items.map(c=>{
-        const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
-        return `<div style="display:flex;align-items:center;gap:6px;padding:6px 9px;background:#fff;border-radius:6px;border:1px solid var(--border);">
-          <div style="flex:1;font-size:12px;font-weight:600;color:var(--t1);">${c.item}</div>
-          <input type="number" id="mcov_${idSafe}" value="0" min="0" step="100"
-            style="width:80px;border:1px solid var(--border);border-radius:5px;padding:4px 6px;font-size:12px;text-align:right;font-family:'IBM Plex Mono',monospace;"
-            placeholder="0">
-          <span style="font-size:10px;color:var(--t3);">만원</span>
+        const isNType=COV_MASTER.find(m=>m.item===c.item)?.nType;
+        const isSavingItem=isSaving;
+        return `<div style="margin-bottom:3px;">
+          <div style="display:grid;grid-template-columns:${isNType?'1fr 120px 28px 28px':'1fr 86px 28px 28px'};gap:5px;align-items:center;
+            padding:5px 8px;background:#f8fafc;border-radius:6px;border:1px solid var(--border);">
+            ${isNType?
+              `<input type="text" value="${c.item}" style="border:1px solid #fbbf24;border-radius:4px;padding:3px 6px;font-size:11px;font-weight:700;background:#fffbeb;"
+                oninput="S._npCovs[${c._idx}].item=this.value" placeholder="예) 115대수술비">`:
+              `<span style="font-size:11px;font-weight:600;color:var(--t1);">${c.item}</span>`}
+            <input type="number" value="${c.amount||0}" min="0"
+              style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace;width:100%;"
+              oninput="S._npCovs[${c._idx}].amount=parseInt(this.value)||0">
+            <span style="font-size:10px;color:var(--t3);">${isWaiver?'적용':'만'}</span>
+            <button onclick="S._npCovs.splice(${c._idx},1);renderMcSelectedList();mcFilterCat(mcActiveCat);"
+              style="padding:2px 5px;background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:3px;font-size:11px;cursor:pointer;line-height:1;">✕</button>
+          </div>
+          ${isSavingItem?`<div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#f0f9ff;border-radius:4px;border:1px dashed #0369a1;">
+            <span style="font-size:10px;color:#0369a1;">메모:</span>
+            <input type="text" value="${c.memo||''}" placeholder="예) 사망·후유장해 주계약, 납입기간 등"
+              style="flex:1;border:none;background:transparent;font-size:10px;color:var(--t1);outline:none;"
+              oninput="S._npCovs[${c._idx}].memo=this.value">
+          </div>`:''}
         </div>`;
       }).join('')}
     </div>`;
-    wrap.appendChild(section);
-  });
+  }).join('');
 }
 
-function fillManualAll(val){
-  MANUAL_COV_LIST.forEach(c=>{
-    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
-    const el=document.getElementById('mcov_'+idSafe);
-    if(el) el.value=val;
-  });
+// 납입면제 기본값
+const WAIVER_DEFAULTS=[
+  {item:'암진단납입면제',cat:'납입면제',amount:1},
+  {item:'뇌출혈납입면제',cat:'납입면제',amount:1},
+  {item:'급성심근경색납입면제',cat:'납입면제',amount:1},
+  {item:'후유장해납입면제',cat:'납입면제',amount:1},
+];
+
+function applyManualPreset(type, gen){
+  if(!S._npCovs) S._npCovs=[];
+  const addOrUpdate=(defaults)=>{
+    defaults.forEach(d=>{
+      const exists=S._npCovs.find(c=>c.item===d.item);
+      if(exists){exists.amount=d.amount||exists.amount;}
+      else{const cov=COV_MASTER.find(c=>c.item===d.item);S._npCovs.push({item:d.item,cat:d.cat||cov?.cat||'기타',amount:d.amount||0});}
+    });
+  };
+  if(type==='silson'){ addOrUpdate(SILSON_DEFAULTS[gen]||[]); showToast(`✅ 실손 ${gen} 기본값 적용`); }
+  else if(type==='driver'){ addOrUpdate(DRIVER_DEFAULTS); showToast('✅ 운전자 기본값 적용'); }
+  else if(type==='waiver'){ addOrUpdate(WAIVER_DEFAULTS); showToast('✅ 납입면제 기본값 적용 (금액은 적용=1로 표시)'); }
+  // 어느 팝업에서 호출됐든 업데이트
+  const activeCat=document.getElementById('mcItemGrid')?mcActiveCat:npActiveCat;
+  if(document.getElementById('mcItemGrid')) mcFilterCat(activeCat);
+  if(document.getElementById('npItemGrid')) npFilterCat(activeCat);
+  if(document.getElementById('mcSelectedList')) renderMcSelectedList();
+  if(document.getElementById('npSelectedCovs')) renderNpSelectedCovs();
 }
 
-function fillManualFromSetting(){
-  MANUAL_COV_LIST.forEach(c=>{
-    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
-    const el=document.getElementById('mcov_'+idSafe);
-    if(el) el.value=CUR_SETTING[c.item]||0;
-  });
-  // 알림
-  alert('✅ 현재 설정 기준값이 채워졌습니다.\n각 항목을 확인하고 수정하세요.');
+// 기타 담보 직접 입력 (수동팝업용)
+function addMcEtcCov(){
+  const name=(document.getElementById('mcEtcName')?.value||'').trim();
+  const amt=parseInt(document.getElementById('mcEtcAmt')?.value)||0;
+  if(!name){showToast('⚠️ 담보명을 입력해주세요.');return;}
+  if(!S._npCovs) S._npCovs=[];
+  const exists=S._npCovs.find(c=>c.item===name);
+  if(exists){exists.amount=amt;}
+  else{S._npCovs.push({item:name,cat:'기타',amount:amt});}
+  document.getElementById('mcEtcName').value='';
+  document.getElementById('mcEtcAmt').value='';
+  renderMcSelectedList();
+  showToast(`✅ "${name}" 추가됨`);
+}
+// 기타 담보 직접 입력 (신규제안팝업용)
+function addNpEtcCov(){
+  const name=(document.getElementById('npEtcName')?.value||'').trim();
+  const amt=parseInt(document.getElementById('npEtcAmt')?.value)||0;
+  if(!name){showToast('⚠️ 담보명을 입력해주세요.');return;}
+  if(!S._npCovs) S._npCovs=[];
+  const exists=S._npCovs.find(c=>c.item===name);
+  if(exists){exists.amount=amt;}
+  else{S._npCovs.push({item:name,cat:'기타',amount:amt});}
+  document.getElementById('npEtcName').value='';
+  document.getElementById('npEtcAmt').value='';
+  renderNpSelectedCovs();
+  showToast(`✅ "${name}" 추가됨`);
+}
+
+function confirmManualCov(contractIdx){
+  if(!manualContracts[contractIdx]) return;
+  manualContracts[contractIdx].coverages=[...(S._npCovs||[])];
+  // 갱신형 체크
+  const renewal=document.getElementById('mcRenewal')?.checked||false;
+  manualContracts[contractIdx].isRenewal=renewal;
+  document.getElementById('covEditPopup')?.remove();
+  document.getElementById('covPopupOverlay')?.remove();
+  renderManualContracts();
+  const count=manualContracts[contractIdx].coverages.filter(c=>c.amount>0).length;
+  showToast(`✅ ${manualContracts[contractIdx].insurer||'계약'} 담보 ${count}개 저장 완료${renewal?' (갱신형)':''}`);
+}
+
+// 수동 입력 샘플 데이터 채우기
+function fillManualSample(){
+  manualContracts=[
+    {id:'ms0',insurer:'MG손해보험',product:'MG손해보험 종합보험(예별)',premium:72376,period:'20년',maturity:'135세',coverages:[
+      {item:'질병입원의료비',amount:5000},{item:'질병통원의료비',amount:30},
+      {item:'상해입원의료비',amount:5000},{item:'상해통원의료비',amount:30},
+    ]},
+    {id:'ms1',insurer:'DB손해보험',product:'참든운전자보험',premium:15770,period:'20년',maturity:'43세',coverages:[
+      {item:'교통사고처리지원금',amount:20000},{item:'변호사선임비용',amount:3000},{item:'벌금',amount:3000},
+    ]},
+    {id:'ms2',insurer:'DB손해보험',product:'아이러브건강보험',premium:105618,period:'20년남만기',maturity:'100세',coverages:[
+      {item:'일반암진단비',amount:5000},{item:'유사암진단비',amount:2000},
+      {item:'암수술비',amount:500},{item:'항암방사선치료비',amount:500},{item:'고액항암치료비',amount:500},
+      {item:'뇌혈관진단비',amount:1800},{item:'뇌졸중진단비',amount:500},
+      {item:'심장질환진단비',amount:2000},{item:'허혈성심장질환진단비',amount:1000},
+      {item:'상해후유장해(80%↑)',amount:10000},{item:'상해후유장해(3~80%)',amount:3000},
+    ]},
+    {id:'ms3',insurer:'동양생명',product:'더좋은암치아보험',premium:29100,period:'10년',maturity:'101세',coverages:[
+      {item:'일반암진단비',amount:0},{item:'유사암진단비',amount:0},
+    ]},
+    {id:'ms4',insurer:'라이나생명',product:'기납입P유종신',premium:107100,period:'12년',maturity:'86세',coverages:[
+      {item:'일반사망',amount:2200},{item:'상해사망',amount:3500},
+    ]},
+  ];
+  // 고객 정보도 채우기
+  const fillIfEmpty=(id,val)=>{ const el=document.getElementById(id); if(el&&!el.value) el.value=val; };
+  fillIfEmpty('custName','정다혜');
+  fillIfEmpty('custBirth','1990.05');
+  fillIfEmpty('custGender','여');
+  fillIfEmpty('custJob','직장인(사무직)');
+  fillIfEmpty('advName','배진우');
+  fillIfEmpty('advPhone','010-3430-2565');
+  fillIfEmpty('advCompany','메타리치 시그널2본부 GA3-7지점');
+  renderManualContracts();
+  showToast('🧪 샘플 데이터가 채워졌습니다. 분석 실행 버튼을 눌러보세요.');
 }
 
 // ── 수동 분석 실행 (API 없음) ──
 function runManualAnalysis(){
-  // 담보 값 수집
+  // 계약별 coverages에서 전체 담보 집계
   const covDetail={}, covStatus={};
   let hasAny=false;
 
-  MANUAL_COV_LIST.forEach(c=>{
-    const idSafe=c.item.replace(/[^가-힣a-z0-9]/gi,'_');
-    const el=document.getElementById('mcov_'+idSafe);
-    const val=parseInt(el?.value||0)||0;
-    covDetail[c.item]=val;
-
-    // 설정 기준과 비교해 상태 판정
-    const rec=CUR_SETTING[c.item]||0;
-    if(val<=0)             covStatus[c.item]='미가입';
-    else if(rec>0 && val < rec*0.7) covStatus[c.item]='부족';
-    else                   covStatus[c.item]='충분';
-    if(val>0) hasAny=true;
+  manualContracts.forEach(c=>{
+    (c.coverages||[]).forEach(cv=>{
+      if(cv.amount>0){
+        covDetail[cv.item]=(covDetail[cv.item]||0)+cv.amount;
+        hasAny=true;
+      }
+    });
   });
 
-  if(!hasAny){alert('담보 금액을 최소 1개 이상 입력해주세요.');return;}
-
-  // 보험점수 계산 (권장 대비 달성률 기반)
-  const scoreGroup=(keys)=>{
-    const vals=keys.map(k=>({v:covDetail[k]||0, r:CUR_SETTING[k]||0})).filter(x=>x.r>0);
-    if(!vals.length) return 0;
-    const avg=vals.reduce((s,x)=>s+Math.min(x.v/x.r,1.5),0)/vals.length;
-    return Math.round(Math.min(avg,1)*100);
+  if(!hasAny){
+    alert('보장내용을 입력해주세요.\n계약 오른쪽 "🛡 선택" 버튼을 눌러 담보를 입력하세요.');
+    return;
   }
-  const death=scoreGroup(['질병사망','상해사망','상해후유장해']);
-  const cancer=scoreGroup(['일반암진단비','유사암진단비','고액항암치료비','암주요치료비']);
-  const ci=scoreGroup(['뇌혈관진단비','뇌졸중진단비','허혈성심장질환진단비','급성심근경색진단비']);
+
+  // 상태 판정 (권장 기준 대비)
+  // ※ 질병통원의료비는 실손 특성상 20만원 이상이면 충분으로 판정
+  const SPECIAL_MIN={'질병통원의료비':20,'상해통원의료비':20};
+  COV_MASTER.forEach(c=>{
+    const val=covDetail[c.item]||0;
+    const rec=CUR_SETTING[c.item]||0;
+    const specialMin=SPECIAL_MIN[c.item]||0;
+    if(val<=0)                                      covStatus[c.item]='미가입';
+    else if(specialMin>0&&val>=specialMin)           covStatus[c.item]='충분'; // 특별 기준
+    else if(rec>0&&val<rec*0.7)                     covStatus[c.item]='부족';
+    else                                            covStatus[c.item]='충분';
+  });
+
+  // 보험점수 계산 (보장범위 계층 반영)
+  // 뇌혈관: 뇌혈관질환 > 뇌졸중 > 뇌출혈 (더 넓은 범위 = 동일 금액도 더 높은 점수)
+  // 심장: 특정심장질환 > 허혈성심장질환 > 급성심근경색
+  const scoreGroup=(keys)=>{
+    const vals=keys.map(k=>({v:covDetail[k]||0,r:CUR_SETTING[k]||0})).filter(x=>x.r>0);
+    if(!vals.length) return 0;
+    return Math.round(Math.min(vals.reduce((s,x)=>s+Math.min(x.v/x.r,1.5),0)/vals.length,1)*100);
+  };
+  // 계층 점수: 가장 넓은 담보를 우선 사용 (상위 범위 담보가 있으면 하위 범위 담보 무시)
+  const scoreHierarchyManual=(hierarchy, recommend)=>{
+    for(const h of hierarchy){
+      const v=covDetail[h.key]||0;
+      if(v>0){
+        const effectiveVal=v*h.factor;
+        return Math.round(Math.min(effectiveVal/recommend,1.5)*100);
+      }
+    }
+    return 0;
+  };
+  const BRAIN_HIER=[
+    {key:'뇌혈관진단비',   factor:1.00},
+    {key:'뇌졸중진단비',   factor:0.90},
+    {key:'뇌출혈진단비',   factor:0.75},
+  ];
+  const HEART_HIER=[
+    {key:'심장질환진단비',        factor:1.00},
+    {key:'특정심장질환진단비',    factor:1.00},
+    {key:'허혈성심장질환진단비',  factor:0.88},
+    {key:'급성심근경색진단비',    factor:0.70},
+  ];
+  const BRAIN_REC_M=CUR_SETTING['뇌혈관진단비']||3000;
+  const HEART_REC_M=CUR_SETTING['심장질환진단비']||CUR_SETTING['특정심장질환진단비']||CUR_SETTING['허혈성심장질환진단비']||3000;
+  const DEATH_REC_M=CUR_SETTING['일반사망']||CUR_SETTING['질병사망']||5000;
+  const ciBrain=scoreHierarchyManual(BRAIN_HIER,BRAIN_REC_M);
+  const ciHeart=scoreHierarchyManual(HEART_HIER,HEART_REC_M);
+  // 사망 계층: 일반사망 > 재해사망 > 상해사망, 질병사망 별도
+  const DEATH_HIER_M=[
+    {key:'일반사망', factor:1.00},
+    {key:'재해사망', factor:0.90},
+    {key:'상해사망', factor:0.85},
+  ];
+  const deathHier=scoreHierarchyManual(DEATH_HIER_M,DEATH_REC_M);
+  const deathDisease=scoreGroup(['질병사망','상해후유장해(80%↑)']);
+
+  const death  = deathHier>0 ? Math.max(deathHier, deathDisease) : deathDisease;
+  const cancer =scoreGroup(['일반암진단비','유사암진단비','고액항암치료비','암주요치료비']);
+  const ci     =Math.round((ciBrain+ciHeart)/2);
   const surgery=scoreGroup(['질병입원의료비','암수술비','뇌혈관수술비']);
   const accident=scoreGroup(['교통사고처리지원금','변호사선임비용']);
-  const total=Math.round((death*0.15+cancer*0.25+ci*0.25+surgery*0.2+accident*0.15));
+  const total  =Math.round(death*0.15+cancer*0.25+ci*0.25+surgery*0.2+accident*0.15);
+  const grade  =total>=90?'A+':total>=80?'A':total>=70?'B+':total>=60?'B':'C';
 
   const totalPrem=manualContracts.reduce((s,c)=>s+(c.premium||0),0);
-
-  // 등급 계산
-  const grade=total>=90?'A+':total>=80?'A':total>=70?'B+':total>=60?'B':'C';
-
-  // 권고 내용 자동 생성
-  const missingItems=Object.entries(covStatus).filter(([,v])=>v==='미가입').map(([k])=>k);
+  const missingItems=Object.entries(covStatus).filter(([,v])=>v==='미가입').map(([k])=>k).filter(k=>covDetail[k]!==undefined||CUR_SETTING[k]);
   const lackingItems=Object.entries(covStatus).filter(([,v])=>v==='부족').map(([k])=>k);
 
-  // 가짜 결과 객체 (renderAll 형식 맞춤)
   const result={
-    customer:{name:v('custName'),age:'',gender:v('custGender'),birth:v('custBirth')},
+    customer:{name:v('custName'),age:'',gender:v('custGender'),birth:v('custBirth'),summary:'수동 입력'},
     advisor:{name:v('advName'),phone:v('advPhone'),company:v('advCompany')},
-    contract_summary:{
-      normal_count:manualContracts.filter(c=>c.insurer||c.product).length,
-      lapsed_count:0,
-      total_monthly_premium:totalPrem
-    },
+    contract_summary:{normal_count:manualContracts.filter(c=>c.insurer||c.product).length,lapsed_count:0,total_monthly_premium:totalPrem},
     before:{
       insurers:[...new Set(manualContracts.map(c=>c.insurer).filter(Boolean))],
       total_premium:totalPrem,
-      premiums:manualContracts.map(c=>({name:c.insurer,product:c.product,premium:c.premium,period:c.period,maturity:c.maturity})),
-      coverages:MANUAL_COV_LIST.filter(c=>(covDetail[c.item]||0)>0).map(c=>({item:c.item,category:c.cat,amount:covDetail[c.item]+'만원'})),
-      products:[]
+      premiums:manualContracts.map(c=>({name:c.insurer,product:c.product,premium:c.premium,period:c.period,maturity:c.maturity,start:''})),
+      coverages:Object.entries(covDetail).filter(([,v])=>v>0).map(([k,v])=>({item:k,category:COV_MASTER.find(c=>c.item===k)?.cat||'기타',amount:v+'만원'})),
+      products:manualContracts.map(c=>({
+        name:c.product||'',insurer:c.insurer||'',premium:c.premium||0,
+        period:c.period||'',maturity:c.maturity||'',
+        coverages:(c.coverages||[]).map(cv=>({item:cv.item,amount:cv.amount+'만원'}))
+      }))
     },
     after:{insurers:[],total_premium:0,premiums:[],coverages:[]},
     coverage_detail:covDetail,
     coverage_status:covStatus,
-    scores:{
-      before:{total,death,cancer,ci,surgery,accident,reason:'수동 입력 기반 점수'},
-      after:{total:0,death:0,cancer:0,ci:0,surgery:0,accident:0,reason:''}
-    },
+    scores:{before:{total,death,cancer,ci,surgery,accident,reason:'수동 입력 기반'},after:{total:0}},
     venn:{only_before:[],both:[],only_after:[]},
-    coverage_table:MANUAL_COV_LIST.map(c=>({
-      item:c.item, category:c.cat,
-      before_amount:covDetail[c.item]?covDetail[c.item].toLocaleString()+'만원':'—',
-      after_amount:'—', change:'SAME', change_detail:covStatus[c.item]||''
+    coverage_table:Object.entries(covDetail).map(([item,val])=>({
+      item,category:COV_MASTER.find(c=>c.item===item)?.cat||'기타',
+      before_amount:val?val.toLocaleString()+'만원':'—',
+      after_amount:'—',change:'SAME',change_detail:covStatus[item]||''
     })),
     premium_analysis:{
-      monthly_diff:0, annual_diff:0,
-      assessment:`월 ${totalPrem.toLocaleString()}원 납입 중. 설정 기준(${((CUR_SETTING['월보험료적정']||0)).toLocaleString()||'미설정'}) 대비 ${totalPrem>500000?'다소 높은':'적정한'} 수준입니다.`,
+      monthly_diff:0,annual_diff:0,
+      assessment:`월 ${totalPrem.toLocaleString()}원 납입 중. 수동 입력 기반 분석입니다.`,
       cost_per_score:total>0?Math.round(totalPrem/total).toLocaleString()+'원/점':'-'
     },
     recommendation:{
       overall_grade:grade,
-      summary:`수동 입력 기준 종합 보험점수 ${total}점 (${grade}등급). ${missingItems.length?'미가입 항목 '+missingItems.length+'건 보완 필요.':''}${lackingItems.length?' 부족 항목 '+lackingItems.length+'건 증액 검토.':''}`,
+      summary:`수동 입력 기준 보험점수 ${total}점 (${grade}등급). ${missingItems.length?'미가입 '+missingItems.length+'건 보완 필요.':''}${lackingItems.length?' 부족 '+lackingItems.length+'건 증액 검토.':''}`,
       strengths:Object.entries(covStatus).filter(([,v])=>v==='충분').slice(0,5).map(([k])=>k+' 충분'),
-      cautions:[
-        ...missingItems.slice(0,4).map(k=>k+' 미가입 — 즉시 보완 필요'),
-        ...lackingItems.slice(0,3).map(k=>k+' 부족 — 증액 검토')
-      ],
+      cautions:[...missingItems.slice(0,4).map(k=>k+' 미가입 — 즉시 보완 필요'),...lackingItems.slice(0,3).map(k=>k+' 부족 — 증액 검토')],
       why_change:[],
       notes:'수동 입력 기반 분석입니다. 실제 보험 서류와 비교·검토하세요.',
       remodeling_suggestion:missingItems.length?`${missingItems.slice(0,3).join(', ')} 등 미가입 항목 신규 가입을 우선 검토하세요.`:''
     }
   };
 
-  // 결과 표시
   S.result=result; S.currentMode=0;
   renderAll(result,0);
   renderProductMgmt(result);
+  renderPrintCompliance();
+  autoSaveAfterAnalysis();
   document.getElementById('resultWrap').classList.add('show');
   switchTab(4);
   document.getElementById('resultWrap').scrollIntoView({behavior:'smooth',block:'start'});
   renderInfoSections();
+  setTimeout(renderCovBarChart, 600);
+  showToast('✅ 수동 분석 완료');
 }
 
+  // 보험점수 계산 (권장 대비 달성률 기반)
 function openSettingModal(){
   loadSetting();
   renderPresetCards();
@@ -6001,6 +6839,73 @@ function checkAndPrint(){
   document.body.appendChild(overlay);
   document.body.appendChild(popup);
   overlay.onclick=()=>{popup.remove();overlay.remove();};
+}
+
+// 보험점수 표시/숨김 토글
+let _scoreVisible=true;
+function toggleScoreDisplay(){
+  _scoreVisible=!_scoreVisible;
+  const el=document.getElementById('scoreBreakdown');
+  const btn=document.getElementById('scoreToggleBtn');
+  if(el) el.style.display=_scoreVisible?'':'none';
+  if(btn) btn.textContent=_scoreVisible?'👁 숨기기':'👁 보이기';
+}
+
+// 점수 기준 안내 팝업
+function showScoreGuide(){
+  document.getElementById('scoreGuidePopup')?.remove();
+  document.getElementById('scoreGuideOverlay')?.remove();
+  const overlay=document.createElement('div');
+  overlay.id='scoreGuideOverlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;';
+  const popup=document.createElement('div');
+  popup.id='scoreGuidePopup';
+  popup.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.28);width:min(480px,92vw);max-height:80vh;overflow-y:auto;padding:24px;font-family:"Noto Sans KR",sans-serif;';
+  popup.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:var(--navy);">📊 보험점수 산출 기준</div>
+      <button onclick="document.getElementById('scoreGuidePopup').remove();document.getElementById('scoreGuideOverlay').remove();"
+        style="width:28px;height:28px;border-radius:50%;border:none;background:#f1f5f9;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:14px;">
+      보험점수는 <strong>5개 항목의 가중 평균</strong>으로 산출됩니다. 각 항목은 설정된 권장 기준 대비 달성률(최대 100%)로 계산됩니다.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      ${[
+        {cat:'사망·후유장해',weight:'15%',keys:'질병사망, 상해사망, 후유장해(80%↑)',color:'#1e40af',bg:'#eff6ff'},
+        {cat:'암 보장',weight:'25%',keys:'일반암진단비, 유사암진단비, 고액항암치료비, 암주요치료비',color:'#be185d',bg:'#fce7f3'},
+        {cat:'뇌·심장 (CI)',weight:'25%',keys:'뇌혈관질환 &gt; 뇌졸중 &gt; 뇌출혈 / 특정심장 &gt; 허혈성 &gt; 급성심근경색 (범위계층 반영)',color:'#b45309',bg:'#fef3c7'},
+        {cat:'수술·입원',weight:'20%',keys:'질병입원의료비, 암수술비, 뇌혈관수술비',color:'#0d9488',bg:'#f0fdfa'},
+        {cat:'운전자·배상',weight:'15%',keys:'교통사고처리지원금, 변호사선임비용',color:'#d97706',bg:'#fef9c7'},
+      ].map(r=>`
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:10px 12px;background:${r.bg};border-radius:8px;border-left:4px solid ${r.color};">
+        <div style="font-size:18px;font-weight:800;color:${r.color};font-family:'IBM Plex Mono',monospace;min-width:40px;text-align:center;">${r.weight}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:${r.color};">${r.cat}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;">${r.keys}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div style="padding:12px 14px;background:#f8fafc;border-radius:8px;font-size:11px;color:var(--t2);line-height:1.8;">
+      <strong>판정 기준</strong><br>
+      • <strong>충분</strong>: 권장 기준의 70% 이상<br>
+      • <strong>부족</strong>: 권장 기준의 70% 미만<br>
+      • <strong>미가입</strong>: 0원<br>
+      • <span style="color:#0369a1;">질병통원의료비·상해통원의료비는 20만원 이상이면 충분으로 판정</span><br>
+      <br>
+      <strong style="color:#b45309;">🧠 뇌·심장 보장범위 계층 점수</strong><br>
+      • 뇌혈관질환(×1.0) &gt; 뇌졸중(×0.9) &gt; 뇌출혈(×0.75)<br>
+      • 특정심장질환(×1.0) &gt; 허혈성심장(×0.88) &gt; 급성심근경색(×0.70)<br>
+      • <span style="color:#059669;">더 넓은 범위 담보 = 동일 금액이라도 점수 유지/향상</span><br>
+      • 뇌출혈→뇌혈관질환으로 변경 시 금액이 같아도 점수 하락 없음<br>
+      <br>
+      <strong>등급 기준</strong>: A+(90↑) · A(80↑) · B+(70↑) · B(60↑) · C(60미만)<br>
+      <br>
+      ⚙️ 권장 기준은 <strong>보장 기준 설정</strong>에서 나이대별로 변경할 수 있습니다.
+    </div>`;
+  overlay.onclick=()=>{popup.remove();overlay.remove();};
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
 }
 
 function showToast(msg){
