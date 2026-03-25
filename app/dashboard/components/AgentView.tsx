@@ -112,11 +112,43 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     };
   }, [historyData, selectedDate]);
 
-  // 기네스(Best) 및 최저실적(Worst) 계산
+  // 기네스(Best) 및 최저실적(Worst) 계산 (활동 기록이 있는 달 기준)
   const records = useMemo(() => {
     if (historyData.length === 0) return { best: null, worst: null };
-    const sorted = [...historyData].sort((a, b) => (Number(b.contract_amt) || 0) - (Number(a.contract_amt) || 0));
-    return { best: sorted[0], worst: sorted[sorted.length - 1] };
+
+    // '유효한 활동'이 있는 데이터만 필터링 (매출이 0이라도 활동 데이터가 있으면 최저 실적 후보)
+    const activeMonths = historyData.filter(item => {
+      const hasPerf = (Number(item.contract_amt) || 0) > 0 || (Number(item.contract_cnt) || 0) > 0;
+      const hasActivity = (Number(item.call) || 0) > 0 || 
+                          (Number(item.meet) || 0) > 0 || 
+                          (Number(item.pt) || 0) > 0 || 
+                          (Number(item.intro) || 0) > 0 ||
+                          (Number(item.db_assigned) || 0) > 0 ||
+                          (Number(item.db_returned) || 0) > 0;
+      return hasPerf || hasActivity;
+    });
+    
+    if (activeMonths.length === 0) return { best: null, worst: null };
+
+    // 기네스(Best): 매출 높은 순 -> 같으면 최신순
+    const bestSorted = [...activeMonths].sort((a, b) => {
+      const amtDiff = (Number(b.contract_amt) || 0) - (Number(a.contract_amt) || 0);
+      if (amtDiff !== 0) return amtDiff;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+
+    // 최저(Worst): 매출 낮은 순 -> 같으면 과거순
+    const worstSorted = [...activeMonths].sort((a, b) => {
+      const amtDiff = (Number(a.contract_amt) || 0) - (Number(b.contract_amt) || 0);
+      if (amtDiff !== 0) return amtDiff;
+      // 매출액이 같을 경우(예: 둘 다 0원), 과거 데이터를 우선적으로 '최저'로 표기하여 데이터 정합성 유지
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+
+    return { 
+      best: bestSorted[0], 
+      worst: worstSorted[0] 
+    };
   }, [historyData]);
 
   // 달성률 계산 헬퍼
