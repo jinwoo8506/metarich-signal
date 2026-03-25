@@ -5,7 +5,7 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
-export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack }: any) {
+export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack, externalMenuStatus, onMenuStatusChange }: any) {
   const router = useRouter();
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
@@ -15,7 +15,8 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
   const isAdmin = user.role === 'admin' || user.role === 'master';
   const isMaster = user.role === 'master';
 
-  const [menuStatus, setMenuStatus] = useState<any>({
+  // 대시보드에서 관리하는 설정을 로컬 상태로 유지
+  const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, show_cont: true
   });
   const [isEditMode, setIsEditMode] = useState(false);
@@ -28,6 +29,11 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id]);
 
+  // 대시보드에서 받아온 외부 상태가 바뀔 경우 동기화
+  useEffect(() => {
+    if (externalMenuStatus) setMenuStatus(externalMenuStatus);
+  }, [externalMenuStatus]);
+
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");
     if (data) {
@@ -36,12 +42,18 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         return acc;
       }, {});
       setMenuStatus((prev: any) => ({ ...prev, ...settings }));
+      if (onMenuStatusChange) onMenuStatusChange({ ...menuStatus, ...settings });
     }
   }
 
   const toggleMenu = async (key: string) => {
     const newValue = !((menuStatus as any)[key]);
-    setMenuStatus((prev: any) => ({ ...prev, [key]: newValue }));
+    const updatedStatus = { ...menuStatus, [key]: newValue };
+    setMenuStatus(updatedStatus);
+    
+    // 대시보드 메인 화면에도 즉시 반영
+    if (onMenuStatusChange) onMenuStatusChange(updatedStatus);
+    
     await supabase.from("team_settings").upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
   };
 
@@ -59,7 +71,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     }
   }
 
-  // 📈 [수정 핵심] 실적 계산 로직 보정
   async function fetch3MonthAvg() {
     const d = new Date(selectedDate);
     const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
@@ -80,8 +91,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
       const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
-      
-      // ✅ 기존 uniqueMonths를 무시하고 3개월 평균이므로 무조건 3으로 나눕니다.
       const divisor = 3; 
 
       setThreeMonthAvg({ 
@@ -163,7 +172,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         
         {[
           { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
-          { id: 'show_insu', label: '보장분석 PRO(유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
+          { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
           { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/...', color: 'border-orange-500' },
           { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/...', color: 'border-emerald-500' },
           { id: 'show_cafe', label: '성장연구소 카페', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' }

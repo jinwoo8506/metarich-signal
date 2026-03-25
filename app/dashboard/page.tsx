@@ -10,12 +10,41 @@ import AdminView from "./components/AdminView"
 // ✅ 상담 모드 메인 콘텐츠: 사이드바 설정(menuStatus)과 동기화됨
 function ConsultingView({ menuStatus }: any) {
   const allMenus = [
-    { id: "show_insu", title: "재무 / 보장분석", desc: "Gemini AI 기반 정밀 분석 리포트", icon: "📊", url: "/insu.html", color: "border-blue-500 text-blue-600" },
-    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600" },
-    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람", color: "border-orange-500 text-orange-600" }
+    { 
+      id: "show_finance", 
+      title: "재무 / 보장분석", 
+      desc: "종합 금융 플래닝 및 분석 리포트", 
+      icon: "📊", 
+      url: "/financial_planner.html", 
+      color: "border-black text-black" 
+    },
+    { 
+      id: "show_insu", 
+      title: "보장분석 PRO (유료)", 
+      desc: "Gemini AI 기반 정밀 보장분석 시스템", 
+      icon: "🛡️", 
+      url: "/insu.html", 
+      color: "border-blue-500 text-blue-600" 
+    },
+    { 
+      id: "show_cont", 
+      title: "숨은 보험금 찾기", 
+      desc: "미청구 보험금 및 휴면보험금 조회", 
+      icon: "🔍", 
+      url: "https://cont.insure.or.kr/cont_web/intro.do", 
+      color: "border-emerald-500 text-emerald-600" 
+    },
+    { 
+      id: "show_hira", 
+      title: "진료기록 확인", 
+      desc: "국가 검진 및 보험료 납부 내역 확인", 
+      icon: "🏥", 
+      url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람", 
+      color: "border-orange-500 text-orange-600" 
+    }
   ];
 
-  // 관리자가 활성화한 메뉴만 필터링
+  // 관리자가 활성화한 메뉴만 필터링 (menuStatus 기반)
   const activeMenus = allMenus.filter(m => menuStatus[m.id]);
 
   return (
@@ -79,6 +108,11 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
+  // 사이드바에서 변경된 설정을 대시보드 상태에 실시간 동기화하기 위한 핸들러
+  const handleMenuStatusChange = (newStatus: any) => {
+    setMenuStatus(newStatus);
+  };
+
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
   if (viewMode === 'select') {
@@ -104,13 +138,14 @@ export default function DashboardPage() {
       <Sidebar 
         user={user} selectedDate={selectedDate} onDateChange={setSelectedDate} 
         mode={viewMode} onBack={() => setViewMode('select')} 
-        externalMenuStatus={menuStatus} // 외부에서 불러온 설정 전달
+        externalMenuStatus={menuStatus} // 외부 설정 전달
+        onMenuStatusChange={handleMenuStatusChange} // 변경 콜백 전달
       />
       <main className="flex-1 p-4 lg:p-10 max-w-[1600px] mx-auto w-full">
         {viewMode === 'office' ? (
           user.role === 'admin' || user.role === 'master' ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
         ) : (
-          <ConsultingView menuStatus={menuStatus} /> // ✅ 사이드바 설정대로 버튼 필터링
+          <ConsultingView menuStatus={menuStatus} /> 
         )}
       </main>
     </div>
