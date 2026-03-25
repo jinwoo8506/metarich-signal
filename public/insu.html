@@ -834,7 +834,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
     </div>
     <button class="tbtn tbtn-policy" onclick="openPolicyModal()">📊 상품공시실</button>
     <button class="tbtn tbtn-disease" onclick="window.open('https://www.kcdcode.kr','_blank')">🔬 질병분류</button>
-    <button class="tbtn" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;" onclick="openSettingModal()">⚙️ 보장 기준 설정</button>
+    <div style="display:flex;align-items:center;gap:5px;">
+      <button class="tbtn" style="background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;" onclick="openSettingModal()">⚙️ 보장 기준 설정</button>
+      <div id="settingStatusBadge" style="font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;padding:3px 8px;border-radius:10px;border:1px solid rgba(245,158,11,.3);cursor:pointer;white-space:nowrap;" onclick="openSettingModal()">40대 / 일반</div>
+    </div>
     <button class="tbtn" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;" onclick="saveWorkJSON()" title="현재 작업을 JSON 파일로 저장">💾 저장</button>
     <button class="tbtn" style="background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff;" onclick="openWorkList()" title="저장된 작업 목록 보기">📂 불러오기</button>
     <button class="tbtn tbtn-out" onclick="clearAll()">↺ 초기화</button>
@@ -844,42 +847,77 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
 
 <!-- ─── 보장 기준 설정 모달 ─── -->
 <div class="modal-overlay" id="settingModal" onclick="if(event.target===this)closeSettingModal()" style="z-index:600;">
-  <div class="modal" style="width:min(860px,96vw);max-height:90vh;overflow-y:auto;">
+  <div class="modal" style="width:min(920px,97vw);max-height:93vh;overflow-y:auto;">
     <div class="modal-head">
       <div>
         <div class="modal-title">⚙️ 보장 기준 설정</div>
-        <div style="font-size:12px;color:var(--t3);margin-top:3px;">나이대별 추천 기준을 선택하거나 항목별로 직접 설정하세요</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">고객 성향(최소/일반/최대) 선택 → 나이대 선택 → 항목별 세부 조정 → 적용</div>
       </div>
       <button class="modal-close" onclick="closeSettingModal()">✕</button>
     </div>
-    <div class="modal-body" style="padding:20px;">
+    <div class="modal-body" style="padding:18px 20px;">
 
-      <!-- 1. 나이대별 프리셋 -->
-      <div style="margin-bottom:20px;">
-        <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:10px;letter-spacing:.5px;">📌 나이대별 평균 보장 기준 (빠른 설정)</div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="presetCards">
-          <!-- JS로 렌더 -->
+      <!-- STEP 1: 보장 성향 (최소/일반/최대) -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">1</span>
+          고객 보장 성향 선택
         </div>
-        <div style="margin-top:8px;padding:8px 11px;background:var(--pri-l);border-radius:7px;font-size:11px;color:var(--pri);line-height:1.6;">
-          💡 나이대 선택 시 해당 연령대에 권장되는 보장 금액이 자동으로 설정됩니다. 이후 상세 탭에서 개별 조정도 가능합니다.
-        </div>
-      </div>
-
-      <!-- 2. 상세 설정 탭 -->
-      <div style="margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;color:var(--t2);margin-bottom:10px;letter-spacing:.5px;">🔧 항목별 상세 설정</div>
-        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;" id="settingCatTabs">
-          <!-- JS로 렌더 -->
-        </div>
-        <div id="settingItemGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <!-- JS로 렌더 -->
-        </div>
-      </div>
-
-      <!-- 3. 월보험료 기준 -->
-      <div style="padding:14px 16px;background:var(--slate);border-radius:9px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">💰 월보험료 적정 기준</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <button id="levelBtn_min" onclick="setCoverLevel('min')" style="padding:14px 10px;border-radius:10px;border:2px solid #94a3b8;background:#f8fafc;cursor:pointer;text-align:center;transition:all .18s;">
+            <div style="font-size:22px;margin-bottom:4px;">🛡</div>
+            <div style="font-size:14px;font-weight:800;color:#475569;">최소 보장</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:3px;line-height:1.4;">핵심 위험만 커버<br>보험료 최소화</div>
+          </button>
+          <button id="levelBtn_normal" onclick="setCoverLevel('normal')" style="padding:14px 10px;border-radius:10px;border:2px solid #4361ee;background:#e8ecff;cursor:pointer;text-align:center;transition:all .18s;">
+            <div style="font-size:22px;margin-bottom:4px;">🛡🛡</div>
+            <div style="font-size:14px;font-weight:800;color:#4361ee;">일반 보장</div>
+            <div style="font-size:11px;color:#4361ee;margin-top:3px;line-height:1.4;">표준 권장 수준<br>균형잡힌 구성</div>
+          </button>
+          <button id="levelBtn_max" onclick="setCoverLevel('max')" style="padding:14px 10px;border-radius:10px;border:2px solid #7c3aed;background:#f3eeff;cursor:pointer;text-align:center;transition:all .18s;">
+            <div style="font-size:22px;margin-bottom:4px;">🛡🛡🛡</div>
+            <div style="font-size:14px;font-weight:800;color:#7c3aed;">최대 보장</div>
+            <div style="font-size:11px;color:#7c3aed;margin-top:3px;line-height:1.4;">최고 수준 보장<br>보험료 여유 있음</div>
+          </button>
+        </div>
+        <div id="levelGuide" style="margin-top:8px;padding:7px 11px;background:var(--pri-l);border-radius:7px;font-size:11px;color:var(--pri);line-height:1.6;display:none;"></div>
+      </div>
+
+      <!-- STEP 2: 나이대별 프리셋 -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">2</span>
+          고객 나이대 선택 <span style="font-size:10px;font-weight:400;color:var(--t3);margin-left:4px;">— 성향+나이대 조합으로 기준금액 자동 설정</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="presetCards"></div>
+        <div style="margin-top:8px;padding:7px 11px;background:#fef9e7;border-radius:7px;font-size:11px;color:#b45309;line-height:1.6;" id="ageAppliedNotice" style="display:none;">
+          ※ 60대 이상은 갱신/비갱신 점수 보정이 제외됩니다.
+        </div>
+      </div>
+
+      <!-- STEP 3: 항목별 상세 설정 -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--navy);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">3</span>
+            항목별 세부 조정
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button onclick="setCoverLevel('min');renderSettingItems();" style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid #94a3b8;background:#f8fafc;color:#475569;">최소 적용</button>
+            <button onclick="setCoverLevel('normal');renderSettingItems();" style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid #4361ee;background:#e8ecff;color:#4361ee;">일반 적용</button>
+            <button onclick="setCoverLevel('max');renderSettingItems();" style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid #7c3aed;background:#f3eeff;color:#7c3aed;">최대 적용</button>
+          </div>
+        </div>
+        <!-- 카테고리 탭 -->
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;" id="settingCatTabs"></div>
+        <!-- 항목 그리드 -->
+        <div id="settingItemGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;"></div>
+      </div>
+
+      <!-- 월보험료 기준 (접혀있는 형태) -->
+      <details style="margin-bottom:14px;">
+        <summary style="font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;padding:8px 12px;background:var(--slate);border-radius:7px;">💰 월보험료 적정 기준 설정 (클릭하여 펼치기)</summary>
+        <div style="padding:12px;background:var(--slate);border-radius:0 0 7px 7px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:1px;">
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px;">최소 권장 (원/월)</div>
             <input type="number" id="setPremMin" class="fc" style="font-size:13px;" placeholder="200000">
@@ -893,15 +931,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--slate);color:var(--t
             <input type="number" id="setPremMax" class="fc" style="font-size:13px;" placeholder="700000">
           </div>
         </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--t3);line-height:1.6;">
-          ※ 보험료가 최소 이하면 "부족", 적정~최대면 "충분", 최대 초과면 "과다" 로 표시됩니다.
-        </div>
-      </div>
+      </details>
 
       <!-- 버튼 -->
-      <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <button onclick="resetSetting()" style="padding:9px 18px;background:var(--slate);color:var(--t2);border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">↺ 기본값으로</button>
-        <button onclick="applySetting()" style="padding:9px 22px;background:linear-gradient(135deg,var(--pri),#6366f1);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">✅ 적용하기</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--border);padding-top:14px;">
+        <button onclick="resetSetting()" style="padding:9px 16px;background:var(--slate);color:var(--t2);border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;">↺ 초기화</button>
+        <div style="display:flex;gap:8px;">
+          <div id="settingCurrentLabel" style="font-size:11px;color:var(--t3);padding:8px 10px;background:var(--slate);border-radius:7px;"></div>
+          <button onclick="applySetting()" style="padding:9px 24px;background:linear-gradient(135deg,var(--navy),var(--pri));color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(67,97,238,.3);">✅ 기준 저장 & 적용</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1526,6 +1564,7 @@ document.addEventListener('DOMContentLoaded',function(){
     if(st) st.textContent='✅';
   }
   loadSetting();
+  setTimeout(updateSettingBadge, 100);
 });
 
 // ════════════════════════════════════════
@@ -1937,7 +1976,7 @@ async function callAnalysisAPI(mode){
     INST=`[현재보장분석 지시] 업로드 PDF는 현재 가입 보험 서류입니다. 아래를 정확히 추출해 JSON으로만 응답(마크다운 절대금지):
 1. 고객정보(이름/나이/성별/생년월일) 2. 설계사(이름/연락처/소속)
 3. 계약현황: 정상계약건수/실효해지건수/월보험료합계(원단위)
-4. 보험사별 계약목록: [보험사명, 상품명전체, 월보험료(원), 납입기간, 만기연령, 보장시작일, 보장종료일]
+4. 보험사별 계약목록: [보험사명, 상품명전체, 월보험료(원), 납입기간, 만기연령, 보장시작일, 보장종료일, isRenewal(갱신형여부true/false — 상품명에 갱신·갱신형·재가입 등 포함 시 true)]
 5. 담보별 가입금액(만원단위): 질병사망,상해사망,상해후유장해,일반암진단비,유사암진단비,뇌혈관진단비,뇌졸중진단비,뇌출혈진단비,허혈성심장질환진단비,급성심근경색진단비,중증치매진단,고액항암치료비,암주요치료비,2대질환주요치료비,질병입원의료비,질병통원의료비,상해입원의료비,상해통원의료비,암수술비,뇌혈관수술비,허혈심장수술비,질병수술비,상해수술비,간병인사용입원일당,1인실입원일당,교통사고처리지원금,변호사선임비용,벌금,일상생활배상책임
 6. 각 담보 보장상태(미가입/부족/충분) — 권장기준: 일반암진단비 3000만이상=충분, 뇌혈관/심장 각 3000만이상=충분, 나머지는 0=미가입
 7. 보험점수(0-100): 사망(death)/암(cancer)/CI뇌심장(ci)/수술입원(surgery)/재해운전자(accident) 각각 + 총점(total)
@@ -2448,7 +2487,7 @@ function renderCoverage(d,isSolo){
 function renderPremium(d){
   const bp=d.before?.premiums||[],ap=d.after?.premiums||[],bt=d.before?.total_premium||0,at=d.after?.total_premium||0,diff=at-bt;
   document.getElementById('premLayout').innerHTML=`
-    <div class="prem-col"><h4>현재 (Before)</h4>${bp.map(p=>`<div class="prem-item"><span class="prem-iname">${p.name}<small>${p.product||''}</small></span><span class="prem-ival">${(p.premium||0).toLocaleString()}원</span></div>`).join('')}<div class="prem-tot"><span>월 합계</span><span class="prem-tot-v">${bt.toLocaleString()}원</span></div></div>
+    <div class="prem-col"><h4>현재 (Before)</h4>${bp.map(p=>`<div class="prem-item" style="${p.isRenewal?'border-left:3px solid rgba(245,158,11,.6);background:#fffbeb;':''}"><span class="prem-iname">${p.name}<small>${p.product||''}${p.isRenewal?'<span style=\'margin-left:4px;background:#fef3c7;color:#b45309;padding:0 4px;border-radius:6px;font-size:9px;\'>🔄갱신</span>':''}</small></span><span class="prem-ival">${(p.premium||0).toLocaleString()}원</span></div>`).join('')}<div class="prem-tot"><span>월 합계</span><span class="prem-tot-v">${bt.toLocaleString()}원</span></div></div>
     <div class="prem-mid"><div class="prem-arr">→</div><div class="prem-diff ${diff<=0?'pd-s':'pd-m'}">${diff<=0?Math.abs(diff).toLocaleString()+'원 절감':diff.toLocaleString()+'원 증가'}</div></div>
     <div class="prem-col"><h4>제안 (After)</h4>${ap.map(p=>`<div class="prem-item aft"><span class="prem-iname">${p.name}<small>${p.product||''}</small></span><span class="prem-ival" style="color:var(--green)">${(p.premium||0).toLocaleString()}원</span></div>`).join('')}<div class="prem-tot"><span>월 합계</span><span class="prem-tot-v">${at.toLocaleString()}원</span></div></div>`;
   const pa=d.premium_analysis||{};
@@ -3947,100 +3986,301 @@ function buildCard(id,d){
 // ════════════════════════════════════════
 
 // 나이대별 프리셋 데이터
+// ══════════════════════════════════════════════════
+// 나이대별 보장기준 — 최소/일반/최대 3단계
+// ══════════════════════════════════════════════════
+let CUR_LEVEL='normal'; // 'min'|'normal'|'max'
+let CUR_AGE_IDX=2;     // 기본 40대
+
 const PRESET_AGES=[
   {
     label:'20대', range:'20~29세', color:'#0369a1', bg:'#e0f2fe',
-    desc:'사회초년생 · 기본 보장 구성',
+    desc:'사회초년생 · 기본 보장',
     prem:{min:150000,opt:250000,max:400000},
+    is60plus:false,
     recommend:{
-      '질병사망':5000,'상해사망':10000,'일반암진단비':2000,'유사암진단비':500,
-      '뇌혈관진단비':1000,'허혈성심장질환진단비':1000,'고액항암치료비':3000,
-      '암주요치료비':1000,'질병입원의료비':3000,'질병통원의료비':2000,
-      '암수술비':1000,'교통사고처리지원금':20000,'변호사선임비용':5000,
-      '일상생활배상책임':10000,'간병인사용입원일당':5
+      min:{
+        '질병사망':3000,'재해사망':5000,'상해사망':5000,'일반암진단비':1000,'유사암진단비':300,'고액항암치료비':2000,'암주요치료비':500,'항암약물치료비':500,'암수술비':500,
+        '뇌혈관진단비':500,'뇌혈관수술비':500,'뇌심장주요치료비':500,
+        '심장질환진단비':500,'허혈심장수술비':300,'심장주요치료비':300,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '교통사고처리지원금':10000,'변호사선임비용':500,'벌금대인':500,'일상생활배상책임':10000
+      },
+      normal:{
+        '질병사망':5000,'재해사망':10000,'상해사망':10000,'일반암진단비':2000,'유사암진단비':500,'고액항암치료비':3000,'암주요치료비':1000,'항암약물치료비':1000,'암수술비':1000,
+        '뇌혈관진단비':1000,'뇌혈관수술비':1000,'뇌심장주요치료비':1000,
+        '심장질환진단비':1000,'허혈심장수술비':1000,'심장주요치료비':1000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병수술비':100,'상해수술비':100,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'일상생활배상책임':10000
+      },
+      max:{
+        '질병사망':10000,'재해사망':20000,'상해사망':20000,'상해후유장해3%':5000,'질병후유장해3%':5000,
+        '일반암진단비':3000,'유사암진단비':1000,'고액항암치료비':5000,'암주요치료비':2000,'항암약물치료비':2000,'표적항암약물치료비':1000,'중입자치료비':500,'암비급여주요치료비':2000,'암수술비':2000,
+        '뇌혈관진단비':2000,'뇌혈관수술비':2000,'뇌심장주요치료비':2000,
+        '심장질환진단비':2000,'허혈심장수술비':2000,'심장주요치료비':2000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병입원일당':3,'상해입원일당':3,'중환자실질병일당':10,'중환자실상해일당':10,'1인실입원일당':5,
+        '질병수술비':200,'상해수술비':200,'질병종수술비':500,'상해종수술비':500,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000
+      }
     }
   },
   {
     label:'30대', range:'30~39세', color:'#0f766e', bg:'#f0fdfa',
-    desc:'결혼·출산 · 보장 확대 시기',
+    desc:'결혼·출산 · 보장 확대',
     prem:{min:200000,opt:350000,max:550000},
+    is60plus:false,
     recommend:{
-      '질병사망':10000,'상해사망':20000,'일반암진단비':3000,'유사암진단비':1000,
-      '뇌혈관진단비':2000,'허혈성심장질환진단비':2000,'고액항암치료비':5000,
-      '암주요치료비':2000,'질병입원의료비':5000,'질병통원의료비':3000,
-      '암수술비':2000,'뇌혈관수술비':2000,'허혈심장수술비':2000,
-      '교통사고처리지원금':20000,'변호사선임비용':5000,
-      '일상생활배상책임':10000,'간병인사용입원일당':7
+      min:{
+        '질병사망':5000,'재해사망':10000,'상해사망':10000,'일반암진단비':2000,'유사암진단비':500,'고액항암치료비':3000,'암주요치료비':1000,'항암약물치료비':1000,'암수술비':1000,
+        '뇌혈관진단비':1000,'뇌혈관수술비':1000,'뇌심장주요치료비':1000,
+        '심장질환진단비':1000,'허혈심장수술비':1000,'심장주요치료비':1000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':1000,'일상생활배상책임':10000
+      },
+      normal:{
+        '질병사망':10000,'재해사망':20000,'상해사망':20000,'상해후유장해3%':5000,'질병후유장해3%':5000,
+        '일반암진단비':3000,'유사암진단비':1000,'고액항암치료비':5000,'암주요치료비':2000,'항암약물치료비':2000,'암수술비':2000,
+        '뇌혈관진단비':2000,'뇌혈관수술비':2000,'뇌심장주요치료비':2000,
+        '심장질환진단비':2000,'허혈심장수술비':2000,'심장주요치료비':2000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병수술비':200,'상해수술비':200,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000
+      },
+      max:{
+        '질병사망':20000,'재해사망':30000,'상해사망':30000,'상해후유장해3%':10000,'질병후유장해3%':10000,
+        '일반암진단비':5000,'유사암진단비':1000,'고액항암진단비':3000,'고액항암치료비':10000,'암주요치료비':3000,'항암약물치료비':3000,'표적항암약물치료비':2000,'중입자치료비':1000,'암비급여주요치료비':3000,'암수술비':3000,
+        '뇌혈관진단비':3000,'뇌혈관수술비':3000,'뇌심장주요치료비':3000,
+        '심장질환진단비':3000,'허혈심장수술비':3000,'심장주요치료비':3000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병입원일당':5,'상해입원일당':5,'중환자실질병일당':10,'중환자실상해일당':10,'1인실입원일당':10,
+        '질병수술비':300,'상해수술비':300,'질병종수술비':1000,'상해종수술비':1000,'30대질병수술비':300,'30대상해수술비':300,
+        '간병인사용질병일당':5,'간병인사용상해일당':5,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000,'주택화재':1000
+      }
     }
   },
   {
     label:'40대', range:'40~49세', color:'#7c3aed', bg:'#f3eeff',
     desc:'중년 · 암/뇌심장 집중 보강',
     prem:{min:300000,opt:500000,max:700000},
+    is60plus:false,
     recommend:{
-      '질병사망':10000,'상해사망':20000,'일반암진단비':5000,'유사암진단비':1000,
-      '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
-      '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
-      '고액항암치료비':10000,'암주요치료비':2000,'2대질환주요치료비':2000,
-      '질병입원의료비':5000,'질병통원의료비':3000,'상해입원의료비':5000,
-      '암수술비':2000,'뇌혈관수술비':3000,'허혈심장수술비':3000,
-      '교통사고처리지원금':20000,'변호사선임비용':5000,
-      '일상생활배상책임':10000,'간병인사용입원일당':10
+      min:{
+        '질병사망':5000,'재해사망':10000,'상해사망':10000,'일반암진단비':3000,'유사암진단비':500,'고액항암치료비':5000,'암주요치료비':1000,'항암약물치료비':1000,'암수술비':1000,
+        '뇌혈관진단비':2000,'뇌혈관수술비':2000,'뇌심장주요치료비':1000,
+        '심장질환진단비':2000,'허혈심장수술비':2000,'심장주요치료비':1000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':1000,'일상생활배상책임':10000
+      },
+      normal:{
+        '질병사망':10000,'재해사망':20000,'상해사망':20000,'상해후유장해3%':5000,'질병후유장해3%':5000,
+        '일반암진단비':5000,'유사암진단비':1000,'고액항암치료비':10000,'암주요치료비':2000,'항암약물치료비':2000,'암수술비':2000,
+        '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌혈관수술비':3000,'뇌심장주요치료비':2000,
+        '심장질환진단비':3000,'허혈성심장질환진단비':3000,'허혈심장수술비':3000,'심장주요치료비':2000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병수술비':200,'상해수술비':200,'30대질병수술비':300,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000
+      },
+      max:{
+        '질병사망':20000,'재해사망':30000,'상해사망':30000,'상해후유장해3%':10000,'질병후유장해3%':10000,
+        '일반암진단비':5000,'유사암진단비':1000,'고액암진단비':3000,'고액항암치료비':10000,'암주요치료비':3000,'항암약물치료비':3000,'표적항암약물치료비':2000,'중입자치료비':1000,'암비급여주요치료비':3000,'암수술비':3000,
+        '뇌혈관진단비':5000,'뇌졸중진단비':3000,'뇌출혈진단비':2000,'뇌혈관수술비':5000,'뇌심장주요치료비':3000,
+        '심장질환진단비':5000,'허혈성심장질환진단비':3000,'급성심근경색진단비':3000,'허혈심장수술비':5000,'심장주요치료비':3000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병입원일당':5,'상해입원일당':5,'중환자실질병일당':15,'중환자실상해일당':15,'1인실입원일당':10,
+        '질병수술비':300,'상해수술비':300,'질병종수술비':1000,'상해종수술비':1000,'30대질병수술비':500,'30대상해수술비':500,'65대질병수술비':300,'65대상해수술비':300,
+        '간병인사용질병일당':5,'간병인사용상해일당':5,'치매진단비':3000,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000,'주택화재':2000
+      }
     }
   },
   {
     label:'50대', range:'50~59세', color:'#dc2626', bg:'#fef2f2',
     desc:'갱신·유지 점검 · 간병 대비',
     prem:{min:350000,opt:600000,max:900000},
+    is60plus:false,
     recommend:{
-      '질병사망':5000,'상해사망':10000,'일반암진단비':5000,'유사암진단비':1000,
-      '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
-      '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
-      '고액항암치료비':10000,'암주요치료비':2000,'2대질환주요치료비':2000,
-      '질병입원의료비':5000,'질병통원의료비':3000,
-      '암수술비':2000,'뇌혈관수술비':3000,'허혈심장수술비':3000,
-      '중증치매진단':3000,'간병인사용입원일당':10,'1인실입원일당':10,
-      '교통사고처리지원금':20000,'변호사선임비용':5000,'일상생활배상책임':10000
+      min:{
+        '질병사망':3000,'재해사망':5000,'상해사망':5000,'일반암진단비':3000,'유사암진단비':500,'고액항암치료비':5000,'암주요치료비':1000,'항암약물치료비':1000,'암수술비':1000,
+        '뇌혈관진단비':2000,'뇌혈관수술비':2000,'뇌심장주요치료비':1000,
+        '심장질환진단비':2000,'허혈심장수술비':2000,'심장주요치료비':1000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '간병인사용질병일당':5,'치매진단비':2000,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'일상생활배상책임':10000
+      },
+      normal:{
+        '질병사망':5000,'재해사망':10000,'상해사망':10000,'상해후유장해3%':5000,'질병후유장해3%':5000,
+        '일반암진단비':5000,'유사암진단비':1000,'고액항암치료비':10000,'암주요치료비':2000,'항암약물치료비':2000,'표적항암약물치료비':1000,'암비급여주요치료비':2000,'암수술비':2000,
+        '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌혈관수술비':3000,'뇌심장주요치료비':2000,
+        '심장질환진단비':3000,'허혈성심장질환진단비':3000,'허혈심장수술비':3000,'심장주요치료비':2000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '1인실입원일당':10,'중환자실질병일당':15,'질병수술비':200,'상해수술비':200,
+        '간병인사용질병일당':10,'간병인사용상해일당':10,'치매진단비':3000,'간호간병통합일당':5,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000
+      },
+      max:{
+        '질병사망':10000,'재해사망':20000,'상해사망':20000,'상해후유장해3%':10000,'질병후유장해3%':10000,
+        '일반암진단비':5000,'유사암진단비':1000,'고액암진단비':3000,'고액항암치료비':10000,'암주요치료비':3000,'항암약물치료비':3000,'표적항암약물치료비':2000,'중입자치료비':1000,'암비급여주요치료비':3000,'암수술비':3000,
+        '뇌혈관진단비':5000,'뇌졸중진단비':3000,'뇌출혈진단비':2000,'뇌혈관수술비':5000,'뇌심장주요치료비':3000,
+        '심장질환진단비':5000,'허혈성심장질환진단비':3000,'급성심근경색진단비':3000,'허혈심장수술비':5000,'심장주요치료비':3000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병입원일당':5,'상해입원일당':5,'중환자실질병일당':20,'중환자실상해일당':20,'1인실입원일당':15,
+        '질병수술비':300,'상해수술비':300,'질병종수술비':1000,'상해종수술비':1000,'30대질병수술비':500,'65대질병수술비':300,'115대질병수술비':200,
+        '간병인사용질병일당':15,'간병인사용상해일당':15,'간병인지원질병일당':10,'요양병원일당':5,'간호간병통합일당':7,'치매진단비':5000,'시설급여월':50,'재가급여월':50,'치매표적치료비':500,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000,'주택화재':2000,'급배수손해':500
+      }
     }
   },
   {
     label:'60대+', range:'60세 이상', color:'#b45309', bg:'#fef3c7',
     desc:'노후 · 간병·치매 집중 대비',
     prem:{min:300000,opt:500000,max:800000},
+    is60plus:true,
     recommend:{
-      '질병사망':3000,'상해사망':5000,'일반암진단비':3000,'유사암진단비':500,
-      '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌출혈진단비':1000,
-      '허혈성심장질환진단비':3000,'급성심근경색진단비':3000,
-      '고액항암치료비':5000,'암주요치료비':2000,
-      '질병입원의료비':5000,'질병통원의료비':3000,
-      '암수술비':2000,'뇌혈관수술비':3000,
-      '중증치매진단':5000,'간병인사용입원일당':15,'1인실입원일당':10,
-      '교통사고처리지원금':20000,'변호사선임비용':5000,'일상생활배상책임':10000
+      min:{
+        '일반암진단비':2000,'유사암진단비':500,'고액항암치료비':3000,'암주요치료비':1000,'항암약물치료비':1000,'암수술비':500,
+        '뇌혈관진단비':2000,'뇌혈관수술비':1000,'뇌심장주요치료비':1000,
+        '심장질환진단비':2000,'허혈심장수술비':1000,'심장주요치료비':1000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '간병인사용질병일당':10,'치매진단비':3000,
+        '교통사고처리지원금':10000,'일상생활배상책임':10000
+      },
+      normal:{
+        '질병사망':3000,'재해사망':5000,'일반암진단비':3000,'유사암진단비':500,'고액항암치료비':5000,'암주요치료비':2000,'항암약물치료비':2000,'표적항암약물치료비':1000,'암비급여주요치료비':2000,'암수술비':1000,
+        '뇌혈관진단비':3000,'뇌졸중진단비':2000,'뇌혈관수술비':3000,'뇌심장주요치료비':2000,
+        '심장질환진단비':3000,'허혈성심장질환진단비':2000,'허혈심장수술비':3000,'심장주요치료비':2000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '1인실입원일당':10,'중환자실질병일당':15,'질병수술비':200,
+        '간병인사용질병일당':15,'간병인사용상해일당':10,'치매진단비':5000,'간호간병통합일당':7,'요양병원일당':5,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'일상생활배상책임':10000
+      },
+      max:{
+        '질병사망':5000,'재해사망':10000,'일반암진단비':5000,'유사암진단비':1000,'고액암진단비':3000,'고액항암치료비':10000,'암주요치료비':3000,'항암약물치료비':3000,'표적항암약물치료비':2000,'중입자치료비':1000,'암비급여주요치료비':3000,'암수술비':2000,
+        '뇌혈관진단비':5000,'뇌졸중진단비':3000,'뇌출혈진단비':2000,'뇌혈관수술비':5000,'뇌심장주요치료비':3000,
+        '심장질환진단비':5000,'허혈성심장질환진단비':3000,'급성심근경색진단비':2000,'허혈심장수술비':5000,'심장주요치료비':3000,
+        '질병입원의료비':5000,'질병통원의료비':20,'상해입원의료비':5000,'상해통원의료비':20,
+        '질병입원일당':5,'상해입원일당':5,'중환자실질병일당':20,'중환자실상해일당':15,'1인실입원일당':15,
+        '질병수술비':300,'상해수술비':200,'질병종수술비':1000,'30대질병수술비':300,'115대질병수술비':200,'5대기관수술비':500,
+        '간병인사용질병일당':20,'간병인사용상해일당':15,'간병인지원질병일당':15,'요양병원일당':10,'간호간병통합일당':10,'치매진단비':5000,'시설급여월':100,'재가급여월':80,'복지용구월':10,'복합재가월':50,'치매표적치료비':1000,
+        '교통사고처리지원금':20000,'변호사선임비용':500,'벌금대인':3000,'벌금대물':500,'일상생활배상책임':10000,'주택화재':2000,'급배수손해':500
+      }
     }
   }
 ];
 
-// 담보 카테고리 분류
+// ══════════════════════════════════════════════════
+// 보장항목 카테고리 — 전면 개편
+// ══════════════════════════════════════════════════
 const SET_CATS={
-  '사망·장해':['질병사망','상해사망','상해후유장해'],
-  '암':['일반암진단비','유사암진단비','고액항암치료비','암주요치료비','암수술비'],
-  '뇌혈관':['뇌혈관진단비','뇌졸중진단비','뇌출혈진단비','뇌혈관수술비'],
-  '심장':['허혈성심장질환진단비','급성심근경색진단비','허혈심장수술비'],
-  '입원·수술':['질병입원의료비','질병통원의료비','상해입원의료비','상해통원의료비','질병수술비','상해수술비'],
-  '간병·치매':['간병인사용입원일당','1인실입원일당','중증치매진단','2대질환주요치료비'],
-  '운전자·화재':['교통사고처리지원금','변호사선임비용','벌금','일상생활배상책임']
+  '사망·장해':[
+    {key:'일반사망',          label:'일반사망',            unit:'만원', hint:'재해+질병 모두 포함 (가장 넓은 범위)'},
+    {key:'재해사망',          label:'재해사망',            unit:'만원', hint:'재해·사고로 인한 사망'},
+    {key:'상해사망',          label:'상해사망',            unit:'만원', hint:'상해로 인한 사망'},
+    {key:'질병사망',          label:'질병사망',            unit:'만원', hint:'질병으로 인한 사망'},
+    {key:'상해후유장해3%',    label:'상해후유장해(3%~)',   unit:'만원', hint:'상해 3% 이상 후유장해'},
+    {key:'질병후유장해3%',    label:'질병후유장해(3%~)',   unit:'만원', hint:'질병 3% 이상 후유장해'},
+  ],
+  '암':[
+    {key:'일반암진단비',          label:'일반암 진단비',      unit:'만원', hint:'권장 3,000만~5,000만'},
+    {key:'유사암진단비',          label:'유사암·소액암 진단비',unit:'만원',hint:'갑상선·경계성 등'},
+    {key:'고액암진단비',          label:'고액암 진단비',      unit:'만원', hint:'백혈병·뇌암·식도암 등'},
+    {key:'항암약물치료비',        label:'항암(약물) 치료비',  unit:'만원', hint:'일반항암약물·면역항암 포함'},
+    {key:'항암방사선치료비',      label:'항암(방사선) 치료비',unit:'만원', hint:'방사선 치료비'},
+    {key:'표적항암약물치료비',    label:'표적 치료비',        unit:'만원', hint:'표적항암약물 (유전자변이 확인 필요)'},
+    {key:'중입자치료비',          label:'중입자 치료비',      unit:'만원', hint:'중입자·양성자 치료 (일부 암종 한정)'},
+    {key:'암주요치료비',          label:'암 주요치료비(호르몬)',unit:'만원',hint:'수술·방사선·항암 반복보장'},
+    {key:'암비급여주요치료비',    label:'비급여 주요치료비',  unit:'만원', hint:'비급여 본인부담 주요치료비'},
+    {key:'암수술비',              label:'암 수술비',          unit:'만원', hint:'암 수술 1회당'},
+  ],
+  '뇌혈관':[
+    {key:'뇌혈관진단비',      label:'뇌혈관질환 진단비',  unit:'만원', hint:'전체 뇌혈관 질환 (가장 넓은 범위)'},
+    {key:'뇌졸중진단비',      label:'뇌졸중 진단비',      unit:'만원', hint:'뇌출혈+뇌경색'},
+    {key:'뇌출혈진단비',      label:'뇌출혈 진단비',      unit:'만원', hint:'뇌출혈 한정 (가장 좁은 범위)'},
+    {key:'뇌혈관수술비',      label:'뇌혈관 수술비',      unit:'만원', hint:'뇌혈관 수술 1회당'},
+    {key:'뇌심장주요치료비',  label:'뇌혈관 주요치료비',  unit:'만원', hint:'수술·재활 반복보장'},
+  ],
+  '심장':[
+    {key:'심장질환진단비',        label:'특정심장질환 진단비',unit:'만원', hint:'부정맥·심부전·판막 포함 (가장 넓은 범위)'},
+    {key:'허혈성심장질환진단비',  label:'허혈성심장 진단비',  unit:'만원', hint:'심근경색+협심증'},
+    {key:'급성심근경색진단비',    label:'급성심근경색 진단비',unit:'만원', hint:'가장 좁은 범위'},
+    {key:'허혈심장수술비',        label:'심장 수술비',        unit:'만원', hint:'스텐트·우회술 등'},
+    {key:'심장주요치료비',        label:'심장 주요치료비',    unit:'만원', hint:'수술 후 재활 반복보장'},
+  ],
+  '입원·수술':[
+    {key:'질병입원일당',      label:'질병 입원일당',        unit:'만원', hint:'질병 입원 1일당'},
+    {key:'상해입원일당',      label:'상해 입원일당',        unit:'만원', hint:'상해 입원 1일당'},
+    {key:'중환자실질병일당',  label:'중환자실(질병) 일당',  unit:'만원', hint:'ICU 입원 1일당'},
+    {key:'중환자실상해일당',  label:'중환자실(상해) 일당',  unit:'만원', hint:'ICU 상해 입원 1일당'},
+    {key:'1인실입원일당',     label:'1인실 입원일당',       unit:'만원', hint:'상급 1인실 입원 1일당'},
+    {key:'질병수술비',        label:'일반 수술비(질병)',    unit:'만원', hint:'1종~5종 수술비'},
+    {key:'상해수술비',        label:'일반 수술비(상해)',    unit:'만원', hint:'1종~5종 상해 수술비'},
+    {key:'질병종수술비',      label:'종수술비(질병)',       unit:'만원', hint:'종수술 (큰 수술)'},
+    {key:'상해종수술비',      label:'종수술비(상해)',       unit:'만원', hint:'종수술 상해'},
+    {key:'30대질병수술비',    label:'30대 수술비(질병)',    unit:'만원', hint:'30대 분류 수술비'},
+    {key:'30대상해수술비',    label:'30대 수술비(상해)',    unit:'만원', hint:'30대 분류 상해 수술비'},
+    {key:'65대질병수술비',    label:'65대 수술비(질병)',    unit:'만원', hint:'65대 분류 수술비'},
+    {key:'65대상해수술비',    label:'65대 수술비(상해)',    unit:'만원', hint:'65대 분류 상해 수술비'},
+    {key:'115대질병수술비',   label:'115대 수술비(질병)',   unit:'만원', hint:'115대 분류 수술비'},
+    {key:'5대기관수술비',     label:'특정 수술비(5대기관)', unit:'만원', hint:'뇌·심장·간·췌장·폐 등'},
+    {key:'종양수술비',        label:'특정 수술비(종양)',    unit:'만원', hint:'종양 특정 수술'},
+  ],
+  '실손의료비':[
+    {key:'질병입원의료비',    label:'입원의료비(질병)',    unit:'만원', hint:'기본 5,000만원 / 실손 갱신형'},
+    {key:'상해입원의료비',    label:'입원의료비(상해)',    unit:'만원', hint:'기본 5,000만원'},
+    {key:'질병통원의료비',    label:'통원의료비(질병)',    unit:'만원', hint:'20만원 이상이면 충분 판정'},
+    {key:'상해통원의료비',    label:'통원의료비(상해)',    unit:'만원', hint:'20만원 이상이면 충분 판정'},
+  ],
+  '간병·치매':[
+    {key:'간병인사용질병일당',  label:'간병인사용 일당(질병)',  unit:'만원', hint:'질병 간병인 사용 1일당'},
+    {key:'간병인사용상해일당',  label:'간병인사용 일당(상해)',  unit:'만원', hint:'상해 간병인 사용 1일당'},
+    {key:'간병인지원질병일당',  label:'간병인지원 일당(질병)',  unit:'만원', hint:'간병인 지원 서비스'},
+    {key:'간병인지원상해일당',  label:'간병인지원 일당(상해)',  unit:'만원', hint:'상해 간병인 지원'},
+    {key:'요양병원일당',        label:'요양병원 입원일당',     unit:'만원', hint:'요양병원 입원 1일당'},
+    {key:'간호간병통합일당',    label:'간호간병통합 일당',     unit:'만원', hint:'간호간병통합서비스 병동'},
+    {key:'치매진단비',          label:'치매 진단비',           unit:'만원', hint:'경증·중증 치매 포함'},
+    {key:'시설급여월',          label:'시설급여 (장기요양)',   unit:'만원', hint:'장기요양 시설급여 본인부담'},
+    {key:'재가급여월',          label:'재가급여 (장기요양)',   unit:'만원', hint:'장기요양 재가급여 본인부담'},
+    {key:'복지용구월',          label:'복지용구',              unit:'만원', hint:'장기요양 복지용구 한도'},
+    {key:'복합재가월',          label:'복합재가서비스',        unit:'만원', hint:'복합재가 월 한도'},
+    {key:'치매표적치료비',      label:'치매 표적치료(레캠비)', unit:'만원', hint:'레캠비 등 진행억제 약제비'},
+  ],
+  '운전자·화재·배상':[
+    {key:'교통사고처리지원금',  label:'교통사고처리지원금',   unit:'만원', hint:'형사합의금 최대 2억'},
+    {key:'변호사선임비용',      label:'변호사 선임비용',       unit:'만원', hint:'25년 이후 500만/심급'},
+    {key:'벌금대인',            label:'벌금(대인)',            unit:'만원', hint:'스쿨존 3,000만원'},
+    {key:'벌금대물',            label:'벌금(대물)',            unit:'만원', hint:'대물 벌금 500만원'},
+    {key:'자부상치료비',        label:'자동차사고 부상치료비', unit:'만원', hint:'본인 부상 치료비'},
+    {key:'주택화재',            label:'주택화재보험',          unit:'만원', hint:'화재·폭발 손해'},
+    {key:'급배수손해',          label:'급배수 손해',           unit:'만원', hint:'누수 시 우리집 손해 (급배수)'},
+    {key:'화재벌금',            label:'화재 벌금',             unit:'만원', hint:'화재 과실 벌금'},
+    {key:'가전제품수리',        label:'가전제품 수리비',       unit:'만원', hint:'화재 손해 가전'},
+    {key:'일상생활배상책임',    label:'일상생활 배상책임',     unit:'만원', hint:'누수 아랫집 등 타인 피해'},
+  ]
 };
 
 // 현재 설정 상태 (localStorage로 영구 저장)
 let CUR_SETTING={};
+let CUR_IS60PLUS=false;
 let SET_CAT_ACTIVE='암';
 
 function loadSetting(){
   try{
-    const saved=localStorage.getItem('ins_setting');
-    if(saved) CUR_SETTING=JSON.parse(saved);
-    else CUR_SETTING=JSON.parse(JSON.stringify(PRESET_AGES[2].recommend)); // 기본: 40대
-  }catch(e){CUR_SETTING=JSON.parse(JSON.stringify(PRESET_AGES[2].recommend));}
+    const saved=localStorage.getItem('ins_setting_v2');
+    if(saved){
+      const obj=JSON.parse(saved);
+      CUR_SETTING=obj.setting||{};
+      CUR_LEVEL=obj.level||'normal';
+      CUR_AGE_IDX=obj.ageIdx||2;
+      CUR_IS60PLUS=!!(PRESET_AGES[CUR_AGE_IDX]?.is60plus);
+    } else {
+      // 구버전 호환
+      const old=localStorage.getItem('ins_setting');
+      if(old) CUR_SETTING=JSON.parse(old);
+      else { CUR_LEVEL='normal'; CUR_AGE_IDX=2; applyAgeLevel(); }
+    }
+  }catch(e){ CUR_LEVEL='normal'; CUR_AGE_IDX=2; applyAgeLevel(); }
   // 보험료 기준
   try{
     const p=JSON.parse(localStorage.getItem('ins_prem')||'{}');
@@ -4051,7 +4291,10 @@ function loadSetting(){
 }
 
 function saveSetting(){
-  localStorage.setItem('ins_setting',JSON.stringify(CUR_SETTING));
+  localStorage.setItem('ins_setting_v2',JSON.stringify({
+    setting:CUR_SETTING, level:CUR_LEVEL, ageIdx:CUR_AGE_IDX
+  }));
+  localStorage.setItem('ins_setting',JSON.stringify(CUR_SETTING)); // 구버전 호환
   const p={
     min:parseInt(document.getElementById('setPremMin')?.value||300000),
     opt:parseInt(document.getElementById('setPremOpt')?.value||500000),
@@ -4094,6 +4337,8 @@ function initCompareGrid(d){
     id:'ec'+i, insurer:p.name||'', product:p.product||'',
     premium:p.premium||0, period:p.period||'', maturity:p.maturity||'',
     start:p.start||'', action:'keep',
+    // 갱신형 자동 감지: AI가 반환한 isRenewal 또는 상품명 키워드로 판단
+    isRenewal:!!(p.isRenewal||/(갱신|재가입|1년만기|3년갱신|5년갱신)/i.test(p.product||'')),
     coverages: d.before?.products?.[i]?.coverages?.length
       ? d.before.products[i].coverages.map(c=>({item:c.item||c.name||'', amount:parseInt(c.amount)||0}))
       : (i===0 ? covSource : []) // 첫 계약에 전체 담보 연결
@@ -4120,16 +4365,36 @@ function renderExistingContracts(){
 
   wrap.innerHTML=cs.map((c,i)=>{
     const kept=c.action==='keep';
-    return `<div style="display:grid;grid-template-columns:10px 1fr auto auto auto auto;gap:8px;align-items:center;padding:10px 13px;margin-bottom:6px;border-radius:9px;border:1.5px solid ${kept?'var(--border)':'rgba(220,38,38,.3)'};background:${kept?'#fff':'#fef2f2'};transition:all .2s;">
-      <div style="width:10px;height:10px;border-radius:50%;background:${kept?'var(--green)':'var(--red)'};"></div>
+    const isRen=!!c.isRenewal;
+    const bCol=isRen?'rgba(245,158,11,.5)':kept?'var(--border)':'rgba(220,38,38,.3)';
+    const bg=kept?(isRen?'#fffbeb':'#fff'):'#fef2f2';
+    const dot=kept?(isRen?'#f59e0b':'var(--green)'):'var(--red)';
+    const nc=kept?'var(--navy)':'#dc2626';
+    const lt=kept?'':'text-decoration:line-through;';
+    const pc=kept?'var(--navy)':'#dc2626';
+    const ren_badge=isRen?'<span style="margin-left:6px;background:#fef3c7;color:#b45309;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;border:1px solid rgba(245,158,11,.3);">🔄 갱신형</span>':'';
+    const ren_bdr=isRen?'#f59e0b':'var(--border)';
+    const ren_bg=isRen?'#fef9c7':'#fff';
+    const ren_col=isRen?'#b45309':'var(--t3)';
+    const ren_lbl=isRen?'🔄갱신':'⬜갱신?';
+    const kbdr=kept?'var(--green)':'var(--border)';
+    const kbg=kept?'var(--green-l)':'#fff';
+    const kcol=kept?'var(--green)':'var(--t3)';
+    const dbdr=kept?'var(--border)':'var(--red)';
+    const dbg=kept?'#fff':'var(--red-l)';
+    const dcol=kept?'var(--t3)':'var(--red)';
+    const prem=(c.premium||0).toLocaleString();
+    return `<div style="display:grid;grid-template-columns:10px 1fr auto auto auto auto auto;gap:7px;align-items:center;padding:10px 13px;margin-bottom:6px;border-radius:9px;border:1.5px solid ${bCol};background:${bg};transition:all .2s;">
+      <div style="width:10px;height:10px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
       <div>
-        <div style="font-size:13px;font-weight:700;color:${kept?'var(--navy)':'#dc2626'};${kept?'':'text-decoration:line-through;'}">${c.insurer} — ${c.product}</div>
+        <div style="font-size:13px;font-weight:700;color:${nc};${lt}">${c.insurer} — ${c.product}${ren_badge}</div>
         <div style="font-size:11px;color:var(--t3);margin-top:1px;">${c.period||''} ${c.maturity?'/ '+c.maturity:''} ${c.start?'· '+c.start:''}</div>
       </div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${kept?'var(--navy)':'#dc2626'};${kept?'':'text-decoration:line-through;'}">${(c.premium||0).toLocaleString()}원/월</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${pc};${lt}">${prem}원/월</div>
       <button onclick="openContractDetail(${i})" style="padding:4px 10px;background:var(--pri-l);color:var(--pri);border:1px solid var(--border2);border-radius:5px;font-size:11px;cursor:pointer;">🛡 보장</button>
-      <button onclick="setExistAction(${i},'keep')" style="padding:5px 11px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${kept?'var(--green)':'var(--border)'};background:${kept?'var(--green-l)':'#fff'};color:${kept?'var(--green)':'var(--t3)'};">유지</button>
-      <button onclick="setExistAction(${i},'delete')" style="padding:5px 11px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${kept?'var(--border)':'var(--red)'};background:${kept?'#fff':'var(--red-l)'};color:${kept?'var(--t3)':'var(--red)'};">해지</button>
+      <button onclick="toggleRenewal(${i})" style="padding:5px 9px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid ${ren_bdr};background:${ren_bg};color:${ren_col};">${ren_lbl}</button>
+      <button onclick="setExistAction(${i},'keep')" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${kbdr};background:${kbg};color:${kcol};">유지</button>
+      <button onclick="setExistAction(${i},'delete')" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${dbdr};background:${dbg};color:${dcol};">해지</button>
     </div>`;
   }).join('');
 
@@ -4159,6 +4424,17 @@ function setExistAction(i,action){
   if(!S.existingContracts||!S.existingContracts[i]) return;
   S.existingContracts[i].action=action;
   renderExistingContracts();
+}
+
+// 갱신형 토글
+function toggleRenewal(i){
+  if(!S.existingContracts||!S.existingContracts[i]) return;
+  S.existingContracts[i].isRenewal=!S.existingContracts[i].isRenewal;
+  renderExistingContracts();
+  // 갱신형이면 점수 계산 시 60대 이상처럼 갱신 보정 생략 여부 안내
+  const c=S.existingContracts[i];
+  if(c.isRenewal) showToast('🔄 '+c.product+' — 갱신형으로 표시됨 (테두리 주황색)');
+  else showToast('⬜ '+c.product+' — 갱신형 해제');
 }
 
 // 계약 상세 보장 팝업
@@ -4942,7 +5218,7 @@ function renderFullCompareReport(rows, contracts, beforePrem, afterPrem){
   const keptContracts=contracts.filter(c=>!c.isDel&&c.action!=='delete'&&!c.isNew);
 
   // ── 보험점수 계산 (before: 기존 전체, after: 유지+신규 담보 기준) ──
-  const RECOMMEND_D={...{일반암진단비:3000,고액항암치료비:5000,뇌혈관진단비:3000,허혈성심장질환진단비:3000,질병사망:10000,상해사망:20000},...CUR_SETTING};
+  const RECOMMEND_D={...{일반암진단비:3000,고액항암치료비:5000,항암약물치료비:2000,암주요치료비:2000,암수술비:2000,뇌혈관진단비:3000,심장질환진단비:3000,허혈성심장질환진단비:3000,일반사망:10000,질병사망:10000,재해사망:20000,상해사망:20000,교통사고처리지원금:20000,변호사선임비용:500,질병입원의료비:5000,질병통원의료비:20},...CUR_SETTING};
   const calcScore=(covMap)=>{
     const sg=(keys)=>{
       const vals=keys.map(k=>({v:covMap[k]||0,r:RECOMMEND_D[k]||0})).filter(x=>x.r>0);
@@ -5337,7 +5613,7 @@ function applyPropAndCompare(prop){
 
   const before_detail=S.result.coverage_detail||{};
   const after_detail=prop.coverages||{};
-  const RECOMMEND_D={...{질병사망:10000,상해사망:20000,일반암진단비:3000,뇌혈관진단비:3000,허혈성심장질환진단비:3000,고액항암치료비:5000},...CUR_SETTING};
+  const RECOMMEND_D={...{일반암진단비:3000,고액항암치료비:5000,항암약물치료비:2000,암주요치료비:2000,암수술비:2000,뇌혈관진단비:3000,심장질환진단비:3000,허혈성심장질환진단비:3000,일반사망:10000,질병사망:10000,재해사망:20000,상해사망:20000,교통사고처리지원금:20000,변호사선임비용:500,질병입원의료비:5000,질병통원의료비:20},...CUR_SETTING};
 
   // 변화 테이블 생성
   const allItems=[...new Set([...Object.keys(before_detail),...Object.keys(after_detail)])];
@@ -6085,12 +6361,15 @@ function runManualAnalysis(){
   const deathDisease=scoreGroup(['질병사망','상해후유장해(80%↑)']);
 
   const death  = deathHier>0 ? Math.max(deathHier, deathDisease) : deathDisease;
-  const cancer =scoreGroup(['일반암진단비','유사암진단비','고액항암치료비','암주요치료비']);
+  const cancer =scoreGroup(['일반암진단비','유사암진단비','고액항암치료비','암주요치료비','항암약물치료비','암주요치료비']);
   const ci     =Math.round((ciBrain+ciHeart)/2);
-  const surgery=scoreGroup(['질병입원의료비','암수술비','뇌혈관수술비']);
+  const surgery=scoreGroup(['질병입원의료비','암수술비','뇌혈관수술비','질병수술비']);
   const accident=scoreGroup(['교통사고처리지원금','변호사선임비용']);
   const total  =Math.round(death*0.15+cancer*0.25+ci*0.25+surgery*0.2+accident*0.15);
   const grade  =total>=90?'A+':total>=80?'A':total>=70?'B+':total>=60?'B':'C';
+  // 60대 이상 또는 갱신형 위주 구성은 비갱신형 점수 보정 미적용 안내
+  const hasRenewal=manualContracts.some(c=>c.isRenewal);
+  const renewalNote=(CUR_IS60PLUS||hasRenewal)?'※ 60대 이상/갱신형 계약 포함 — 갱신/비갱신 보정 미적용':'';
 
   const totalPrem=manualContracts.reduce((s,c)=>s+(c.premium||0),0);
   const missingItems=Object.entries(covStatus).filter(([,v])=>v==='미가입').map(([k])=>k).filter(k=>covDetail[k]!==undefined||CUR_SETTING[k]);
@@ -6132,7 +6411,7 @@ function runManualAnalysis(){
       strengths:Object.entries(covStatus).filter(([,v])=>v==='충분').slice(0,5).map(([k])=>k+' 충분'),
       cautions:[...missingItems.slice(0,4).map(k=>k+' 미가입 — 즉시 보완 필요'),...lackingItems.slice(0,3).map(k=>k+' 부족 — 증액 검토')],
       why_change:[],
-      notes:'수동 입력 기반 분석입니다. 실제 보험 서류와 비교·검토하세요.',
+      notes:'수동 입력 기반 분석입니다. 실제 보험 서류와 비교·검토하세요. '+(renewalNote?renewalNote:''),
       remodeling_suggestion:missingItems.length?`${missingItems.slice(0,3).join(', ')} 등 미가입 항목 신규 가입을 우선 검토하세요.`:''
     }
   };
@@ -6153,52 +6432,101 @@ function runManualAnalysis(){
   // 보험점수 계산 (권장 대비 달성률 기반)
 function openSettingModal(){
   loadSetting();
+  if(!Object.keys(SET_CATS).includes(SET_CAT_ACTIVE)) SET_CAT_ACTIVE='암';
+  renderLevelBtns();
   renderPresetCards();
   renderSettingCatTabs();
   renderSettingItems();
+  updateSettingLabel();
   document.getElementById('settingModal').classList.add('open');
 }
 function closeSettingModal(){ document.getElementById('settingModal').classList.remove('open'); }
 
+// ── 레벨 버튼 렌더 ──
+function renderLevelBtns(){
+  ['min','normal','max'].forEach(lv=>{
+    const btn=document.getElementById('levelBtn_'+lv);
+    if(!btn) return;
+    const isOn=CUR_LEVEL===lv;
+    const colors={min:'#94a3b8',normal:'#4361ee',max:'#7c3aed'};
+    const bgs={min:'#f8fafc',normal:'#e8ecff',max:'#f3eeff'};
+    btn.style.borderColor=isOn?colors[lv]:colors[lv]+'66';
+    btn.style.background=isOn?bgs[lv]:'#fff';
+    btn.style.boxShadow=isOn?`0 0 0 3px ${colors[lv]}33`:'';
+    btn.style.transform=isOn?'translateY(-2px)':'';
+  });
+  const guides={
+    min:'💡 최소 보장: 핵심 보장 항목 위주 / 보험료를 최소화하고 싶은 고객에게 적합',
+    normal:'💡 일반 보장: 표준 권장 수준 / 대부분의 고객에게 권장되는 균형잡힌 구성',
+    max:'💡 최대 보장: 최고 수준 보장 / 보험료 여유가 있고 최대한 보장받고 싶은 고객'
+  };
+  const g=document.getElementById('levelGuide');
+  if(g){g.textContent=guides[CUR_LEVEL];g.style.display='block';}
+}
+
+function setCoverLevel(lv){
+  CUR_LEVEL=lv;
+  renderLevelBtns();
+  // 나이대가 선택돼 있으면 자동 적용
+  applyAgeLevel();
+  renderSettingItems();
+  updateSettingLabel();
+}
+
+// ── 나이대 프리셋 카드 ──
 function renderPresetCards(){
   document.getElementById('presetCards').innerHTML=PRESET_AGES.map((p,i)=>`
-    <div onclick="applyPreset(${i})" style="cursor:pointer;padding:12px 10px;border-radius:9px;border:2px solid ${p.color}33;background:${p.bg};transition:all .18s;text-align:center;" id="presetCard${i}"
+    <div onclick="applyPreset(${i})" style="cursor:pointer;padding:12px 10px;border-radius:9px;border:2px solid ${i===CUR_AGE_IDX?p.color:p.color+'33'};background:${p.bg};transition:all .18s;text-align:center;box-shadow:${i===CUR_AGE_IDX?`0 0 0 2px ${p.color}33`:''}" id="presetCard${i}"
       onmouseover="this.style.borderColor='${p.color}';this.style.transform='translateY(-2px)'"
-      onmouseout="this.style.borderColor='${p.color}33';this.style.transform=''">
+      onmouseout="this.style.borderColor='${i===CUR_AGE_IDX?p.color:p.color+'33'}';this.style.transform=''">
       <div style="font-size:20px;font-weight:900;color:${p.color};font-family:'IBM Plex Mono',monospace;">${p.label}</div>
       <div style="font-size:10px;color:${p.color};margin:2px 0;font-weight:600;">${p.range}</div>
       <div style="font-size:10px;color:#475569;line-height:1.4;">${p.desc}</div>
-      <div style="margin-top:6px;font-size:10px;color:#64748b;">적정 ${(p.prem.opt/10000).toFixed(0)}만원/월</div>
+      <div style="margin-top:5px;font-size:10px;color:#64748b;">적정 ${(p.prem.opt/10000).toFixed(0)}만원/월</div>
+      ${i===CUR_AGE_IDX?`<div style="margin-top:4px;font-size:10px;font-weight:700;color:${p.color};background:${p.color}22;border-radius:8px;padding:1px 6px;">✓ 선택됨</div>`:''}
     </div>`).join('');
 }
 
 function applyPreset(idx){
-  const p=PRESET_AGES[idx];
-  CUR_SETTING=JSON.parse(JSON.stringify(p.recommend));
-  document.getElementById('setPremMin').value=p.prem.min;
-  document.getElementById('setPremOpt').value=p.prem.opt;
-  document.getElementById('setPremMax').value=p.prem.max;
-  // 선택 표시
-  PRESET_AGES.forEach((_,i)=>{
-    const el=document.getElementById('presetCard'+i);
-    if(el) el.style.boxShadow=i===idx?`0 0 0 2px ${PRESET_AGES[i].color}`:'';
-  });
+  CUR_AGE_IDX=idx;
+  applyAgeLevel();
+  renderPresetCards();
   renderSettingItems();
-  // 알림
-  const el=document.getElementById('presetCards');
-  const notice=document.createElement('div');
-  notice.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0f1e3c;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;z-index:999;pointer-events:none;';
-  notice.textContent=`✅ ${p.label} 기준 적용됨`;
-  el.style.position='relative';
-  el.appendChild(notice);
-  setTimeout(()=>notice.remove(),1200);
+  updateSettingLabel();
+  // 60대 이상 안내
+  const notice=document.getElementById('ageAppliedNotice');
+  if(notice) notice.style.display=PRESET_AGES[idx].is60plus?'block':'none';
 }
 
+function applyAgeLevel(){
+  const p=PRESET_AGES[CUR_AGE_IDX];
+  const rec=p.recommend[CUR_LEVEL]||p.recommend.normal||{};
+  CUR_SETTING=JSON.parse(JSON.stringify(rec));
+  // 보험료 기준 적용
+  const prem=p.prem;
+  const scales={min:0.7,normal:1.0,max:1.4};
+  const sc=scales[CUR_LEVEL]||1;
+  if(document.getElementById('setPremMin')) document.getElementById('setPremMin').value=Math.round(prem.min*sc);
+  if(document.getElementById('setPremOpt')) document.getElementById('setPremOpt').value=Math.round(prem.opt*sc);
+  if(document.getElementById('setPremMax')) document.getElementById('setPremMax').value=Math.round(prem.max*sc);
+  // 60대 이상 플래그 저장
+  CUR_IS60PLUS=!!p.is60plus;
+}
+
+function updateSettingLabel(){
+  const el=document.getElementById('settingCurrentLabel');
+  if(!el) return;
+  const levelNames={min:'최소',normal:'일반',max:'최대'};
+  const age=PRESET_AGES[CUR_AGE_IDX];
+  el.innerHTML=`현재: <strong style="color:var(--navy)">${age.label} / ${levelNames[CUR_LEVEL]} 보장</strong>`;
+}
+
+// ── 카테고리 탭 ──
 function renderSettingCatTabs(){
   const cats=Object.keys(SET_CATS);
   document.getElementById('settingCatTabs').innerHTML=cats.map(c=>`
-    <button onclick="setSettingCat('${c}')" id="setCat_${c.replace(/·/g,'_')}"
-      style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;
+    <button onclick="setSettingCat('${c}')" id="setCat_${c.replace(/[·\/\s]/g,'_')}"
+      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;white-space:nowrap;
         ${c===SET_CAT_ACTIVE?'background:var(--navy);color:#fff;border-color:var(--navy);':'background:#fff;color:var(--t2);border-color:var(--border);'}">${c}</button>
   `).join('');
 }
@@ -6209,77 +6537,95 @@ function setSettingCat(cat){
   renderSettingItems();
 }
 
+// ── 항목 그리드 ──
 function renderSettingItems(){
   const items=SET_CATS[SET_CAT_ACTIVE]||[];
+  // 현재 레벨 기준값
+  const levelRec=PRESET_AGES[CUR_AGE_IDX]?.recommend?.[CUR_LEVEL]||{};
   document.getElementById('settingItemGrid').innerHTML=items.map(item=>{
-    const cur=CUR_SETTING[item]||0;
-    const disp=cur>=10000?(cur/10000).toFixed(1)+'억':cur.toLocaleString()+'만';
+    const key=item.key||item;
+    const label=item.label||key;
+    const hint=item.hint||'';
+    const cur=CUR_SETTING[key]||0;
+    const lvMin=(PRESET_AGES[CUR_AGE_IDX]?.recommend?.min||{})[key]||0;
+    const lvNorm=(PRESET_AGES[CUR_AGE_IDX]?.recommend?.normal||{})[key]||0;
+    const lvMax=(PRESET_AGES[CUR_AGE_IDX]?.recommend?.max||{})[key]||0;
+    const idSafe=key.replace(/[^가-힣a-z0-9]/gi,'_');
+    const disp=cur>=10000?(cur/10000).toFixed(1)+'억':cur?cur.toLocaleString()+'만':'-';
+    const isDaily=key.includes('일당')||key.includes('월');
+    const suffix=isDaily?'만원/일':'만원';
     return `
     <div style="padding:10px 12px;background:#fff;border-radius:8px;border:1px solid var(--border);">
-      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;">${item}</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="number" id="setItem_${item.replace(/[^가-힣a-z0-9]/gi,'_')}"
-          value="${cur}" min="0" step="100"
-          style="flex:1;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:'IBM Plex Mono',monospace;text-align:right;"
-          oninput="CUR_SETTING['${item}']=Number(this.value);updateItemDisplay('${item}',Number(this.value))">
-        <span style="font-size:11px;color:var(--t3);white-space:nowrap;">만원</span>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);">${label}</div>
+          ${hint?`<div style="font-size:10px;color:var(--t3);margin-top:1px;">${hint}</div>`:''}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--pri);text-align:right;white-space:nowrap;margin-left:4px;" id="setDisp_${idSafe}">${disp}</div>
       </div>
-      <div style="font-size:11px;color:var(--t3);margin-top:4px;" id="setDisp_${item.replace(/[^가-힣a-z0-9]/gi,'_')}">현재 기준: ${disp}</div>
-      <!-- 빠른 선택 -->
-      <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;">
-        ${getQuickBtns(item).map(v=>`
-        <button onclick="setItemVal('${item}','${item.replace(/[^가-힣a-z0-9]/gi,'_')}',${v.val})"
-          style="padding:3px 8px;background:var(--slate);color:var(--t2);border:1px solid var(--border);border-radius:5px;font-size:11px;cursor:pointer;">${v.label}</button>`).join('')}
+      <div style="display:flex;align-items:center;gap:6px;">
+        <input type="number" id="setItem_${idSafe}"
+          value="${cur}" min="0" step="${isDaily?1:100}"
+          style="flex:1;border:1.5px solid var(--border);border-radius:6px;padding:5px 7px;font-size:12px;font-family:'IBM Plex Mono',monospace;text-align:right;"
+          oninput="CUR_SETTING['${key}']=Number(this.value);updateItemDisplay('${key}',Number(this.value))">
+        <span style="font-size:10px;color:var(--t3);white-space:nowrap;">${suffix}</span>
+      </div>
+      <!-- 레벨별 빠른 선택 -->
+      <div style="display:flex;gap:3px;margin-top:6px;flex-wrap:wrap;">
+        ${lvMin?`<button onclick="setItemVal('${key}','${idSafe}',${lvMin})" style="padding:2px 7px;background:#f8fafc;color:#475569;border:1px solid #94a3b8;border-radius:5px;font-size:10px;cursor:pointer;">최소 ${lvMin>=10000?(lvMin/10000).toFixed(0)+'억':lvMin+'만'}</button>`:''}
+        ${lvNorm?`<button onclick="setItemVal('${key}','${idSafe}',${lvNorm})" style="padding:2px 7px;background:#e8ecff;color:#4361ee;border:1px solid #4361ee;border-radius:5px;font-size:10px;cursor:pointer;">일반 ${lvNorm>=10000?(lvNorm/10000).toFixed(0)+'억':lvNorm+'만'}</button>`:''}
+        ${lvMax?`<button onclick="setItemVal('${key}','${idSafe}',${lvMax})" style="padding:2px 7px;background:#f3eeff;color:#7c3aed;border:1px solid #7c3aed;border-radius:5px;font-size:10px;cursor:pointer;">최대 ${lvMax>=10000?(lvMax/10000).toFixed(0)+'억':lvMax+'만'}</button>`:''}
+        <button onclick="setItemVal('${key}','${idSafe}',0)" style="padding:2px 7px;background:#fff5f5;color:#dc2626;border:1px solid #fca5a5;border-radius:5px;font-size:10px;cursor:pointer;">미설정</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function getQuickBtns(item){
-  // 항목별 빠른 선택 버튼
-  const map={
-    '질병사망':[{val:5000,label:'5천만'},{val:10000,label:'1억'},{val:20000,label:'2억'}],
-    '상해사망':[{val:10000,label:'1억'},{val:20000,label:'2억'},{val:30000,label:'3억'}],
-    '일반암진단비':[{val:2000,label:'2천만'},{val:3000,label:'3천만'},{val:5000,label:'5천만'}],
-    '고액항암치료비':[{val:5000,label:'5천만'},{val:10000,label:'1억'}],
-    '뇌혈관진단비':[{val:2000,label:'2천만'},{val:3000,label:'3천만'},{val:5000,label:'5천만'}],
-    '허혈성심장질환진단비':[{val:2000,label:'2천만'},{val:3000,label:'3천만'},{val:5000,label:'5천만'}],
-    '교통사고처리지원금':[{val:10000,label:'1억'},{val:20000,label:'2억'}],
-    '변호사선임비용':[{val:500,label:'500만'},{val:5000,label:'5천만'}],
-    '간병인사용입원일당':[{val:5,label:'5만'},{val:10,label:'10만'},{val:15,label:'15만'}],
-  };
-  return map[item]||[{val:1000,label:'1천만'},{val:2000,label:'2천만'},{val:3000,label:'3천만'}];
-}
+function getQuickBtns(item){ return []; } // 호환성 유지
 
-function setItemVal(item,idSafe,val){
-  CUR_SETTING[item]=val;
+function setItemVal(key,idSafe,val){
+  CUR_SETTING[key]=val;
   const inp=document.getElementById('setItem_'+idSafe);
   if(inp) inp.value=val;
-  updateItemDisplay(item,val);
+  updateItemDisplay(key,val);
 }
 
-function updateItemDisplay(item,val){
-  const idSafe=item.replace(/[^가-힣a-z0-9]/gi,'_');
-  const disp=val>=10000?(val/10000).toFixed(1)+'억':val.toLocaleString()+'만';
+function updateItemDisplay(key,val){
+  const idSafe=key.replace(/[^가-힣a-z0-9]/gi,'_');
+  const disp=val>=10000?(val/10000).toFixed(1)+'억':val?val.toLocaleString()+'만':'-';
   const dispEl=document.getElementById('setDisp_'+idSafe);
-  if(dispEl) dispEl.textContent='현재 기준: '+disp+'원';
+  if(dispEl) dispEl.textContent=disp;
 }
 
 function resetSetting(){
-  if(!confirm('기본값(40대 기준)으로 초기화하시겠습니까?')) return;
-  applyPreset(2);
+  if(!confirm('기본값(40대/일반 보장)으로 초기화하시겠습니까?')) return;
+  CUR_LEVEL='normal'; CUR_AGE_IDX=2;
+  applyAgeLevel();
+  renderLevelBtns();
+  renderPresetCards();
+  renderSettingItems();
+  updateSettingLabel();
 }
 
 function applySetting(){
   saveSetting();
   closeSettingModal();
-  // 분석 결과가 있으면 즉시 재평가
   if(S.result){
     renderCovStatusGrid(S.result);
     renderCovEditTable();
   }
-  // 알림
-  alert('✅ 보장 기준이 저장되었습니다.\n다음 분석부터 적용됩니다.');
+  updateSettingBadge();
+  showToast('✅ 보장 기준이 저장되었습니다.');
+}
+
+function updateSettingBadge(){
+  const badge=document.getElementById('settingStatusBadge');
+  if(!badge) return;
+  const levelNames={min:'최소',normal:'일반',max:'최대'};
+  const age=PRESET_AGES[CUR_AGE_IDX];
+  badge.textContent=`${age.label} / ${levelNames[CUR_LEVEL]}`;
+  badge.style.color=age.color;
+  badge.style.background=age.bg;
 }
 
 // ════════════════════════════════════════
