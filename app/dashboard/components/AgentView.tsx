@@ -33,36 +33,20 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
   };
 
-  // [수정] 구글 시트 이미지 레이아웃 순서에 맞게 데이터 매핑하여 전송
+  // 구글 시트 동기화 로직
   const handleGoogleSync = async (customers: any[]) => {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
-    
     if (customers.length === 0) return alert("전송할 데이터가 없습니다.");
 
-    // 이미지의 엑셀 컬럼 순서대로 데이터 재구성
     const mappedData = customers.map(c => ({
-      name: c.name || "",            // 성함
-      phone: c.phone || "",          // 연락처
-      contract_date: c.contract_date || "", // 계약일자
-      payment_day: c.payment_day || "",   // 수금날짜
-      birth: c.birth || "",          // 생년월일
-      family: c.family || "",        // 가족
-      etc1: "",                      // (공란 - 이미지상 4차 등)
-      relation: "",                  // 관계
-      status: c.status || "유지",     // 상태
-      monthly_pay: c.monthly_pay || 0, // 월납
-      insu_company: c.insu_company || "", // 보험사
-      gift: c.gift || "",            // 증권 및 선물 증정
-      contract_type: c.contract_type || "체결" // 체결여부
+      name: c.name || "", phone: c.phone || "", contract_date: c.contract_date || "",
+      payment_day: c.payment_day || "", birth: c.birth || "", family: c.family || "",
+      etc1: "", relation: "", status: c.status || "유지", monthly_pay: c.monthly_pay || 0,
+      insu_company: c.insu_company || "", gift: c.gift || "", contract_type: c.contract_type || "체결"
     }));
 
     try {
-      await fetch(GAS_URL, {
-        method: "POST",
-        mode: "no-cors", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mappedData),
-      });
+      await fetch(GAS_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mappedData) });
       alert(`🚀 성공! ${customers.length}명의 고객 데이터를 구글 시트에 기록했습니다.`);
       setIsCustOpen(false);
     } catch (error) {
@@ -94,11 +78,11 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   }
 
   async function fetchAllHistory() {
-    const { data, error } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).order('date', { ascending: false });
+    const { data } = await supabase.from("daily_perf").select("*").eq("user_id", user.id).order('date', { ascending: false });
     if (data) setHistoryData(data);
-    if (error) console.error("History fetch error:", error);
   }
 
+  // 3개월 평균 데이터 계산
   const avgData = useMemo(() => {
     const d = new Date(selectedDate);
     const startRange = new Date(d.getFullYear(), d.getMonth() - 2, 1); 
@@ -116,7 +100,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       pt: acc.pt + (Number(curr.pt) || 0),
       intro: acc.intro + (Number(curr.intro) || 0)
     }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
-    const divisor = filtered.length > 0 ? filtered.length : 3;
+    const divisor = filtered.length;
     return {
       amt: Math.round(sum.amt / divisor),
       cnt: Number((sum.cnt / divisor).toFixed(1)),
@@ -128,11 +112,18 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     };
   }, [historyData, selectedDate]);
 
+  // 기네스(Best) 및 최저실적(Worst) 계산
   const records = useMemo(() => {
     if (historyData.length === 0) return { best: null, worst: null };
     const sorted = [...historyData].sort((a, b) => (Number(b.contract_amt) || 0) - (Number(a.contract_amt) || 0));
     return { best: sorted[0], worst: sorted[sorted.length - 1] };
   }, [historyData]);
+
+  // 달성률 계산 헬퍼
+  const calculateRate = (current: number, target: number) => {
+    if (!target || target === 0) return 0;
+    return Math.round((current / target) * 100);
+  };
 
   const handleSave = async (customField?: object) => {
     const rawPayload = customField ? { ...perfInput, ...customField } : perfInput;
@@ -185,19 +176,34 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
+            {/* 실적액 입력 & 달성률 */}
             <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black text-black">
-              <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적액(만)</p>
+              <div className="flex justify-between items-end px-2">
+                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 목표 및 실적액(만)</p>
+                <p className={`text-3xl italic ${getRateStyles(calculateRate(perfInput.contract_amt, perfInput.target_amt)).text}`}>
+                  {calculateRate(perfInput.contract_amt, perfInput.target_amt)}%
+                </p>
+              </div>
               <div className="flex gap-2 font-black">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
                 <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100 outline-none" />
               </div>
+              <ProgressBar rate={calculateRate(perfInput.contract_amt, perfInput.target_amt)} />
             </div>
+
+            {/* 실적건 입력 & 달성률 */}
             <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black text-black">
-              <p className="text-[11px] text-slate-400 uppercase font-black px-2">{month}월 목표 및 실적건</p>
+              <div className="flex justify-between items-end px-2">
+                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 목표 및 실적건</p>
+                <p className={`text-3xl italic ${getRateStyles(calculateRate(perfInput.contract_cnt, perfInput.target_cnt)).text}`}>
+                  {calculateRate(perfInput.contract_cnt, perfInput.target_cnt)}%
+                </p>
+              </div>
               <div className="flex gap-2 font-black">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
                 <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center text-[18px] font-black border border-emerald-100 outline-none" />
               </div>
+              <ProgressBar rate={calculateRate(perfInput.contract_cnt, perfInput.target_cnt)} />
             </div>
           </div>
 
@@ -210,7 +216,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
-          {/* 블랙 섹션 (원본 보존) */}
           <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl space-y-8">
             <div>
               <div className="flex gap-4 mb-6 border-b border-white/10 pb-4 font-black">
@@ -234,16 +239,16 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
 
             <div className="pt-4 border-t border-white/10 font-black">
-              <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest font-black">Personal Records</p>
+              <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest font-black">Personal Records (All Time)</p>
               <div className="grid grid-cols-2 gap-4">
                 <div onClick={() => setViewDetail(records.best)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.best?.date ? 'bg-[#d4af37] border-white' : 'bg-white/5 border-white/10'}`}>
                   <p className={`text-[10px] mb-1 uppercase font-black ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-[#d4af37]'}`}>🏆 GUINNESS</p>
-                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${new Date(records.best.date).getMonth() + 1}월` : '-'}</p>
+                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${new Date(records.best.date).getFullYear()}년 ${new Date(records.best.date).getMonth() + 1}월` : '-'}</p>
                   <p className={`text-[12px] opacity-60 font-black ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
                 <div onClick={() => setViewDetail(records.worst)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.worst?.date ? 'bg-rose-500 border-white' : 'bg-white/5 border-white/10'}`}>
                   <p className={`text-[10px] mb-1 uppercase font-black ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-rose-400'}`}>📉 LOWEST</p>
-                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${new Date(records.worst.date).getMonth() + 1}월` : '-'}</p>
+                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${new Date(records.worst.date).getFullYear()}년 ${new Date(records.worst.date).getMonth() + 1}월` : '-'}</p>
                   <p className={`text-[12px] opacity-60 font-black ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
               </div>
@@ -251,7 +256,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               {viewDetail && (
                 <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300 font-black">
                   <div className="flex justify-between items-center mb-6">
-                    <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">{new Date(viewDetail.date).getMonth() + 1}월 정밀 활동 레포트</p>
+                    <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">{new Date(viewDetail.date).getFullYear()}년 {new Date(viewDetail.date).getMonth() + 1}월 정밀 레포트</p>
                     <button onClick={() => setViewDetail(null)} className="text-[10px] opacity-40 uppercase bg-black px-3 py-1 rounded-full border border-white/20">Close</button>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -266,8 +271,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
                   </div>
                   <div className="mt-6 p-4 bg-black/40 rounded-2xl border border-white/5">
                     <p className="text-[11px] text-white/70 leading-relaxed italic break-keep font-black">
-                      💡 {new Date(viewDetail.date).getMonth() + 1}월의 복기: <br/>
-                      이 달은 <span className="text-white font-black">{viewDetail.call}회의 콜</span>과 <span className="text-white font-black">{viewDetail.meet}번의 미팅</span>을 통해 <span className="text-[#d4af37] font-black">{viewDetail.contract_amt.toLocaleString()}만원</span>을 달성했습니다. 
+                      💡 {new Date(viewDetail.date).getMonth() + 1}월 복기: <br/>
+                      <span className="text-white">{viewDetail.call}회</span>의 콜과 <span className="text-white">{viewDetail.meet}번</span>의 미팅으로 <span className="text-[#d4af37]">{viewDetail.contract_amt.toLocaleString()}만원</span> 달성!
                     </p>
                   </div>
                 </div>
@@ -279,24 +284,24 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       )}
 
       {mainTab === 'edu' && (
-        <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 md:space-y-8 animate-in slide-in-from-right-4 duration-300 font-black text-black">
+        <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 animate-in slide-in-from-right-4 duration-300 font-black text-black">
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
             <h2 className="text-2xl md:text-3xl italic uppercase font-black">Weekly Training</h2>
           </div>
           <div className="bg-slate-50 p-4 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 font-black space-y-4">
-            <div className="grid grid-cols-1 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {[1, 2, 3, 4, 5].map((w) => {
                 const fieldName = `edu_${w}` as keyof typeof perfInput;
                 const isChecked = perfInput[fieldName];
                 return (
-                  <div key={w} onClick={() => handleSave({ [fieldName]: !isChecked })} className={`flex items-center gap-3 md:gap-4 p-4 md:p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99] ${isChecked ? 'bg-emerald-50 border-emerald-500' : 'bg-rose-50 border-rose-200'}`}>
-                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 italic text-xs md:text-sm font-black transition-colors ${isChecked ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
+                  <div key={w} onClick={() => handleSave({ [fieldName]: !isChecked })} className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99] ${isChecked ? 'bg-emerald-50 border-emerald-500' : 'bg-rose-50 border-rose-200'}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 italic text-sm font-black ${isChecked ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
                       {w === 5 ? "추가" : `${w}W`}
                     </div>
-                    <p className={`flex-1 text-[15px] md:text-lg italic font-black leading-snug transition-colors break-keep ${isChecked ? 'text-emerald-900' : 'text-rose-900'}`}>
+                    <p className={`flex-1 text-lg italic font-black leading-snug break-keep ${isChecked ? 'text-emerald-900' : 'text-rose-900'}`}>
                       {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
                     </p>
-                    <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${isChecked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-rose-300 text-transparent'}`}>✓</div>
+                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${isChecked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-rose-300 text-transparent'}`}>✓</div>
                   </div>
                 );
               })}
@@ -307,13 +312,28 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}
       {isCustOpen && (
-        <CustomerManagerModal 
-          onClose={() => setIsCustOpen(false)} 
-          onSaveToGoogle={handleGoogleSync} 
-        />
+        <CustomerManagerModal onClose={() => setIsCustOpen(false)} onSaveToGoogle={handleGoogleSync} />
       )}
     </div>
   )
+}
+
+/** 하위 컴포넌트 및 헬퍼 함수 **/
+
+function getRateStyles(rate: number) {
+  if (rate >= 80) return { bar: "bg-blue-500", text: "text-blue-600" };
+  if (rate >= 65) return { bar: "bg-orange-500", text: "text-orange-600" };
+  if (rate >= 30) return { bar: "bg-yellow-400", text: "text-yellow-500" };
+  return { bar: "bg-red-500", text: "text-red-600" };
+}
+
+function ProgressBar({ rate }: { rate: number }) {
+  const { bar } = getRateStyles(rate);
+  return (
+    <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden border border-black/5">
+      <div className={`${bar} h-full transition-all duration-700 ease-out`} style={{ width: `${Math.min(rate, 100)}%` }} />
+    </div>
+  );
 }
 
 function DetailBox({ label, val, color = "text-white" }: any) {
