@@ -1,4 +1,5 @@
 "use client"
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // AdminView.tsx
 // 관리자 화면 전담 파일 — UI/기능 수정은 이 파일만 건드리면 됩니다
@@ -34,8 +35,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
     setTeamMeta({
-      targetAmt:   Number(settings?.find(s => s.key === 'target_amt')?.value)        || 3000,
-      targetCnt:   Number(settings?.find(s => s.key === 'target_cnt')?.value)        || 100,
+      targetAmt:   Number(settings?.find(s => s.key === 'target_amt')?.value)         || 3000,
+      targetCnt:   Number(settings?.find(s => s.key === 'target_cnt')?.value)         || 100,
       targetIntro: Number(settings?.find(s => s.key === 'team_target_intro')?.value) || 10,
       actualIntro: Number(settings?.find(s => s.key === 'actual_intro_cnt')?.value)  || 0,
     });
@@ -45,16 +46,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
     if (users) {
       const mappedAgents = users.map(u => {
-        // 해당 직원의 전체 히스토리
         const userHistory = allPerfs?.filter(p => p.user_id === u.id) || [];
-        // 현재 선택된 달의 실적
         const currentPerf = userHistory.find(p => p.date === monthKey) || {
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
           contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
           edu_status: '미참여', is_approved: false,
         };
 
-        // 기네스/최저 데이터 산출 (매출액 0 초과 기준)
         const validHistory = userHistory.filter(h => Number(h.contract_amt) > 0);
         const sorted = [...validHistory].sort((a, b) => Number(b.contract_amt) - Number(a.contract_amt));
         
@@ -67,7 +65,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       });
       setAgents(mappedAgents);
 
-      // 전체 활동 합산 계산
       const totals = mappedAgents.reduce((acc, curr) => ({
         call:  acc.call  + Number(curr.performance.call  || 0),
         meet:  acc.meet  + Number(curr.performance.meet  || 0),
@@ -78,7 +75,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     }
   }
 
-  // ── 출력 핸들러 ──────────────────────────────────────────────────
   const handleExport = (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
       exportExcel({ agents, teamMeta, monthKey })
@@ -102,14 +98,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     setShowExportOpt(false);
   };
 
-  // 날짜 변환 함수 (YYYY-MM-DD -> YY.MM)
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   };
 
   return (
-    <div className="flex-1 space-y-6 font-black p-4 md:p-6">
+    <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
 
       {/* 상단 공지사항 */}
       <div
@@ -121,16 +116,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션: 총 4개 버튼 유지 */}
+      {/* 퀵링크 섹션 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
-        <a href="https://meta-on.kr/#/login" target="_blank" rel="noreferrer"
-          className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
-          메타온
-        </a>
-        <a href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" target="_blank" rel="noreferrer"
-          className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
-          자료실
-        </a>
+        <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
+        <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
         <button onClick={() => setIsCalcOpen(true)}
           className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
           업무지원(계산기)
@@ -143,20 +132,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           </button>
           {showExportOpt && (
             <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-2xl shadow-2xl z-50 w-full overflow-hidden">
-              <button onClick={() => handleExport('excel')}
-                className="w-full p-4 hover:bg-slate-50 border-b text-left text-[11px] font-black">
-                EXCEL 출력
-              </button>
-              <button onClick={() => handleExport('pdf')}
-                className="w-full p-4 hover:bg-slate-50 text-left text-[11px] font-black">
-                PDF 출력
-              </button>
+              <button onClick={() => handleExport('excel')} className="w-full p-4 hover:bg-slate-50 border-b text-left text-[11px] font-black">EXCEL 출력</button>
+              <button onClick={() => handleExport('pdf')} className="w-full p-4 hover:bg-slate-50 text-left text-[11px] font-black">PDF 출력</button>
             </div>
           )}
         </div>
       </div>
 
-      {/* 활동 관리 탭 클릭 시 상단에 총 합산 데이터 표기 */}
+      {/* 활동 관리 탭 합산 데이터 */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -183,53 +166,41 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
         <div className="space-y-4 md:space-y-6">
           {agents.map(a => {
-            const amtRate = Math.min(((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100, 100);
-            const cntRate = Math.min(((Number(a.performance.contract_cnt) || 0) / (Number(a.performance.target_cnt) || 1)) * 100, 100);
+            const amtRate = Math.round(((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100);
+            const cntRate = Math.round(((Number(a.performance.contract_cnt) || 0) / (Number(a.performance.target_cnt) || 1)) * 100);
 
             return (
               <div
                 key={a.id}
                 onClick={() => { setSelectedAgent(a); setActiveTab('act'); }}
-                className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-4"
+                className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-6"
               >
-                {/* 모바일 최적화: 이름과 기네스/최저 배지를 세로로 정렬 */}
-                <div className="flex flex-col gap-3">
-                  <p className="text-lg md:text-xl font-black">{a.name} CA</p>
-                  <div className="flex flex-wrap gap-2">
-                    {a.best && (
-                      <div className="text-[9px] md:text-[10px] bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-black border border-amber-200 shadow-sm">
-                        🏆 BEST: {Number(a.best.contract_amt).toLocaleString()}만 ({formatDate(a.best.date)})
-                      </div>
-                    )}
-                    {a.worst && (
-                      <div className="text-[9px] md:text-[10px] bg-rose-50 text-rose-700 px-3 py-1 rounded-full font-black border border-rose-200 shadow-sm">
-                        📉 LOW: {Number(a.worst.contract_amt).toLocaleString()}만 ({formatDate(a.worst.date)})
-                      </div>
-                    )}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-xl font-black">{a.name} CA</p>
+                    <div className="flex flex-wrap gap-2">
+                      {a.best && <RecordBadge type="BEST" amt={a.best.contract_amt} date={formatDate(a.best.date)} />}
+                      {a.worst && <RecordBadge type="LOW" amt={a.worst.contract_amt} date={formatDate(a.worst.date)} />}
+                    </div>
                   </div>
                 </div>
 
-                {/* 중앙: 실적 및 목표 가로 막대 그래프 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-[10px] italic">
-                      <span className="text-slate-500 uppercase font-black">매출 달성률 ({amtRate.toFixed(0)}%)</span>
-                      <span className="font-black text-indigo-600">{(Number(a.performance.contract_amt)||0).toLocaleString()} / {(Number(a.performance.target_amt)||0).toLocaleString()} 만</span>
-                    </div>
-                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-indigo-500 transition-all duration-700 ease-out" style={{ width: `${amtRate}%` }} />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-[10px] italic">
-                      <span className="text-slate-500 uppercase font-black">건수 달성률 ({cntRate.toFixed(0)}%)</span>
-                      <span className="font-black text-emerald-600">{(Number(a.performance.contract_cnt)||0)} / {(Number(a.performance.target_cnt)||0)} 건</span>
-                    </div>
-                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-emerald-500 transition-all duration-700 ease-out" style={{ width: `${cntRate}%` }} />
-                    </div>
-                  </div>
+                {/* 실적 달성률 섹션 (그래프 + 큰 숫자) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <MonitorBar 
+                    label="매출 달성률" 
+                    rate={amtRate} 
+                    current={a.performance.contract_amt} 
+                    target={a.performance.target_amt} 
+                    unit="만" 
+                  />
+                  <MonitorBar 
+                    label="건수 달성률" 
+                    rate={cntRate} 
+                    current={a.performance.contract_cnt} 
+                    target={a.performance.target_cnt} 
+                    unit="건" 
+                  />
                 </div>
               </div>
             );
@@ -237,7 +208,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 및 모달 모듈 */}
+      {/* 팝업 모듈 */}
       {activeTab && (
         <AdminPopups
           type={activeTab}
@@ -248,9 +219,53 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         />
       )}
       {isCalcOpen && <CalcModal onClose={() => setIsCalcOpen(false)} />}
-
     </div>
   )
+}
+
+/** 헬퍼 컴포넌트 **/
+
+function getStatusStyles(rate: number) {
+  if (rate >= 80) return { bar: "bg-blue-500", text: "text-blue-600" };
+  if (rate >= 65) return { bar: "bg-orange-500", text: "text-orange-600" };
+  if (rate >= 30) return { bar: "bg-yellow-400", text: "text-yellow-500" };
+  return { bar: "bg-red-500", text: "text-red-600" };
+}
+
+function MonitorBar({ label, rate, current, target, unit }: any) {
+  const styles = getStatusStyles(rate);
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-end">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-slate-400 uppercase font-black">{label}</span>
+          <span className="text-[12px] font-black">{Number(current||0).toLocaleString()} / {Number(target||0).toLocaleString()} {unit}</span>
+        </div>
+        <span className={`text-3xl italic font-black ${styles.text}`}>{rate}%</span>
+      </div>
+      <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+        <div className={`${styles.bar} h-full transition-all duration-1000 ease-out`} style={{ width: `${Math.min(rate, 100)}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function RecordBadge({ type, amt, date }: any) {
+  const isBest = type === "BEST";
+  return (
+    <div className={`text-[9px] md:text-[10px] px-3 py-1 rounded-full font-black border shadow-sm ${isBest ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+      {isBest ? '🏆' : '📉'} {type}: {Number(amt).toLocaleString()}만 ({date})
+    </div>
+  );
+}
+
+function QuickLink({ href, label }: any) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer"
+      className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
+      {label}
+    </a>
+  );
 }
 
 function TotalBox({ label, val, sub }: any) {
