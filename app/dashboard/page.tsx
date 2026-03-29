@@ -106,8 +106,8 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
     <div className="max-w-6xl mx-auto py-10 font-black">
       <div className="mb-12 border-l-8 border-blue-600 pl-6">
         <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
-        <p className="text-slate-400 font-bold">
-          {isApproved ? "권한에 맞는 모든 시스템이 활성화되었습니다." : "게스트용 기본 도구가 활성화되었습니다."}
+        <p className="text-slate-400 font-bold uppercase">
+          {isApproved ? "System Fully Activated" : "Guest Mode Enabled"}
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -179,8 +179,10 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
+  // ✅ 권한 판별 로직 정밀화 (AgentView 누락 방지)
   const userEmail = user?.email?.toLowerCase()?.trim();
-  const userRole = user?.role_level || user?.role;
+  const userRole = (user?.role_level || user?.role || 'agent').toLowerCase(); // 기본값 agent 설정
+
   const isMasterAccount = userEmail === 'qodbtjq@naver.com' || userRole === 'master';
   const isDirectorAccount = userRole === 'director' || userRole === 'leader';
   const isManagerAccount = userRole === 'manager';
@@ -215,7 +217,7 @@ export default function DashboardPage() {
       />
       <main className={`flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ 탭 활성화 로직: viewMode보다 우선하여 렌더링 */}
+          {/* ✅ 1순위: 탭 활성화 로직 (금융계산기 / 공시실) */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
               <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
@@ -228,17 +230,19 @@ export default function DashboardPage() {
               <iframe src="/gongsi.html" className="w-full h-full border-4 border-black rounded-[2rem] shadow-xl bg-white" />
             </div>
           ) : (
+            /* ✅ 2순위: 일반 모드 렌더링 */
             <>
               {viewMode === 'office' ? (
+                // 권한에 따른 분기 (모든 조건 실패 시 AgentView 출력)
                 isMasterAccount ? <AdminView user={user} selectedDate={selectedDate} /> :
                 isDirectorAccount ? <LeaderView user={user} selectedDate={selectedDate} /> :
                 isManagerAccount ? <ManagerView user={user} selectedDate={selectedDate} /> :
-                <AgentView user={user} selectedDate={selectedDate} />
+                <AgentView user={user} selectedDate={selectedDate} /> 
               ) : (
                 <ConsultingView 
                   menuStatus={menuStatus} 
                   isApproved={isApproved} 
-                  onTabChange={handleTabChange} // ✅ 자식 컴포넌트로 탭 변경 함수 전달
+                  onTabChange={handleTabChange} 
                 /> 
               )}
             </>
