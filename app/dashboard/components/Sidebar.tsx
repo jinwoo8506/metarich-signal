@@ -94,7 +94,7 @@ export default function Sidebar({
   };
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 퀵링크 분류 (고정 vs 상담도구)
+  // 퀵링크 데이터 설정
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
@@ -103,21 +103,32 @@ export default function Sidebar({
   ];
 
   const consultTools = [
-    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: 'tab:finance', color: 'border-black' },
+    // ✅ 재무 분석 도구 경로를 public 폴더의 html 파일로 직접 지정
+    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
-    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '#', color: 'border-slate-400' },
-    { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: '#', color: 'border-indigo-400' },
+    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: 'https://job.fss.or.kr/job/main/main.do', color: 'border-slate-400' },
+    { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'http://www.koicd.kr/kcd/kcd.do', color: 'border-indigo-400' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '#', color: 'border-rose-400' },
   ];
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 클릭 핸들러 (내부 탭 전환 및 외부 파일 연동)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const handleLinkClick = (item: any) => {
     if (isEditMode) return;
-    if (item.url === 'tab:finance' || item.id === 'show_finance') {
+
+    // 만약 내부 React 탭을 사용하는 경우 (영업도구 - 계산기 등)
+    if (item.url === 'tab:finance') {
       if (onTabChange) onTabChange('finance');
       setIsOpen(false);
       setIsConsultModalOpen(false);
-    } else if (item.url !== '#') {
+      return;
+    }
+
+    // public 폴더의 html 파일 또는 외부 URL 오픈
+    if (item.url && item.url !== '#') {
       window.open(item.url, "_blank");
+      setIsConsultModalOpen(false); // 팝업 닫기
     }
   };
 
@@ -179,7 +190,6 @@ export default function Sidebar({
           <div className="px-1 space-y-3">
             <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
 
-            {/* 고정 링크 3개 */}
             <div className="grid grid-cols-1 gap-2">
               {fixedLinks.map(item => (
                 <button key={item.id} onClick={() => handleLinkClick(item)}
@@ -190,7 +200,6 @@ export default function Sidebar({
               ))}
             </div>
 
-            {/* 상담 도구 통합 버튼 (핵심 변경사항) */}
             {isApproved && (
               <button 
                 onClick={() => setIsConsultModalOpen(true)}
