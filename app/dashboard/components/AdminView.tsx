@@ -9,7 +9,8 @@
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
-import CalcModal from "./CalcModal"
+import CalcModal from "./CalcModal" // 기존 퀵링크용 모달
+import FinancialCalc from "./FinancialCalc" // 새로 제작한 통합 금융계산기
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import { exportExcel } from "./exportExcel"
@@ -103,6 +104,23 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   };
 
+  // 만약 현재 탭이 'finance'라면 통합 금융계산기 전용 뷰를 렌더링합니다.
+  if (activeTab === 'finance') {
+    return (
+      <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex justify-end p-4">
+          <button 
+            onClick={() => setActiveTab(null)} 
+            className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37] hover:invert transition-all"
+          >
+            CLOSE CALCULATOR ×
+          </button>
+        </div>
+        <FinancialCalc />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
 
@@ -120,9 +138,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
-        <button onClick={() => setIsCalcOpen(true)}
+        
+        {/* 영업도구 클릭 시 통합 금융계산기 실행 */}
+        <button onClick={() => setActiveTab('finance')}
           className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
-          업무지원(계산기)
+          영업도구(계산기)
         </button>
 
         <div className="relative">
@@ -151,12 +171,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 메인 탭 메뉴 */}
-      <div className="grid grid-cols-4 gap-2 font-black">
-        {['perf', 'act', 'edu', 'sys'].map(t => (
+      {/* 메인 탭 메뉴 (직원 관리 탭 추가) */}
+      <div className="grid grid-cols-5 gap-2 font-black">
+        {['perf', 'act', 'edu', 'sys', 'users'].map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
-            className={`${activeTab === t ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black py-4 px-1 rounded-2xl text-[10px] md:text-sm italic font-black text-center transition-all`}>
-            {t==='perf'?'실적 관리':t==='act'?'활동 관리':t==='edu'?'교육 관리':'시스템 설정'}
+            className={`${activeTab === t ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black py-4 px-1 rounded-2xl text-[10px] md:text-sm italic font-black text-center transition-all ${t === 'users' ? 'border-dashed border-indigo-500' : ''}`}>
+            {t==='perf'?'실적 관리':t==='act'?'활동 관리':t==='edu'?'교육 관리':t==='sys'?'시스템 설정':'직원 승인'}
           </button>
         ))}
       </div>
@@ -179,8 +199,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="space-y-2">
                     <p className="text-xl font-black">{a.name} CA</p>
                     <div className="flex flex-wrap gap-2">
-                      {a.best && <RecordBadge type="BEST" amt={a.best.contract_amt} date={formatDate(a.best.date)} />}
-                      {a.worst && <RecordBadge type="LOW" amt={a.worst.contract_amt} date={formatDate(a.worst.date)} />}
+                      <RecordBadge type="BEST" amt={a.best.contract_amt} date={formatDate(a.best.date)} />
+                      <RecordBadge type="LOW" amt={a.worst.contract_amt} date={formatDate(a.worst.date)} />
                     </div>
                   </div>
                 </div>
@@ -209,7 +229,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       </section>
 
       {/* 팝업 모듈 */}
-      {activeTab && (
+      {activeTab && !['finance'].includes(activeTab) && (
         <AdminPopups
           type={activeTab}
           agents={agents}
@@ -223,8 +243,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-/** 헬퍼 컴포넌트 **/
-
+/** 헬퍼 컴포넌트 (이하 동일) **/
 function getStatusStyles(rate: number) {
   if (rate >= 80) return { bar: "bg-blue-500", text: "text-blue-600" };
   if (rate >= 65) return { bar: "bg-orange-500", text: "text-orange-600" };
@@ -252,6 +271,7 @@ function MonitorBar({ label, rate, current, target, unit }: any) {
 
 function RecordBadge({ type, amt, date }: any) {
   const isBest = type === "BEST";
+  if (!amt) return null; // 데이터 없을 시 렌더링 방지
   return (
     <div className={`text-[9px] md:text-[10px] px-3 py-1 rounded-full font-black border shadow-sm ${isBest ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
       {isBest ? '🏆' : '📉'} {type}: {Number(amt).toLocaleString()}만 ({date})
@@ -270,7 +290,7 @@ function QuickLink({ href, label }: any) {
 
 function TotalBox({ label, val, sub }: any) {
   return (
-    <div className="bg-black p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] text-center font-black">
+    <div className="bg-black p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] text-center font-black border-2 border-[#d4af37]">
       <p className="text-[#d4af37] text-[8px] md:text-[10px] uppercase mb-1">{label}</p>
       <p className="text-white text-lg md:text-xl italic">{val}건</p>
       {sub && <p className="text-[#d4af37] text-[8px] md:text-[9px] mt-1 opacity-80">{sub}</p>}
