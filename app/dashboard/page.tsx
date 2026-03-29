@@ -90,7 +90,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "수술비 검색", 
       desc: "종별 수술비 및 약관상 수술 분류 조회", 
       icon: "✂️", 
-      url: "tab:surgery", // ✅ 수술비 검색도 탭으로 연결 시
+      url: "tab:surgery", // ✅ 수술비 검색 탭 연결
       color: "border-rose-400 text-rose-500",
       staffOnly: true 
     }
@@ -115,7 +115,6 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
           <button 
             key={m.id || i}
             onClick={() => {
-              // 🔴 핵심: url이 'tab:'으로 시작하면 사이드바 시스템의 탭을 바꿉니다.
               if (m.url && m.url.startsWith('tab:')) {
                 const targetTab = m.url.split(':')[1];
                 onTabChange(targetTab);
@@ -179,19 +178,14 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // ✅ 권한 판별 로직 고도화 (DB 제약 조건 유연하게 대응)
   const userEmail = user?.email?.toLowerCase()?.trim();
-  const userRoleLevel = (user?.role_level || "").toLowerCase(); // DB의 role_level
-  const userRoleType = (user?.role || "").toLowerCase();        // DB의 role
+  const userRoleLevel = (user?.role_level || "").toLowerCase();
+  const userRoleType = (user?.role || "").toLowerCase();
 
-  // 1. 마스터 권한
   const isMasterAccount = userEmail === 'qodbtjq@naver.com' || userRoleLevel === 'master';
-  // 2. 리더/디렉터 권한
   const isDirectorAccount = userRoleLevel === 'director' || userRoleLevel === 'leader';
-  // 3. 매니저(지점장) 권한
   const isManagerAccount = userRoleLevel === 'manager';
 
-  // ✅ 승인 조건: 마스터/리더/매니저 계층이 아니더라도 role이 'agent'면 승인된 설계사로 간주
   const isApproved = isMasterAccount || 
                      isDirectorAccount || 
                      isManagerAccount || 
@@ -227,7 +221,7 @@ export default function DashboardPage() {
       />
       <main className={`flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ 1순위: 탭 활성화 로직 (금융계산기 / 공시실) */}
+          {/* ✅ 1순위: 탭 활성화 로직 (금융계산기 / 공시실 / 수술비) */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
               <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
@@ -236,14 +230,17 @@ export default function DashboardPage() {
           ) : activeTab === 'gongsi' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300 h-[85vh]">
               <HeaderBar title="Insurance Gongsi" icon="📑" onBack={() => setActiveTab(null)} />
-              {/* ✅ public/gongsi.html 호출 */}
               <iframe src="/gongsi.html" className="w-full h-full border-4 border-black rounded-[2rem] shadow-xl bg-white" />
+            </div>
+          ) : activeTab === 'surgery' ? (
+            <div className="animate-in fade-in zoom-in-95 duration-300 h-[85vh]">
+              <HeaderBar title="Surgery Search" icon="✂️" onBack={() => setActiveTab(null)} />
+              <iframe src="/susul.html" className="w-full h-full border-4 border-black rounded-[2rem] shadow-xl bg-white" />
             </div>
           ) : (
             /* ✅ 2순위: 일반 모드 렌더링 */
             <>
               {viewMode === 'office' ? (
-                // 상위 권한 분기 -> 조건 미달 시 최종적으로 AgentView 출력
                 isMasterAccount ? <AdminView user={user} selectedDate={selectedDate} /> :
                 isDirectorAccount ? <LeaderView user={user} selectedDate={selectedDate} /> :
                 isManagerAccount ? <ManagerView user={user} selectedDate={selectedDate} /> :
@@ -263,7 +260,6 @@ export default function DashboardPage() {
   );
 }
 
-// ✅ 공통 디자인 헤더 컴포넌트
 function HeaderBar({ title, icon, onBack }: any) {
   return (
     <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">

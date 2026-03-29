@@ -149,17 +149,29 @@ export default function Sidebar({
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'http://www.koicd.kr/kcd/kcd.do', color: 'border-indigo-400' },
-    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '#', color: 'border-rose-400' },
+    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: 'tab:surgery', color: 'border-rose-400' }, // ✅ '#'에서 'tab:surgery'로 업데이트
   ];
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; // 편집 모드일 때는 클릭 방지
-    if (item.url === 'tab:finance' || item.id === 'show_calc') {
+    
+    // ✅ 탭 전환 로직 통합 (금융계산기 및 수술비 검색 등)
+    if (item.url && item.url.startsWith('tab:')) {
+      const targetTab = item.url.split(':')[1];
+      if (onTabChange) onTabChange(targetTab);
+      setIsOpen(false);
+      setIsConsultModalOpen(false);
+      return;
+    }
+
+    // 기존 특정 ID 기반 로직 유지 (금융계산기 대응)
+    if (item.id === 'show_calc') {
       if (onTabChange) onTabChange('finance');
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
     }
+
     if (item.url && item.url !== '#') {
       window.open(item.url, "_blank");
       setIsConsultModalOpen(false); 
