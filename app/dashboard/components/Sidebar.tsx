@@ -22,9 +22,12 @@ export default function Sidebar({
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
   const isAdmin = userEmail === 'jw20371035@gmail.com' || user?.role === 'admin' || isMaster;
   const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
-  const isApproved = isAdmin || isStaff || user?.is_approved === true || user?.is_approved === "true";
+  
+  // 승인 여부: 관리자이거나, 직급이 있으면서 승인 상태가 true여야 함
+  const isApproved = isAdmin || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
 
   const getRankDisplay = (role: string) => {
+    if (!isApproved) return '게스트(승인대기)';
     switch(role) {
       case 'master': return '사업부장';
       case 'admin': return '지점장';
@@ -40,21 +43,21 @@ export default function Sidebar({
     show_calc: true 
   });
   const [isEditMode, setIsEditMode] = useState(false);
-
-  // --- [신규 추가] 권한 관리용 상태 ---
   const [staffList, setStaffList] = useState<any[]>([]);
   const [showStaffManager, setShowStaffManager] = useState(false);
 
   useEffect(() => {
+    // 승인된 사용자만 사무실 데이터 로드
     if (isApproved) {
       fetchDailyData();
       fetch3MonthAvg();
     }
     fetchMenuSettings();
+    
+    // 개인 메모 기능 유지
     const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
     setPrivateMemo(savedPrivate || "");
     
-    // 관리자일 경우 직원 목록 미리 로드
     if (isAdmin) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
@@ -62,7 +65,6 @@ export default function Sidebar({
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
 
-  // --- [신규 추가] 직원 목록 및 권한 업데이트 로직 ---
   async function fetchStaffList() {
     const { data } = await supabase.from("users").select("*").order("name", { ascending: true });
     if (data) setStaffList(data);
@@ -70,19 +72,13 @@ export default function Sidebar({
 
   async function updateStaffRole(staffId: string, newRole: string) {
     const { error } = await supabase.from("users").update({ role: newRole }).eq("id", staffId);
-    if (!error) {
-      alert("직급 권한이 변경되었습니다.");
-      fetchStaffList();
-    }
+    if (!error) { alert("직급 권한이 변경되었습니다."); fetchStaffList(); }
   }
 
   async function toggleStaffApproval(staffId: string, currentStatus: any) {
     const nextStatus = !(currentStatus === true || currentStatus === "true");
     const { error } = await supabase.from("users").update({ is_approved: nextStatus }).eq("id", staffId);
-    if (!error) {
-      alert(nextStatus ? "승인 완료되었습니다." : "승인이 취소되었습니다.");
-      fetchStaffList();
-    }
+    if (!error) { alert(nextStatus ? "승인 완료되었습니다." : "승인이 취소되었습니다."); fetchStaffList(); }
   }
 
   async function fetchMenuSettings() {
@@ -160,18 +156,11 @@ export default function Sidebar({
 
   return (
     <>
-      <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90"
-      >
+      <button onClick={() => setIsOpen(!isOpen)} className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90">
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
-      <aside className={`
-        fixed inset-y-0 left-0 z-50
-        bg-white border-r flex flex-col shadow-sm font-black transition-all duration-300 ease-in-out
-        ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}
-      `}>
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm font-black transition-all duration-300 ease-in-out ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
         <div className={`flex flex-col h-full transition-opacity duration-200 ${!isOpen && 'hidden'}`}>
           
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-6">
@@ -191,19 +180,18 @@ export default function Sidebar({
               )}
             </div>
 
-            {isApproved && (
-              <div className="bg-black text-white p-5 rounded-[2rem] border-2 border-[#d4af37] shadow-lg">
-                <p className="text-[9px] text-[#d4af37] uppercase font-black tracking-widest leading-none mb-1 opacity-80">Logged in as</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl italic font-black text-white">{user?.user_metadata?.full_name || user?.name || "사용자"}</span>
-                  <span className="text-sm font-black text-[#d4af37] italic opacity-90">{getRankDisplay(user?.role)}</span>
-                </div>
+            <div className={`p-5 rounded-[2rem] border-2 shadow-lg transition-colors ${isApproved ? 'bg-black text-white border-[#d4af37]' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+              <p className="text-[9px] uppercase font-black tracking-widest leading-none mb-1 opacity-80">
+                {isApproved ? 'Logged in as' : 'Access Restricted'}
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl italic font-black">{user?.user_metadata?.full_name || user?.name || "사용자"}</span>
+                <span className={`text-sm font-black italic ${isApproved ? 'text-[#d4af37]' : 'text-slate-400'}`}>{getRankDisplay(user?.role)}</span>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
-            {/* --- [신규 추가] 관리자 전용 직원 권한 설정 패널 --- */}
             {isAdmin && showStaffManager && (
               <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200 animate-in slide-in-from-top-4 duration-300">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
@@ -212,16 +200,12 @@ export default function Sidebar({
                     <div key={staff.id} className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-[11px] font-black">{staff.name || staff.email}</span>
-                        <button 
-                          onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
-                          className={`text-[8px] px-2 py-1 rounded-lg font-black ${ (staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                        <button onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
+                          className={`text-[8px] px-2 py-1 rounded-lg font-black ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
                           {(staff.is_approved === true || staff.is_approved === "true") ? '승인됨' : '미승인'}
                         </button>
                       </div>
-                      <select 
-                        value={staff.role} 
-                        onChange={(e) => updateStaffRole(staff.id, e.target.value)}
-                        className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg outline-none border-none">
+                      <select value={staff.role} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg outline-none border-none">
                         <option value="agent">설계사 (Agent)</option>
                         <option value="leader">팀장 (Leader)</option>
                         <option value="manager">실장 (Manager)</option>
@@ -234,55 +218,48 @@ export default function Sidebar({
               </div>
             )}
 
+            {/* [권한] 승인 사용자만 사무실 기능 노출 */}
             {isApproved && mode === 'office' && (
               <>
                 <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2 flex-shrink-0">
-                  <Calendar 
-                    onChange={(d: any) => onDateChange(d)} 
-                    value={selectedDate} 
-                    formatDay={(_, date) => date.getDate().toString()} 
-                    className="border-0 w-full font-black text-xs" 
-                    calendarType="gregory" 
-                    next2Label={null} 
-                    prev2Label={null} 
-                  />
+                  <Calendar onChange={(d: any) => onDateChange(d)} value={selectedDate} formatDay={(_, date) => date.getDate().toString()} className="border-0 w-full font-black text-xs" calendarType="gregory" next2Label={null} prev2Label={null} />
                 </div>
-                
                 <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
-                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">
-                    {isAdmin ? "Team Performance" : "My Performance"}
-                  </p>
+                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">{isAdmin ? "Team Performance" : "My Performance"}</p>
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="border-r border-white/10">
                       <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Amt</p>
                       <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
                     </div>
-                    <div>
-                      <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Cnt</p>
-                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
-                    </div>
+                    <div><p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Cnt</p><p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p></div>
                   </div>
                 </div>
               </>
             )}
 
+            {/* [권한] 미승인 게스트가 사무실 탭 진입 시 경고 */}
+            {!isApproved && mode === 'office' && (
+              <div className="bg-rose-50 p-6 rounded-[2rem] border border-rose-100 text-center space-y-2">
+                <span className="text-2xl">🔒</span>
+                <p className="text-[11px] font-black text-rose-600 leading-tight">관리자 승인 후<br/>사무실 업무 이용이 가능합니다.</p>
+              </div>
+            )}
+
+            {/* [공통] 퀵링크 (게스트도 사용 가능) */}
             <div className="space-y-3">
               <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
               <div className="grid grid-cols-1 gap-2">
                 {fixedLinks.map(item => (
-                  <button key={item.id} onClick={() => handleLinkClick(item)}
-                    className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 transition-all active:scale-95`}>
+                  <button key={item.id} onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 transition-all active:scale-95`}>
                     <span className="text-lg">{item.icon}</span>
                     <span className="text-[11px] font-black text-black">{item.label}</span>
                   </button>
                 ))}
               </div>
-
+              
+              {/* [권한] 상담 도구함(계산기 등)은 승인된 경우만 버튼 노출 */}
               {isApproved && (
-                <button 
-                  onClick={() => setIsConsultModalOpen(true)}
-                  className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 transition-all active:scale-95 shadow-xl group"
-                >
+                <button onClick={() => setIsConsultModalOpen(true)} className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 transition-all active:scale-95 shadow-xl group">
                   <span className="text-2xl group-hover:scale-110 transition-transform">💼</span>
                   <span className="text-[13px] font-black uppercase italic tracking-tighter">Open Consult Tools</span>
                   <span className="text-[8px] opacity-60 font-black">전문 상담 전용 도구함</span>
@@ -290,29 +267,25 @@ export default function Sidebar({
               )}
             </div>
 
+            {/* [권한] 승인 사용자만 공지사항 노출 */}
             {isApproved && mode === 'office' && (
               <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col min-h-[128px]">
                 <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Instruction</p>
-                <textarea 
-                  value={dailyAdminNotice} 
-                  onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
-                  readOnly={!isAdmin}
-                  className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-1 bg-white/30 rounded-lg'}`} 
-                />
+                <textarea value={dailyAdminNotice} onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} readOnly={!isAdmin} className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-1 bg-white/30 rounded-lg'}`} />
               </div>
             )}
           </div>
 
           <div className="p-6 pt-2 flex-shrink-0">
-            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} 
-              className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic hover:bg-red-50 transition-colors">
+            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic hover:bg-red-50 transition-colors">
               Logout System
             </button>
           </div>
         </div>
       </aside>
 
-      {isConsultModalOpen && (
+      {/* 상담 도구 팝업 (전체 기능 유지) */}
+      {isConsultModalOpen && isApproved && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="bg-black p-6 flex justify-between items-center">
@@ -322,28 +295,17 @@ export default function Sidebar({
               </div>
               <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black hover:scale-110 transition-transform">×</button>
             </div>
-            
             <div className="p-6 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar">
               {consultTools.map((item) => {
                 const isVisible = menuStatus[item.id] || isEditMode;
                 if (!isVisible) return null;
-
                 return (
                   <div key={item.id} className="relative group">
-                    <button 
-                      onClick={() => handleLinkClick(item)}
-                      className={`w-full flex items-center justify-between px-6 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all group ${!menuStatus[item.id] && 'opacity-30 grayscale'}`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="text-xl">{item.icon}</span>
-                        <span className="text-[13px] font-black">{item.label}</span>
-                      </div>
+                    <button onClick={() => handleLinkClick(item)} className={`w-full flex items-center justify-between px-6 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all group ${!menuStatus[item.id] && 'opacity-30 grayscale'}`}>
+                      <div className="flex items-center gap-4"><span className="text-xl">{item.icon}</span><span className="text-[13px] font-black">{item.label}</span></div>
                       <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-black italic">SELECT →</span>
                     </button>
-                    {isEditMode && (
-                      <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)}
-                        className="absolute -top-1 -right-1 w-6 h-6 accent-black cursor-pointer z-20" />
-                    )}
+                    {isEditMode && <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute -top-1 -right-1 w-6 h-6 accent-black cursor-pointer z-20" />}
                   </div>
                 );
               })}

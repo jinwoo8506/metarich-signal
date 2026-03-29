@@ -142,7 +142,7 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  // ✅ 탭 상태 관리 추가 (finance 등)
+  // ✅ 탭 상태 관리
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const [menuStatus, setMenuStatus] = useState<any>({
@@ -177,7 +177,6 @@ export default function DashboardPage() {
     setMenuStatus(newStatus);
   };
 
-  // ✅ 탭 전환 핸들러: viewMode를 변경하지 않고 activeTab만 설정하여 현재 모드 유지
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
   };
@@ -186,6 +185,8 @@ export default function DashboardPage() {
 
   const userEmail = user?.email?.toLowerCase()?.trim();
   const isAdminOrMaster = user.role === 'admin' || user.role === 'master' || userEmail === 'qodbtjq@naver.com';
+  
+  // 승인 로직 유지
   const isApproved = isAdminOrMaster || user?.is_approved === true || user?.is_approved === "true" || ['agent', 'leader', 'manager'].includes(user?.role);
 
   if (viewMode === 'select') {
@@ -226,10 +227,9 @@ export default function DashboardPage() {
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
       `}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ activeTab(금융계산기)이 활성화된 경우 */}
+          {/* ✅ 금융계산기 탭 활성화 시 */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
-              {/* 상단 닫기 헤더 바 */}
               <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <div className="flex items-center gap-4 ml-4">
                   <span className="text-3xl">🧮</span>
@@ -238,8 +238,6 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-slate-400 font-bold uppercase">영업 지원 금융 도구</p>
                   </div>
                 </div>
-                
-                {/* 닫기(X) 버튼: activeTab을 null로 만들어 직전 viewMode 화면으로 복구 */}
                 <button 
                   onClick={() => setActiveTab(null)}
                   className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black"
@@ -247,11 +245,10 @@ export default function DashboardPage() {
                   ×
                 </button>
               </div>
-              
               <FinancialCalc />
             </div>
           ) : (
-            /* ✅ 계산기가 아닐 때: 기존 viewMode 상태에 따른 화면 렌더링 */
+            /* ✅ 일반 뷰 모드 */
             <>
               {viewMode === 'office' ? (
                 isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
