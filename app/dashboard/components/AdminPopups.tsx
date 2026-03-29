@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react"
 import { supabase } from "../../../lib/supabase"
 
 export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onClose }: any) {
+  // --- 기존 상태 유지 ---
   const [tarAmt, setTarAmt] = useState(teamMeta.targetAmt);
   const [tarCnt, setTarCnt] = useState(teamMeta.targetCnt);
   const [tarIntro, setTarIntro] = useState(teamMeta.targetIntro);
@@ -11,15 +12,18 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [notice, setNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
 
-  // --- 신규 추가: 유저 관리 상태 ---
+  // --- 신규 추가: 유저 및 소속 관리 상태 ---
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [depts, setDepts] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from("team_settings").select("*");
-      if (data) {
-        setNotice(data.find(s => s.key === 'global_notice')?.value || "");
-        const savedEdu = data.find(s => s.key === 'edu_content')?.value;
+      // 1. 시스템 설정 로드 (공지사항, 교육내용)
+      const { data: settings } = await supabase.from("team_settings").select("*");
+      if (settings) {
+        setNotice(settings.find(s => s.key === 'global_notice')?.value || "");
+        const savedEdu = settings.find(s => s.key === 'edu_content')?.value;
         if (savedEdu) {
           try {
             setEduWeeks(JSON.parse(savedEdu));
@@ -29,20 +33,30 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         }
       }
       
-      // 승인 대기 유저 불러오기
+      // 2. 사업부, 지점 및 승인 대기 유저 로드 (테이블: users)
       if (type === 'users') {
-        const { data: users } = await supabase
-          .from("profiles")
+        const { data: dData } = await supabase.from('departments').select('*').order('name');
+        const { data: bData } = await supabase.from('branches').select('*').order('name');
+        if (dData) setDepts(dData);
+        if (bData) setBranches(bData);
+
+        const { data: userData } = await supabase
+          .from("users")
           .select("*")
           .eq("is_approved", false)
           .order("created_at", { ascending: false });
-        if (users) setPendingUsers(users);
+        if (userData) setPendingUsers(userData);
       }
     }
     load();
   }, [type]);
 
-  // --- 기존 로직 보존: 실적 승인 ---
+  // 로컬 상태 업데이트용 헬퍼 (신규 유저 소속 선택용)
+  const updatePendingUserInfo = (userId: string, field: string, value: string) => {
+    setPendingUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value } : u));
+  };
+
+  // [기능 1] 실적 승인 (기존 기능)
   const handleApprove = async (agentId: string, currentStatus: boolean) => {
     const { error } = await supabase
       .from("daily_perf")
@@ -52,27 +66,35 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     if (error) {
       alert("승인 처리 중 오류가 발생했습니다.");
     } else {
-      alert(!currentStatus ? "실적이 승인되었습니다. (직원 수정 불가)" : "승인이 해제되었습니다.");
+      alert(!currentStatus ? "실적이 승인되었습니다." : "승인이 해제되었습니다.");
       onClose(); 
     }
   };
 
-  // --- 신규 로직: 신규 직원 최종 승인 ---
-  const handleUserApproval = async (userId: string) => {
+  // [기능 2] 직원 최종 승인 (신규 기능 - users 테이블)
+  const handleUserApproval = async (user: any) => {
+    if(!user.department || !user.team) {
+      alert("사업부와 지점을 먼저 선택해주세요.");
+      return;
+    }
     const { error } = await supabase
-      .from("profiles")
-      .update({ is_approved: true })
-      .eq("id", userId);
+      .from("users")
+      .update({ 
+        is_approved: true,
+        department: user.department,
+        team: user.team 
+      })
+      .eq("id", user.id);
 
     if (error) {
       alert("직원 승인 중 오류가 발생했습니다.");
     } else {
-      alert("해당 직원이 승인되었습니다. 이제 모든 메뉴를 이용할 수 있습니다.");
-      setPendingUsers(pendingUsers.filter(u => u.id !== userId));
+      alert(`${user.name} 직원이 승인되었습니다.`);
+      setPendingUsers(pendingUsers.filter(u => u.id !== user.id));
     }
   };
 
-  // --- 기존 로직 보존: 시스템 설정 저장 ---
+  // [기능 3] 시스템 설정 저장 (기존 기능)
   const saveSys = async () => {
     await supabase.from("team_settings").upsert([
       { key: 'target_amt', value: String(tarAmt) }, 
@@ -86,7 +108,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     onClose();
   };
 
-  // --- 기존 로직 보존: 통계 계산 ---
+  // --- 통계 계산 로직 유지 ---
   const totalAmt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_amt || 0), 0);
   const totalCnt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_cnt || 0), 0);
   const totalDB = agents.reduce((s:any, a:any) => s + (a.performance?.db_assigned || 0), 0);
@@ -99,7 +121,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const getRate = (part: number, total: number) => total > 0 ? ((part / total) * 100).toFixed(1) : "0.0";
 
   return (
-    <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 font-black">
+    <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 font-black text-black">
       <style jsx global>{`
         @keyframes pulse-yellow { 0%, 100% { background-color: transparent; } 50% { background-color: #fef08a; } }
         @keyframes pulse-red { 0%, 100% { background-color: transparent; } 50% { background-color: #fecaca; } }
@@ -107,7 +129,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         .animate-pulse-red { animation: pulse-red 1.5s infinite; }
       `}</style>
 
-      <div className="bg-white w-full max-w-5xl rounded-[2rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
+      <div className="bg-white w-full max-w-6xl rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50 text-black">✕</button>
 
         {type === 'sys' && (
@@ -116,16 +138,16 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </button>
         )}
 
-        {/* --- [신규 추가] 직원 승인 관리 섹션 --- */}
+        {/* 1. User Management (직원 승인 - 신규 추가 영역) */}
         {type === 'users' && (
           <div className="space-y-6 md:space-y-10">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">User Management</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">User Management</h3>
             <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
               <table className="w-full text-left font-black">
                 <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase">
                   <tr>
                     <th className="p-4 md:p-6">Employee Info</th>
-                    <th className="p-4 md:p-6 text-center">Dept/Branch</th>
+                    <th className="p-4 md:p-6 text-center">Set Dept / Branch</th>
                     <th className="p-4 md:p-6 text-center">Action</th>
                   </tr>
                 </thead>
@@ -136,18 +158,25 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     pendingUsers.map((u) => (
                       <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-4 md:p-6">
-                          <p className="font-black text-sm md:text-xl italic text-black">{u.full_name || '이름없음'}</p>
+                          <p className="font-black text-sm md:text-xl italic">{u.name || '이름없음'}</p>
                           <p className="text-[10px] text-slate-400 font-normal">{u.email}</p>
                         </td>
-                        <td className="p-4 md:p-6 text-center font-black text-xs md:text-sm text-black">
-                          {u.dept_name} / {u.branch_name}<br/>
-                          <span className="text-[10px] text-indigo-600 font-black italic">신청: {u.requested_title}</span>
+                        <td className="p-4 md:p-6">
+                          <div className="flex flex-col md:flex-row gap-2 justify-center items-center">
+                            <select value={u.department || ""} onChange={(e) => updatePendingUserInfo(u.id, 'department', e.target.value)} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
+                              <option value="">사업부 선택</option>
+                              {depts.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
+                            </select>
+                            <select value={u.team || ""} onChange={(e) => updatePendingUserInfo(u.id, 'team', e.target.value)} disabled={!u.department} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
+                              <option value="">지점 선택</option>
+                              {branches.filter(b => b.dept_name === u.department).map(b => (
+                                <option key={b.id} value={b.name}>{b.name}</option>
+                              ))}
+                            </select>
+                          </div>
                         </td>
                         <td className="p-4 md:p-6 text-center">
-                          <button 
-                            onClick={() => handleUserApproval(u.id)}
-                            className="bg-black text-[#d4af37] px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black hover:bg-slate-800 transition-all"
-                          >
+                          <button onClick={() => handleUserApproval(u)} className="bg-black text-[#d4af37] px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black hover:bg-slate-800 transition-all">
                             APPROVE USER
                           </button>
                         </td>
@@ -160,11 +189,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* --- 기존 섹션: Team Performance --- */}
+        {/* 2. Team Performance (기존 유지) */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">Team Performance</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 font-black text-black">
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Team Performance</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 font-black">
               <StatBox label="매출 달성율" cur={totalAmt} tar={tarAmt} unit="만" color="bg-indigo-600" />
               <StatBox label="건수 달성율" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
               <StatBox label="도입 달성율" cur={curIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
@@ -181,8 +210,8 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     const blinkClass = isTenDaysIdle ? 'animate-pulse-yellow' : isLowAvg ? 'animate-pulse-red' : '';
                     return (
                       <tr key={a.id} className={`hover:bg-slate-50 transition-colors ${blinkClass}`}>
-                        <td className="p-4 md:p-6 font-black text-sm md:text-xl italic text-black">{a.name} CA</td>
-                        <td className="p-4 md:p-6 text-center font-black text-lg md:text-2xl italic text-black">{a.performance.contract_amt}만</td>
+                        <td className="p-4 md:p-6 font-black text-sm md:text-xl italic">{a.name} CA</td>
+                        <td className="p-4 md:p-6 text-center font-black text-lg md:text-2xl italic">{a.performance.contract_amt}만</td>
                         <td className="p-4 md:p-6 text-center">
                           <button onClick={() => handleApprove(a.id, a.performance.is_approved)} className={`px-4 md:px-6 py-1 md:py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black transition-all ${a.performance.is_approved ? 'bg-black text-[#d4af37]' : 'bg-white text-black hover:bg-slate-100'}`}>
                             {a.performance.is_approved ? 'APPROVED' : 'APPROVE'}
@@ -197,14 +226,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* --- 기존 섹션: Activity & Funnel --- */}
+        {/* 3. Activity & Funnel (기존 유지) */}
         {type === 'act' && (
           <div className="space-y-6 md:space-y-8 font-black">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">Activity & Funnel</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
             {!selectedAgent ? (
               <div className="space-y-6 md:space-y-12 animate-in fade-in duration-500">
                 <div className="bg-slate-50 p-6 md:p-10 rounded-2xl md:rounded-[3rem] border-2 md:border-4 border-black grid grid-cols-3 gap-2 md:gap-6 text-center shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
-                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">총 배정 DB</p><p className="text-lg md:text-3xl font-black italic text-black">{totalDB}건</p></div>
+                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">총 배정 DB</p><p className="text-lg md:text-3xl font-black italic">{totalDB}건</p></div>
                    <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">총 반품 DB</p><p className="text-lg md:text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
                    <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">전체 반품율</p><p className="text-lg md:text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
@@ -222,7 +251,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 md:space-y-10 animate-in slide-in-from-right-4 duration-300 text-black">
+              <div className="space-y-6 md:space-y-10 animate-in slide-in-from-right-4 duration-300">
                 <div className="flex flex-col md:flex-row justify-between items-center bg-black p-6 md:p-8 rounded-2xl md:rounded-[2rem] text-white gap-4 shadow-2xl">
                    <p className="text-xl md:text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Report</p>
                    <button onClick={() => handleApprove(selectedAgent.id, selectedAgent.performance.is_approved)} className={`w-full md:w-auto px-6 py-3 rounded-full text-xs font-black italic shadow-xl transition-transform active:scale-95 ${selectedAgent.performance.is_approved ? 'bg-rose-600 text-white' : 'bg-[#d4af37] text-black'}`}>
@@ -245,13 +274,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* --- 기존 섹션: Attendance & Training (가로 스크롤 및 스티키 레이아웃 유지) --- */}
+        {/* 4. Attendance & Training (기존 유지) */}
         {type === 'edu' && (
-          <div className="space-y-6 md:space-y-10">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">Attendance & Training</h3>
+          <div className="space-y-6 md:space-y-10 font-black">
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Attendance & Training</h3>
             <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-x-auto scrollbar-thin scrollbar-thumb-black shadow-xl">
-              <table className="w-full text-left font-black min-w-[600px]">
-                <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase font-black">
+              <table className="w-full text-left min-w-[600px]">
+                <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase">
                   <tr>
                     <th className="p-4 md:p-6 sticky left-0 bg-black z-10">Name</th>
                     <th className="p-4 md:p-6 text-center">Status</th>
@@ -265,9 +294,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <tbody className="divide-y-2 divide-black bg-white">
                   {agents.map((a:any) => (
                     <tr key={a.id} className="hover:bg-slate-50">
-                      <td className="p-4 md:p-6 font-black text-sm md:text-lg italic sticky left-0 bg-white border-r-2 border-black/5 text-black">{a.name} CA</td>
-                      <td className="p-4 md:p-6 text-center">
-                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[9px] font-black uppercase">
+                      <td className="p-4 md:p-6 font-black text-sm md:text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name} CA</td>
+                      <td className="p-4 md:p-6 text-center font-black">
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[9px] uppercase font-black">
                           {a.performance.edu_status || '출석완료'}
                         </span>
                       </td>
@@ -284,9 +313,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* --- 기존 섹션: Admin Settings (커리큘럼 입력부 보존) --- */}
+        {/* 5. Admin Settings (기존 유지) */}
         {type === 'sys' && (
-          <div className="space-y-6 md:space-y-10 font-black text-black">
+          <div className="space-y-6 md:space-y-10 font-black">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Admin Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
               <div className="space-y-4">
@@ -298,7 +327,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
               <div className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Global Notice (Ticker)</p>
-                  <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-4 md:p-6 bg-slate-50 border-2 md:border-4 border-black rounded-2xl outline-none font-black italic text-sm md:text-lg text-black" placeholder="공지사항 입력..." />
+                  <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-4 md:p-6 bg-slate-50 border-2 md:border-4 border-black rounded-2xl outline-none font-black italic text-sm md:text-lg" placeholder="공지사항 입력..." />
                 </div>
                 <div className="space-y-2">
                   <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Weekly Education Curriculum</p>
@@ -318,12 +347,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-// --- 공통 헬퍼 컴포넌트 보존 ---
+// --- 공통 컴포넌트들 유지 ---
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-4 md:p-6 rounded-2xl border-2 md:border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <p className="text-[9px] text-slate-400 uppercase mb-1 md:mb-2 font-black">{label}</p>
-      <p className="text-sm md:text-xl font-black italic text-black">{val || 0}</p>
+      <p className="text-sm md:text-xl font-black italic">{val || 0}</p>
     </div>
   ) 
 }
@@ -331,7 +360,7 @@ function ActivityCountBox({ label, val }: any) {
 function StatBox({ label, cur, tar, unit, color }: any) { 
   const pct = Math.min((cur / (tar || 1)) * 100, 100).toFixed(1); 
   return (
-    <div className="text-center space-y-2 md:space-y-6 font-black p-3 md:p-4 text-black">
+    <div className="text-center space-y-2 md:space-y-6 font-black p-3 md:p-4">
       <p className="text-[10px] text-slate-400 uppercase font-black">{label}</p>
       <p className="text-lg md:text-3xl font-black italic">{cur}{unit} / {tar}{unit}</p>
       <div className="w-full h-8 md:h-10 bg-slate-100 rounded-full border-2 md:border-4 border-black overflow-hidden relative font-black shadow-lg">
@@ -354,8 +383,8 @@ function FunnelBox({ label, val }: any) {
 function InputRow({ label, val, onChange }: any) { 
   return (
     <div className="flex justify-between items-center bg-slate-50 p-4 md:p-6 rounded-2xl border-2 md:border-4 border-black font-black shadow-md">
-      <label className="text-[10px] md:text-sm italic font-black uppercase text-black">{label}</label>
-      <input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-20 md:w-32 p-2 md:p-3 bg-white border-2 border-black rounded-xl text-center outline-none font-black text-sm md:text-xl italic text-black" />
+      <label className="text-[10px] md:text-sm italic font-black uppercase">{label}</label>
+      <input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-20 md:w-32 p-2 md:p-3 bg-white border-2 border-black rounded-xl text-center outline-none font-black text-sm md:text-xl italic" />
     </div>
   ) 
 }

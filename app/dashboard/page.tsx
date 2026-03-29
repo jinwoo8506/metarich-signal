@@ -10,7 +10,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
-// [상담 도구 뷰 컴포넌트]
+// [상담 도구 뷰 컴포넌트] - 기존 로직 유지
 function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
   const allMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
@@ -63,8 +63,12 @@ export default function DashboardPage() {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return router.replace("/login");
+
+      // [업데이트] 테이블명을 "users"로 통일하여 정보 조회
       const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
+      
       if (!userInfo) return router.replace("/login");
+
       const { data: settings } = await supabase.from("team_settings").select("key, value");
       setMenuStatus(settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), {}) || {});
       setUser(userInfo);
@@ -75,30 +79,25 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 🛡️ 계정 분리 절대 로직 (이메일 우선 방식)
+  // 🛡️ 계정 분리 절대 로직 유지
   const email = (user.email || "").toLowerCase().trim();
   const role = (user.role || "").toLowerCase();
   const level = (user.role_level || "").toLowerCase();
 
-  // 마스터 계정: 특정 이메일이거나 역할이 master인 경우
   const isMaster = email === 'qodbtjq@naver.com' || role === 'master' || level === 'master';
-  
-  // 리더/사업부장: 마스터가 아니며, 리더 권한을 가진 경우
   const isLeader = !isMaster && (role === 'leader' || level === 'director' || level === 'leader');
-  
-  // 지점장/매니저: 위 권한들이 아니며, 매니저 권한인 경우
   const isManager = !isMaster && !isLeader && (role === 'manager' || level === 'manager');
-
-  // 직원/설계사: 위 권한들이 아니거나, 특정 이메일인 경우 (jinwoo8506)
   const isAgent = email === 'jinwoo8506@gmail.com' || (!isMaster && !isLeader && !isManager);
 
-  // 상담 도구 접근 권한
+  // 상담 도구 접근 권한 (is_approved 값 타입 체크 강화)
   const isApproved = isMaster || isLeader || isManager || role === 'agent' || String(user.is_approved) === "true";
 
   if (viewMode === 'select') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
-        <h1 className="text-5xl mb-16 italic tracking-tighter"><span className="text-blue-600">{user.name}</span>님, 환영합니다!</h1>
+        <h1 className="text-5xl mb-16 italic tracking-tighter">
+          <span className="text-blue-600">{user.name || user.full_name}</span>님, 환영합니다!
+        </h1>
         <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
           <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
             <span className="text-8xl group-hover:scale-110 transition-transform">🏢</span>
@@ -132,7 +131,6 @@ export default function DashboardPage() {
             <><HeaderBar title="Surgery Search" icon="✂️" onBack={() => setActiveTab(null)} /><iframe src="/susul.html" className="w-full h-[80vh] border-4 border-black rounded-[2rem] bg-white shadow-xl" /></>
           ) : (
             viewMode === 'office' ? (
-              // 권한별 뷰 분기 (이메일 필터링이 이미 완료된 변수 사용)
               isMaster ? <AdminView user={user} selectedDate={selectedDate} /> :
               isLeader ? <LeaderView user={user} selectedDate={selectedDate} /> :
               isManager ? <ManagerView user={user} selectedDate={selectedDate} /> :

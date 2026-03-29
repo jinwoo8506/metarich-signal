@@ -1,7 +1,7 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AdminView.tsx (Updated: 조직 및 권한 관리 시스템 통합)
+// AdminView.tsx (Updated: DB 필드 정합성 및 조직 관리 통합)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState } from "react"
@@ -44,13 +44,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     // 2. 권한별 유저 필터링 로직 (마스터/사업부장/지점장)
     let userQuery = supabase.from("users").select("*");
     
-    // 마스터가 아니면 소속 기반 필터링 적용
-    if (user.role_level === 'director') {
-      userQuery = userQuery.eq('center', user.center); // 사업부장: 본인 센터만
-    } else if (user.role_level === 'manager') {
-      userQuery = userQuery.eq('branch', user.branch); // 지점장: 본인 지점만
+    // 마스터가 아니면 소속 기반 필터링 적용 (DB 필드명: department, team 기준)
+    if (user.role_level === 'director' || user.role === 'leader') {
+      userQuery = userQuery.eq('department', user.department); // 사업부장: 본인 사업부만
+    } else if (user.role_level === 'manager' || user.role === 'manager') {
+      userQuery = userQuery.eq('team', user.team); // 지점장: 본인 지점만
     }
-    // master는 필터 없이 전체
+    // master는 필터 없이 전체 조회
 
     const { data: users } = await userQuery;
     const { data: allPerfs } = await supabase.from("daily_perf").select("*");
@@ -58,6 +58,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     if (users) {
       const mappedAgents = users.map(u => {
         const userHistory = allPerfs?.filter(p => p.user_id === u.id) || [];
+        // 해당 월의 데이터 찾기
         const currentPerf = userHistory.find(p => p.date === monthKey) || {
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
           contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
@@ -95,7 +96,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         head: [['성명', '소속', '직책', '실적(만)', '건수', '전화', '만남', '제안']],
         body: agents.map(a => [
           a.name,
-          `${a.center || ''} ${a.branch || ''}`,
+          `${a.department || ''} ${a.team || ''}`, // PDF 출력 시 소속 필드 반영
           a.role_level,
           Number(a.performance.contract_amt || 0),
           Number(a.performance.contract_cnt || 0),
@@ -140,7 +141,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션 - 영업도구 클릭 시 계산기 실행 */}
+      {/* 퀵링크 섹션 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
@@ -173,7 +174,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 메인 탭 메뉴 - 마스터만 '직원 승인/조직 관리' 접근 가능 */}
+      {/* 메인 탭 메뉴 */}
       <div className="grid grid-cols-5 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys', 'users'].map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -186,7 +187,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       {/* 팀 모니터링 섹션 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
-          {user.role_level === 'master' ? 'All Centers' : user.center} Monitoring
+          {user.role_level === 'master' ? 'All Centers' : user.department || 'My Unit'} Monitoring
         </h2>
         <div className="space-y-4 md:space-y-6">
           {agents.filter(a => a.is_approved).map(a => {
@@ -203,7 +204,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{a.role_level || 'planner'}</span>
-                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.branch || '미소속'})</span></p>
+                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.team || '미소속'})</span></p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <RecordBadge type="BEST" amt={a.best?.contract_amt} date={a.best ? formatDate(a.best.date) : ""} />
@@ -222,11 +223,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 모듈 - AdminPopups.tsx에서 'users' 타입 처리(승인/조직이동) 포함됨 */}
+      {/* 팝업 모듈 */}
       {activeTab && !['finance'].includes(activeTab) && (
         <AdminPopups
           type={activeTab}
-          agents={agents} // 전체 유저 데이터 (미승인 포함)
+          agents={agents}
           selectedAgent={selectedAgent}
           teamMeta={teamMeta}
           onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }}
