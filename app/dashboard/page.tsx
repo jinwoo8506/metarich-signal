@@ -177,10 +177,9 @@ export default function DashboardPage() {
     setMenuStatus(newStatus);
   };
 
-  // ✅ 탭 전환 핸들러
+  // ✅ 탭 전환 핸들러: viewMode를 변경하지 않고 activeTab만 설정하여 현재 모드 유지
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setViewMode('office'); // 탭 내용 표시를 위해 office 모드 레이아웃 사용
   };
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
@@ -219,7 +218,6 @@ export default function DashboardPage() {
         onMenuStatusChange={handleMenuStatusChange}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
-        // ✅ 사이드바에서 탭 전환 연동
         onTabChange={handleTabChange}
         activeTab={activeTab}
       />
@@ -228,27 +226,43 @@ export default function DashboardPage() {
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
       `}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ activeTab 상태에 따른 컴포넌트 분기 처리 */}
+          {/* ✅ activeTab(금융계산기)이 활성화된 경우 */}
           {activeTab === 'finance' ? (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-6 flex justify-between items-center">
+            <div className="animate-in fade-in zoom-in-95 duration-300">
+              {/* 상단 닫기 헤더 바 */}
+              <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center gap-4 ml-4">
+                  <span className="text-3xl">🧮</span>
+                  <div>
+                    <h2 className="text-xl font-black italic uppercase">Financial Calculator</h2>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">영업 지원 금융 도구</p>
+                  </div>
+                </div>
+                
+                {/* 닫기(X) 버튼: activeTab을 null로 만들어 직전 viewMode 화면으로 복구 */}
                 <button 
                   onClick={() => setActiveTab(null)}
-                  className="px-6 py-2 bg-black text-white rounded-full font-black text-xs hover:bg-slate-800 transition-all"
+                  className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black"
                 >
-                  ← 돌아가기
+                  ×
                 </button>
               </div>
+              
               <FinancialCalc />
             </div>
-          ) : viewMode === 'office' ? (
-            isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
           ) : (
-            <ConsultingView 
-              menuStatus={menuStatus} 
-              isApproved={isApproved} 
-              onTabChange={handleTabChange} // ✅ 컨설팅 뷰 내 카드 클릭 연동
-            /> 
+            /* ✅ 계산기가 아닐 때: 기존 viewMode 상태에 따른 화면 렌더링 */
+            <>
+              {viewMode === 'office' ? (
+                isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
+              ) : (
+                <ConsultingView 
+                  menuStatus={menuStatus} 
+                  isApproved={isApproved} 
+                  onTabChange={handleTabChange}
+                /> 
+              )}
+            </>
           )}
         </div>
       </main>
