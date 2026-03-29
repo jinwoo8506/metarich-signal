@@ -142,7 +142,6 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
-  // ✅ 탭 상태 관리
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const [menuStatus, setMenuStatus] = useState<any>({
@@ -183,14 +182,16 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
+  // ✅ 1. 이메일 정규화 (오타 및 대소문자 방지)
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // ✅ 권한 판별 로직 수정 (사이드바와 일치)
-  const isAdminOrMaster = user.role === 'admin' || user.role === 'master' || userEmail === 'qodbtjq@naver.com';
-  const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
-  
-  // 관리자이거나, 직급이 있으면서 명확히 승인(true) 상태여야 함
-  const isApproved = isAdminOrMaster || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
+  // ✅ 2. 관리자/마스터 판단 (가장 높은 우선순위)
+  const isMaster = user.role === 'master' || userEmail === 'qodbtjq@naver.com';
+  const isAdmin = user.role === 'admin' || userEmail === 'jw20371035@gmail.com';
+  const isAdminOrMaster = isAdmin || isMaster;
+
+  // ✅ 3. 승인 여부 판별 (관리자라면 승인 여부와 상관없이 '무조건 승인됨'으로 처리)
+  const isApproved = isAdminOrMaster || (user?.is_approved === true || user?.is_approved === "true");
 
   if (viewMode === 'select') {
     return (
@@ -230,7 +231,6 @@ export default function DashboardPage() {
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
       `}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ 금융계산기 탭 활성화 시 */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
               <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -251,7 +251,6 @@ export default function DashboardPage() {
               <FinancialCalc />
             </div>
           ) : (
-            /* ✅ 일반 뷰 모드 */
             <>
               {viewMode === 'office' ? (
                 isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
