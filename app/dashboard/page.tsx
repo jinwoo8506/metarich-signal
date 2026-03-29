@@ -184,10 +184,13 @@ export default function DashboardPage() {
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
   const userEmail = user?.email?.toLowerCase()?.trim();
-  const isAdminOrMaster = user.role === 'admin' || user.role === 'master' || userEmail === 'qodbtjq@naver.com';
   
-  // 승인 로직 유지
-  const isApproved = isAdminOrMaster || user?.is_approved === true || user?.is_approved === "true" || ['agent', 'leader', 'manager'].includes(user?.role);
+  // ✅ 권한 판별 로직 수정 (사이드바와 일치)
+  const isAdminOrMaster = user.role === 'admin' || user.role === 'master' || userEmail === 'qodbtjq@naver.com';
+  const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
+  
+  // 관리자이거나, 직급이 있으면서 명확히 승인(true) 상태여야 함
+  const isApproved = isAdminOrMaster || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
 
   if (viewMode === 'select') {
     return (
