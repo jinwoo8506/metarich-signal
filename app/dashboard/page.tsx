@@ -7,10 +7,10 @@ import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/masterView"
 import LeaderView from "./components/LeaderView"
-import ManagerView from "./components/ManagerView"
+import ManagerView from "./components/ManagerView" // ✅ 매니저뷰 임포트 유지
 import FinancialCalc from "./components/FinancialCalc"
 
-// ✅ 상담 모드 메인 콘텐츠 (수정됨)
+// ✅ 상담 모드 메인 콘텐츠 (사이드바 탭 시스템과 완전 연동)
 function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
   const allMenus = [
     { 
@@ -54,7 +54,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "재무 / 보장분석", 
       desc: "종합 금융 플래닝 및 분석 리포트", 
       icon: "📊", 
-      url: "tab:finance_planner", // ✅ 사이드바 탭과 일치시켜야 함
+      url: "/financial_planner.html", 
       color: "border-black text-black",
       staffOnly: true 
     },
@@ -72,7 +72,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "보험사 공시실(약관)", 
       desc: "각 보험사별 상품 공시실 바로가기", 
       icon: "📑", 
-      url: "tab:gongsi", // 🔴 중요: 외부 링크가 아닌 사이드바 '공시실' 탭으로 연결
+      url: "tab:gongsi", // 🔴 사이드바 '공시실' 탭과 연동
       color: "border-slate-400 text-slate-500",
       staffOnly: true 
     },
@@ -90,7 +90,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "수술비 검색", 
       desc: "종별 수술비 및 약관상 수술 분류 조회", 
       icon: "✂️", 
-      url: "tab:surgery", // ✅ 수술비 검색도 탭 연결
+      url: "tab:surgery", // ✅ 수술비 검색도 탭으로 연결 시
       color: "border-rose-400 text-rose-500",
       staffOnly: true 
     }
@@ -115,11 +115,11 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
           <button 
             key={m.id || i}
             onClick={() => {
-              // ✅ 'tab:'으로 시작하는 url은 사이드바 탭 전환 로직(onTabChange)을 수행함
-              if (m.url.startsWith('tab:')) {
+              // 🔴 핵심: url이 'tab:'으로 시작하면 사이드바 시스템의 탭을 바꿉니다.
+              if (m.url && m.url.startsWith('tab:')) {
                 const targetTab = m.url.split(':')[1];
                 onTabChange(targetTab);
-              } else if (m.url !== "#") {
+              } else if (m.url && m.url !== "#") {
                 window.open(m.url, "_blank");
               }
             }}
@@ -174,23 +174,16 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
-  const handleMenuStatusChange = (newStatus: any) => {
-    setMenuStatus(newStatus);
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-  };
+  const handleMenuStatusChange = (newStatus: any) => setMenuStatus(newStatus);
+  const handleTabChange = (tab: string) => setActiveTab(tab);
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
   const userEmail = user?.email?.toLowerCase()?.trim();
   const userRole = user?.role_level || user?.role;
-
   const isMasterAccount = userEmail === 'qodbtjq@naver.com' || userRole === 'master';
   const isDirectorAccount = userRole === 'director' || userRole === 'leader';
   const isManagerAccount = userRole === 'manager';
-
   const isApproved = isMasterAccount || isDirectorAccount || isManagerAccount || (user?.is_approved === true || user?.is_approved === "true");
 
   if (viewMode === 'select') {
@@ -214,67 +207,60 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
       <Sidebar 
-        user={user} 
-        selectedDate={selectedDate} 
-        onDateChange={setSelectedDate} 
-        mode={viewMode} 
+        user={user} selectedDate={selectedDate} onDateChange={setSelectedDate} mode={viewMode} 
         onBack={() => { setViewMode('select'); setActiveTab(null); }} 
-        externalMenuStatus={menuStatus} 
-        onMenuStatusChange={handleMenuStatusChange}
-        isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
-        onTabChange={handleTabChange}
-        activeTab={activeTab}
-        isAdmin={isMasterAccount}
+        externalMenuStatus={menuStatus} onMenuStatusChange={handleMenuStatusChange}
+        isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen}
+        onTabChange={handleTabChange} activeTab={activeTab} isAdmin={isMasterAccount}
       />
-      <main className={`
-        flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
-      `}>
+      <main className={`flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ 사이드바 탭의 상태(activeTab)에 따른 화면 출력 로직 */}
+          {/* ✅ 탭 활성화 로직: viewMode보다 우선하여 렌더링 */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
-              <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                <div className="flex items-center gap-4 ml-4">
-                  <span className="text-3xl">🧮</span>
-                  <div>
-                    <h2 className="text-xl font-black italic uppercase">Financial Calculator</h2>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">영업 지원 금융 도구</p>
-                  </div>
-                </div>
-                <button onClick={() => setActiveTab(null)} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
-              </div>
+              <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
               <FinancialCalc />
             </div>
           ) : activeTab === 'gongsi' ? (
-            <div className="p-10 text-center font-black">
-              <h2 className="text-3xl italic">공시실 화면 연결 준비 중...</h2>
-              <button onClick={() => setActiveTab(null)} className="mt-4 text-blue-600 underline">뒤로가기</button>
+            <div className="animate-in fade-in zoom-in-95 duration-300 h-[85vh]">
+              <HeaderBar title="Insurance Gongsi" icon="📑" onBack={() => setActiveTab(null)} />
+              {/* ✅ public/gongsi.html 호출 */}
+              <iframe src="/gongsi.html" className="w-full h-full border-4 border-black rounded-[2rem] shadow-xl bg-white" />
             </div>
           ) : (
             <>
               {viewMode === 'office' ? (
-                isMasterAccount ? (
-                  <AdminView user={user} selectedDate={selectedDate} /> 
-                ) : isDirectorAccount ? (
-                  <LeaderView user={user} selectedDate={selectedDate} />
-                ) : isManagerAccount ? (
-                  <ManagerView user={user} selectedDate={selectedDate} />
-                ) : (
-                  <AgentView user={user} selectedDate={selectedDate} />
-                )
+                isMasterAccount ? <AdminView user={user} selectedDate={selectedDate} /> :
+                isDirectorAccount ? <LeaderView user={user} selectedDate={selectedDate} /> :
+                isManagerAccount ? <ManagerView user={user} selectedDate={selectedDate} /> :
+                <AgentView user={user} selectedDate={selectedDate} />
               ) : (
                 <ConsultingView 
                   menuStatus={menuStatus} 
                   isApproved={isApproved} 
-                  onTabChange={handleTabChange}
+                  onTabChange={handleTabChange} // ✅ 자식 컴포넌트로 탭 변경 함수 전달
                 /> 
               )}
             </>
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+// ✅ 공통 디자인 헤더 컴포넌트
+function HeaderBar({ title, icon, onBack }: any) {
+  return (
+    <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex items-center gap-4 ml-4">
+        <span className="text-3xl">{icon}</span>
+        <div>
+          <h2 className="text-xl font-black italic uppercase">{title}</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase">Professional Support Tool</p>
+        </div>
+      </div>
+      <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
     </div>
   );
 }
