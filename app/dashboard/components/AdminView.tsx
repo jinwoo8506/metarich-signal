@@ -134,17 +134,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
+      {/* 퀵링크 섹션 - 영업도구(계산기) 버튼 삭제됨 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
         
-        {/* 영업도구 클릭 시 통합 금융계산기 실행 */}
-        <button onClick={() => setActiveTab('finance')}
-          className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
-          영업도구(계산기)
-        </button>
-
         <div className="relative">
           <button onClick={() => setShowExportOpt(!showExportOpt)}
             className="w-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">
@@ -171,7 +165,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 메인 탭 메뉴 (직원 관리 탭 추가) */}
+      {/* 메인 탭 메뉴 */}
       <div className="grid grid-cols-5 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys', 'users'].map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -199,13 +193,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="space-y-2">
                     <p className="text-xl font-black">{a.name} CA</p>
                     <div className="flex flex-wrap gap-2">
-                      <RecordBadge type="BEST" amt={a.best.contract_amt} date={formatDate(a.best.date)} />
-                      <RecordBadge type="LOW" amt={a.worst.contract_amt} date={formatDate(a.worst.date)} />
+                      <RecordBadge type="BEST" amt={a.best?.contract_amt} date={a.best ? formatDate(a.best.date) : ""} />
+                      <RecordBadge type="LOW" amt={a.worst?.contract_amt} date={a.worst ? formatDate(a.worst.date) : ""} />
                     </div>
                   </div>
                 </div>
 
-                {/* 실적 달성률 섹션 (그래프 + 큰 숫자) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <MonitorBar 
                     label="매출 달성률" 
@@ -228,7 +221,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 모듈 */}
+      {/* 팝업 모듈 - finance 탭 처리 유지 */}
       {activeTab && !['finance'].includes(activeTab) && (
         <AdminPopups
           type={activeTab}
@@ -243,7 +236,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-/** 헬퍼 컴포넌트 (이하 동일) **/
+/** 헬퍼 컴포넌트 **/
 function getStatusStyles(rate: number) {
   if (rate >= 80) return { bar: "bg-blue-500", text: "text-blue-600" };
   if (rate >= 65) return { bar: "bg-orange-500", text: "text-orange-600" };
@@ -271,7 +264,7 @@ function MonitorBar({ label, rate, current, target, unit }: any) {
 
 function RecordBadge({ type, amt, date }: any) {
   const isBest = type === "BEST";
-  if (!amt) return null; // 데이터 없을 시 렌더링 방지
+  if (!amt) return null;
   return (
     <div className={`text-[9px] md:text-[10px] px-3 py-1 rounded-full font-black border shadow-sm ${isBest ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
       {isBest ? '🏆' : '📉'} {type}: {Number(amt).toLocaleString()}만 ({date})
