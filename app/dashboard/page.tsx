@@ -7,24 +7,18 @@ import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/AdminView"
 
-// ✅ 상담 모드 메인 콘텐츠: 사이드바 설정(menuStatus)과 동기화됨
-function ConsultingView({ menuStatus }: any) {
+// ✅ 상담 모드 메인 콘텐츠: 권한과 사이드바 설정에 따라 메뉴 필터링
+function ConsultingView({ menuStatus, isApproved }: any) {
   const allMenus = [
+    // [고정 메뉴] 게스트 포함 누구나 접근 가능
     { 
-      id: "show_finance", 
-      title: "재무 / 보장분석", 
-      desc: "종합 금융 플래닝 및 분석 리포트", 
-      icon: "📊", 
-      url: "/financial_planner.html", 
-      color: "border-black text-black" 
-    },
-    { 
-      id: "show_insu", 
-      title: "보장분석 PRO (유료)", 
-      desc: "Gemini AI 기반 정밀 보장분석 시스템", 
-      icon: "🛡️", 
-      url: "/insu.html", 
-      color: "border-blue-500 text-blue-600" 
+      id: "show_cafe", 
+      title: "보험의 기준", 
+      desc: "네이버 카페 바로가기", 
+      icon: "☕", 
+      url: "https://cafe.naver.com/signal1035", 
+      color: "border-[#2db400] text-[#2db400]",
+      fixed: true 
     },
     { 
       id: "show_cont", 
@@ -32,7 +26,8 @@ function ConsultingView({ menuStatus }: any) {
       desc: "미청구 보험금 및 휴면보험금 조회", 
       icon: "🔍", 
       url: "https://cont.insure.or.kr/cont_web/intro.do", 
-      color: "border-emerald-500 text-emerald-600" 
+      color: "border-emerald-500 text-emerald-600",
+      fixed: true 
     },
     { 
       id: "show_hira", 
@@ -40,18 +35,73 @@ function ConsultingView({ menuStatus }: any) {
       desc: "국가 검진 및 보험료 납부 내역 확인", 
       icon: "🏥", 
       url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람", 
-      color: "border-orange-500 text-orange-600" 
+      color: "border-orange-500 text-orange-600",
+      fixed: true 
+    },
+    // [직원 전용 메뉴] 승인된 인원(isApproved)만 보이며, 마스터가 활성화해야 함
+    { 
+      id: "show_finance", 
+      title: "재무 / 보장분석", 
+      desc: "종합 금융 플래닝 및 분석 리포트", 
+      icon: "📊", 
+      url: "/financial_planner.html", 
+      color: "border-black text-black",
+      staffOnly: true 
+    },
+    { 
+      id: "show_insu", 
+      title: "보장분석 PRO (유료)", 
+      desc: "Gemini AI 기반 정밀 보장분석 시스템", 
+      icon: "🛡️", 
+      url: "/insu.html", 
+      color: "border-blue-500 text-blue-600",
+      staffOnly: true 
+    },
+    { 
+      id: "show_gongsi", 
+      title: "보험사 공시실(약관)", 
+      desc: "각 보험사별 상품 공시실 바로가기", 
+      icon: "📑", 
+      url: "#", 
+      color: "border-slate-400 text-slate-500",
+      staffOnly: true 
+    },
+    { 
+      id: "show_disease", 
+      title: "질병코드 조회", 
+      desc: "한국표준질병사인분류(KCD) 검색", 
+      icon: "🧬", 
+      url: "#", 
+      color: "border-indigo-400 text-indigo-500",
+      staffOnly: true 
+    },
+    { 
+      id: "show_surgery", 
+      title: "수술비 검색", 
+      desc: "종별 수술비 및 약관상 수술 분류 조회", 
+      icon: "✂️", 
+      url: "#", 
+      color: "border-rose-400 text-rose-500",
+      staffOnly: true 
     }
   ];
 
-  // 관리자가 활성화한 메뉴만 필터링 (menuStatus 기반)
-  const activeMenus = allMenus.filter(m => menuStatus[m.id]);
+  // 필터링 로직:
+  // 1. 고정 메뉴(fixed)는 무조건 표시
+  // 2. 직원 전용 메뉴(staffOnly)는 승인된 유저(isApproved)이면서 관리자가 ON(menuStatus)한 경우만 표시
+  const activeMenus = allMenus.filter(m => {
+    if (m.fixed) return true; 
+    if (m.staffOnly && isApproved && menuStatus[m.id]) return true;
+    return false;
+  });
 
   return (
     <div className="max-w-6xl mx-auto py-10 font-black">
       <div className="mb-12 border-l-8 border-blue-600 pl-6">
         <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
-        <p className="text-slate-400 font-bold">활성화된 분석 시스템만 표시됩니다.</p>
+        <p className="text-slate-400 font-bold">
+          {isApproved ? "권한에 맞는 모든 시스템이 활성화되었습니다." : "게스트용 기본 도구가 활성화되었습니다."}
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {activeMenus.map((m, i) => (
@@ -79,9 +129,9 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
   
-  // ✅ 관리자 설정 상태를 상위에서 관리하여 사이드바와 메인화면 공유
   const [menuStatus, setMenuStatus] = useState<any>({
-    show_finance: true, show_insu: true, show_cafe: true, show_hira: true, show_cont: true
+    show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
+    show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
   });
 
   useEffect(() => {
@@ -92,7 +142,6 @@ export default function DashboardPage() {
       const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
       if (!userInfo) return router.replace("/login");
       
-      // ✅ 관리자 설정 불러오기
       const { data: settings } = await supabase.from("team_settings").select("key, value");
       if (settings) {
         const sObj = settings.reduce((acc: any, curr: any) => {
@@ -108,12 +157,16 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
-  // 사이드바에서 변경된 설정을 대시보드 상태에 실시간 동기화하기 위한 핸들러
   const handleMenuStatusChange = (newStatus: any) => {
     setMenuStatus(newStatus);
   };
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
+
+  // 권한 체크: 직원 이상 혹은 승인된 유저인지 판별
+  const userEmail = user?.email?.toLowerCase()?.trim();
+  const isAdminOrMaster = user.role === 'admin' || user.role === 'master' || userEmail === 'qodbtjq@naver.com';
+  const isApproved = isAdminOrMaster || user?.is_approved === true || user?.is_approved === "true" || ['agent', 'leader', 'manager'].includes(user?.role);
 
   if (viewMode === 'select') {
     return (
@@ -138,14 +191,14 @@ export default function DashboardPage() {
       <Sidebar 
         user={user} selectedDate={selectedDate} onDateChange={setSelectedDate} 
         mode={viewMode} onBack={() => setViewMode('select')} 
-        externalMenuStatus={menuStatus} // 외부 설정 전달
-        onMenuStatusChange={handleMenuStatusChange} // 변경 콜백 전달
+        externalMenuStatus={menuStatus} 
+        onMenuStatusChange={handleMenuStatusChange}
       />
-      <main className="flex-1 p-4 lg:p-10 max-w-[1600px] mx-auto w-full">
+      <main className={`flex-1 p-4 lg:p-10 max-w-[1600px] mx-auto w-full transition-all duration-300`}>
         {viewMode === 'office' ? (
-          user.role === 'admin' || user.role === 'master' ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
+          isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
         ) : (
-          <ConsultingView menuStatus={menuStatus} /> 
+          <ConsultingView menuStatus={menuStatus} isApproved={isApproved} /> 
         )}
       </main>
     </div>
