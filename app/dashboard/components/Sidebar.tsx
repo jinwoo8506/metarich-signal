@@ -20,29 +20,17 @@ export default function Sidebar({
 
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // ✅ [수정] 직급 권한 체계 정의 (배진우님과 박주완님 분리)
-  // Master: 배진우님 (시스템의 모든 통제권)
-  const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
-  
-  // Leader: 박주완님 등 리더급 (실적 모니터링은 가능하나 시스템 설정 및 직원관리는 불가)
-  const isLeader = user?.role === 'leader';
-  
-  // Manager: 지점장
+  // ✅ [권한 체계]
+  const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
+  const isLeader = user?.role === 'leader' || user?.role_level === 'director';
   const isManager = user?.role === 'manager';
-  
-  // Agent: 설계사
   const isAgent = user?.role === 'agent' || isManager || isLeader || isMaster;
   
-  // ✅ [수정] 관리자 기능(직원관리, 공지수정, 메뉴토글) 권한: 오직 배진우(Master)님만 가능
+  // ✅ 관리자 기능 권한: 오직 마스터만 가능
   const isAdmin = isMaster; 
-  
-  // 사무실 업무 접근 가능 직급: 설계사(agent) 이상
   const isStaff = isAgent;
-  
-  // 승인 여부: 마스터/리더는 자동 승인, 그 외엔 DB의 승인 상태 확인
   const isApproved = isMaster || isLeader || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
 
-  // ✅ [수정] 직급 표시 명칭 업데이트
   const getRankDisplay = (role: string) => {
     if (!isApproved) return '게스트(승인대기)';
     if (userEmail === 'qodbtjq@naver.com') return '최고관리자';
@@ -61,7 +49,7 @@ export default function Sidebar({
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
     show_calc: true 
   });
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); // ✅ 메뉴 편집 모드 상태
   const [staffList, setStaffList] = useState<any[]>([]);
   const [showStaffManager, setShowStaffManager] = useState(false);
 
@@ -75,7 +63,6 @@ export default function Sidebar({
     const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
     setPrivateMemo(savedPrivate || "");
     
-    // 오직 마스터 계정만 직원 리스트 호출
     if (isMaster) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
@@ -112,7 +99,7 @@ export default function Sidebar({
   }
 
   const toggleMenu = async (key: string) => {
-    if (!isAdmin) return; // 마스터가 아니면 메뉴 수정 불가
+    if (!isAdmin) return; 
     const newValue = !((menuStatus as any)[key]);
     const updatedStatus = { ...menuStatus, [key]: newValue };
     setMenuStatus(updatedStatus);
@@ -132,7 +119,6 @@ export default function Sidebar({
     
     let query = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
     
-    // 리더(박주완님 등) 혹은 마스터(배진우님)는 전체 데이터 합산, 일반 설계사는 본인 데이터만
     if (!isMaster && !isLeader) {
         query = query.eq("user_id", user?.id);
     }
@@ -167,7 +153,7 @@ export default function Sidebar({
   ];
 
   const handleLinkClick = (item: any) => {
-    if (isEditMode) return;
+    if (isEditMode) return; // 편집 모드일 때는 클릭 방지
     if (item.url === 'tab:finance' || item.id === 'show_calc') {
       if (onTabChange) onTabChange('finance');
       setIsOpen(false);
@@ -198,7 +184,7 @@ export default function Sidebar({
               <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
                 {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
               </h2>
-              {/* ✅ 오직 배진우(Master)님에게만 직원관리 버튼 노출 */}
+              {/* ✅ 마스터 전용 직원관리 버튼 */}
               {isMaster && (
                 <button onClick={() => setShowStaffManager(!showStaffManager)} 
                   className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -219,7 +205,7 @@ export default function Sidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
-            {/* ✅ 오직 배진우(Master)님에게만 직원관리 리스트 노출 */}
+            {/* ✅ 마스터 전용 직원관리 리스트 */}
             {isMaster && showStaffManager && (
               <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200 animate-in slide-in-from-top-4 duration-300">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
@@ -253,7 +239,6 @@ export default function Sidebar({
                 </div>
                 <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
                   <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">
-                    {/* ✅ 리더(박주완님) 이상은 팀 전체 실적 합산 표시 */}
                     {(isMaster || isLeader) ? "Team Performance" : "My Performance"}
                   </p>
                   <div className="grid grid-cols-2 gap-3 text-center">
@@ -325,20 +310,46 @@ export default function Sidebar({
                 <h3 className="text-[#d4af37] font-black italic text-xl uppercase tracking-tighter">Consult Tools</h3>
                 <p className="text-white/50 text-[9px] font-black uppercase">전문 상담 지원 시스템</p>
               </div>
-              <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black hover:scale-110 transition-transform">×</button>
+              <div className="flex items-center gap-3">
+                {/* ✅ 마스터 전용 퀵메뉴 편집 스위치 추가 */}
+                {isMaster && (
+                  <button 
+                    onClick={() => setIsEditMode(!isEditMode)} 
+                    className={`text-[10px] px-3 py-1 rounded-full font-black transition-all ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
+                    {isEditMode ? "FINISH EDIT" : "EDIT TOOLS"}
+                  </button>
+                )}
+                <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black hover:scale-110 transition-transform">×</button>
+              </div>
             </div>
+            
             <div className="p-6 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar">
+              {isEditMode && <p className="text-[10px] font-black text-rose-500 uppercase text-center mb-2">체크박스를 선택하여 메뉴를 활성화하세요</p>}
               {consultTools.map((item) => {
                 const isVisible = menuStatus[item.id] || isEditMode;
                 if (!isVisible) return null;
                 return (
                   <div key={item.id} className="relative group">
-                    <button onClick={() => handleLinkClick(item)} className={`w-full flex items-center justify-between px-6 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all group ${!menuStatus[item.id] && 'opacity-30 grayscale'}`}>
-                      <div className="flex items-center gap-4"><span className="text-xl">{item.icon}</span><span className="text-[13px] font-black">{item.label}</span></div>
-                      <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-black italic">SELECT →</span>
+                    <button 
+                      onClick={() => handleLinkClick(item)} 
+                      className={`w-full flex items-center justify-between px-6 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all group ${!menuStatus[item.id] && 'opacity-30 grayscale'}`}>
+                      <div className="flex items-center gap-4">
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-[13px] font-black">{item.label}</span>
+                      </div>
+                      {!isEditMode && <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-black italic">SELECT →</span>}
                     </button>
-                    {/* ✅ 오직 마스터만 메뉴 활성/비활성 편집 가능 */}
-                    {isMaster && isEditMode && <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute -top-1 -right-1 w-6 h-6 accent-black cursor-pointer z-20" />}
+                    {/* ✅ 편집 모드일 때만 체크박스 노출 */}
+                    {isMaster && isEditMode && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                        <input 
+                          type="checkbox" 
+                          checked={menuStatus[item.id] === true} 
+                          onChange={() => toggleMenu(item.id)} 
+                          className="w-6 h-6 accent-black cursor-pointer shadow-lg" 
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -350,6 +361,7 @@ export default function Sidebar({
         </div>
       )}
 
+      {/* 모바일 대응 오버레이 */}
       {isOpen && <div onClick={() => setIsOpen(false)} className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
       
       <style jsx global>{`
