@@ -15,7 +15,7 @@ export default function Sidebar({
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
-  const [isConsultModalOpen, setIsConsultModalOpen] = useState(false); // 상담도구 팝업 상태
+  const [isConsultModalOpen, setIsConsultModalOpen] = useState(false); 
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
   const userEmail = user?.email?.toLowerCase()?.trim();
@@ -24,7 +24,17 @@ export default function Sidebar({
   const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
   const isApproved = isAdmin || isStaff || user?.is_approved === true || user?.is_approved === "true";
 
-  // ✅ show_calc (금융계산기) 키 추가 및 초기 상태 동기화
+  // 직책 한글 변환 로직 (user.role 기반)
+  const getRankDisplay = (role: string) => {
+    switch(role) {
+      case 'master': return '사업부장';
+      case 'admin': return '지점장';
+      case 'manager': return '팀장';
+      case 'agent': return '설계사';
+      default: return '사용자';
+    }
+  };
+
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
@@ -102,7 +112,6 @@ export default function Sidebar({
   ];
 
   const consultTools = [
-    // ✅ 'tab:finance'를 통해 FinancialCalc 컴포넌트와 연동
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
@@ -113,15 +122,12 @@ export default function Sidebar({
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return;
-
-    // ✅ 금융계산기 클릭 시 내부 탭 전환 로직 실행
     if (item.url === 'tab:finance' || item.id === 'show_calc') {
       if (onTabChange) onTabChange('finance');
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
     }
-
     if (item.url && item.url !== '#') {
       window.open(item.url, "_blank");
       setIsConsultModalOpen(false); 
@@ -158,6 +164,19 @@ export default function Sidebar({
               </button>
             )}
           </div>
+
+          {/* 🟢 업데이트: 사용자 정보 (성함 및 직책) - 달력 위에 배치 */}
+          {isApproved && (
+            <div className="bg-black text-white p-5 rounded-[2rem] border-2 border-[#d4af37] shadow-lg -mb-2">
+              <p className="text-[9px] text-[#d4af37] uppercase font-black tracking-widest leading-none mb-1 opacity-80">
+                Logged in as
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl italic font-black text-white">{user?.user_metadata?.full_name || user?.name || "사용자"}</span>
+                <span className="text-sm font-black text-[#d4af37] italic opacity-90">{getRankDisplay(user?.role)}</span>
+              </div>
+            </div>
+          )}
 
           {isApproved && mode === 'office' && (
             <>
@@ -224,7 +243,7 @@ export default function Sidebar({
         </div>
       </aside>
 
-      {/* 상담 도구 팝업 모달 */}
+      {/* 상담 도구 팝업 모달 (유지) */}
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
