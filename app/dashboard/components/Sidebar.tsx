@@ -20,20 +20,27 @@ export default function Sidebar({
 
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // ✅ [수정] 직급 권한 체계 정의
+  // ✅ [수정] 직급 권한 체계 정의 (배진우님과 박주완님 분리)
+  // Master: 배진우님 (시스템의 모든 통제권)
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
-  const isLeader = user?.role === 'leader' || isMaster;
-  const isManager = user?.role === 'manager' || isLeader;
-  const isAgent = user?.role === 'agent' || isManager;
   
-  // 관리자 기능(직원관리, 공지수정 등) 권한: 지점장(admin) 이상 혹은 마스터
-  const isAdmin = userEmail === 'jw20371035@gmail.com' || user?.role === 'admin' || isMaster;
+  // Leader: 박주완님 등 리더급 (실적 모니터링은 가능하나 시스템 설정 및 직원관리는 불가)
+  const isLeader = user?.role === 'leader';
+  
+  // Manager: 지점장
+  const isManager = user?.role === 'manager';
+  
+  // Agent: 설계사
+  const isAgent = user?.role === 'agent' || isManager || isLeader || isMaster;
+  
+  // ✅ [수정] 관리자 기능(직원관리, 공지수정, 메뉴토글) 권한: 오직 배진우(Master)님만 가능
+  const isAdmin = isMaster; 
   
   // 사무실 업무 접근 가능 직급: 설계사(agent) 이상
   const isStaff = isAgent;
   
-  // 승인 여부: 관리자이거나, 직급이 있으면서 승인 상태가 true여야 함
-  const isApproved = isAdmin || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
+  // 승인 여부: 마스터/리더는 자동 승인, 그 외엔 DB의 승인 상태 확인
+  const isApproved = isMaster || isLeader || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
 
   // ✅ [수정] 직급 표시 명칭 업데이트
   const getRankDisplay = (role: string) => {
@@ -41,7 +48,7 @@ export default function Sidebar({
     if (userEmail === 'qodbtjq@naver.com') return '최고관리자';
     switch(role) {
       case 'master': return '사업부장';
-      case 'leader': return '사업부장'; // 요청하신 체계에 따름
+      case 'leader': return '사업부장'; 
       case 'manager': return '지점장';
       case 'agent': return '설계사';
       case 'admin': return '시스템관리자';
@@ -68,8 +75,8 @@ export default function Sidebar({
     const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
     setPrivateMemo(savedPrivate || "");
     
-    // 마스터 계정이나 관리자만 직원 리스트 호출
-    if (isAdmin || isMaster) fetchStaffList();
+    // 오직 마스터 계정만 직원 리스트 호출
+    if (isMaster) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
   useEffect(() => {
@@ -105,6 +112,7 @@ export default function Sidebar({
   }
 
   const toggleMenu = async (key: string) => {
+    if (!isAdmin) return; // 마스터가 아니면 메뉴 수정 불가
     const newValue = !((menuStatus as any)[key]);
     const updatedStatus = { ...menuStatus, [key]: newValue };
     setMenuStatus(updatedStatus);
@@ -124,8 +132,10 @@ export default function Sidebar({
     
     let query = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
     
-    // 관리자(지점장 이상)가 아니면 본인 데이터만, 관리자면 전체 데이터 합산
-    if (!isAdmin) query = query.eq("user_id", user?.id);
+    // 리더(박주완님 등) 혹은 마스터(배진우님)는 전체 데이터 합산, 일반 설계사는 본인 데이터만
+    if (!isMaster && !isLeader) {
+        query = query.eq("user_id", user?.id);
+    }
     
     const { data } = await query;
     if (data && data.length > 0) {
@@ -136,6 +146,7 @@ export default function Sidebar({
   }
 
   const saveDailyNotice = async (val: string) => {
+    if (!isAdmin) return;
     setDailyAdminNotice(val);
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
@@ -187,7 +198,8 @@ export default function Sidebar({
               <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
                 {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
               </h2>
-              {(isAdmin || isMaster) && (
+              {/* ✅ 오직 배진우(Master)님에게만 직원관리 버튼 노출 */}
+              {isMaster && (
                 <button onClick={() => setShowStaffManager(!showStaffManager)} 
                   className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                   {showStaffManager ? "CLOSE STAFF" : "MANAGE STAFF"}
@@ -207,7 +219,8 @@ export default function Sidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
-            {(isAdmin || isMaster) && showStaffManager && (
+            {/* ✅ 오직 배진우(Master)님에게만 직원관리 리스트 노출 */}
+            {isMaster && showStaffManager && (
               <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200 animate-in slide-in-from-top-4 duration-300">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
                 <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
@@ -239,7 +252,10 @@ export default function Sidebar({
                   <Calendar onChange={(d: any) => onDateChange(d)} value={selectedDate} formatDay={(_, date) => date.getDate().toString()} className="border-0 w-full font-black text-xs" calendarType="gregory" next2Label={null} prev2Label={null} />
                 </div>
                 <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
-                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">{isAdmin ? "Team Performance" : "My Performance"}</p>
+                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">
+                    {/* ✅ 리더(박주완님) 이상은 팀 전체 실적 합산 표시 */}
+                    {(isMaster || isLeader) ? "Team Performance" : "My Performance"}
+                  </p>
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="border-r border-white/10">
                       <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Amt</p>
@@ -281,7 +297,13 @@ export default function Sidebar({
             {isApproved && mode === 'office' && (
               <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col min-h-[128px]">
                 <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Instruction</p>
-                <textarea value={dailyAdminNotice} onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} readOnly={!isAdmin} className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-1 bg-white/30 rounded-lg'}`} />
+                <textarea 
+                  value={dailyAdminNotice} 
+                  onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
+                  readOnly={!isAdmin} 
+                  placeholder={isAdmin ? "공지사항을 입력하세요..." : "공지사항이 없습니다."}
+                  className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-1 bg-white/30 rounded-lg'}`} 
+                />
               </div>
             )}
           </div>
@@ -315,7 +337,8 @@ export default function Sidebar({
                       <div className="flex items-center gap-4"><span className="text-xl">{item.icon}</span><span className="text-[13px] font-black">{item.label}</span></div>
                       <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-black italic">SELECT →</span>
                     </button>
-                    {isEditMode && <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute -top-1 -right-1 w-6 h-6 accent-black cursor-pointer z-20" />}
+                    {/* ✅ 오직 마스터만 메뉴 활성/비활성 편집 가능 */}
+                    {isMaster && isEditMode && <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute -top-1 -right-1 w-6 h-6 accent-black cursor-pointer z-20" />}
                   </div>
                 );
               })}

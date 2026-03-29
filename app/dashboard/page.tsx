@@ -6,6 +6,7 @@ import { supabase } from "../../lib/supabase"
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/AdminView"
+import LeaderView from "./components/LeaderView" // ✅ LeaderView 임포트 추가
 import FinancialCalc from "./components/FinancialCalc"
 
 // ✅ 상담 모드 메인 콘텐츠
@@ -180,17 +181,20 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // ✅ [수정] 마스터 계정(qodbtjq@naver.com) 권한 강제 부여
+  // ✅ [수정] 권한 판별 로직 (배진우님과 박주완님 구분)
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // 마스터 계정 여부 확인
+  // 배진우님 계정 여부 (qodbtjq@naver.com) - 직원관리/기능제한 탭 활성화 권한
   const isMasterAccount = userEmail === 'qodbtjq@naver.com';
   
-  // 관리자 권한 여부 (마스터 계정이거나 role이 admin/master인 경우)
-  const isAdminOrMaster = isMasterAccount || user.role === 'admin' || user.role === 'master';
+  // 관리자 권한 여부 (배진우님 또는 role이 admin인 경우)
+  const isAdminAccount = isMasterAccount || user.role === 'admin';
 
-  // 승인 여부 (관리자라면 무조건 승인됨으로 처리)
-  const isApproved = isAdminOrMaster || (user?.is_approved === true || user?.is_approved === "true");
+  // 박주완님 리더 권한 여부 (role이 leader인 경우)
+  const isLeaderAccount = user.role === 'leader';
+
+  // 승인 여부 (마스터, 관리자, 리더는 무조건 승인됨으로 처리)
+  const isApproved = isAdminAccount || isLeaderAccount || (user?.is_approved === true || user?.is_approved === "true");
 
   if (viewMode === 'select') {
     return (
@@ -224,7 +228,7 @@ export default function DashboardPage() {
         setIsOpen={setIsSidebarOpen}
         onTabChange={handleTabChange}
         activeTab={activeTab}
-        isAdmin={isAdminOrMaster} // 사이드바에도 마스터 권한 전달
+        isAdmin={isMasterAccount} // ✅ 오직 배진우님(Master)에게만 사이드바 관리탭 권한 부여
       />
       <main className={`
         flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
@@ -247,10 +251,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* ✅ 여기서 qodbtjq@naver.com 계정이 AdminView를 보게 함 */}
+              {/* ✅ 사무실 업무 뷰 분기 로직 */}
               {viewMode === 'office' ? (
-                isAdminOrMaster ? (
+                isAdminAccount ? (
                   <AdminView user={user} selectedDate={selectedDate} /> 
+                ) : isLeaderAccount ? (
+                  <LeaderView user={user} selectedDate={selectedDate} /> // ✅ 박주완 부장님(leader)은 LeaderView를 봄
                 ) : (
                   <AgentView user={user} selectedDate={selectedDate} />
                 )
