@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 보험사 상품공시실</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0f1e3c; --navy2:#1a3260;
+    --teal:#0d9488; --teal-l:#f0fdfa;
+    --white:#fff; --slate:#f8fafc;
+    --border:#e2e8f0; --border2:#cbd5e1;
+    --t1:#1e293b; --t2:#475569; --t3:#94a3b8;
+    --sh:0 2px 12px rgba(0,0,0,.08);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Noto Sans KR',sans-serif;
+    background:#f1f5f9;
+    min-height:100vh;
+    color:var(--t1);
+  }
+
+  /* ── 헤더 ── */
+  .topbar{
+    background:linear-gradient(135deg,var(--navy),var(--navy2));
+    padding:0 28px;
+    height:62px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;top:0;z-index:100;
+    box-shadow:0 2px 16px rgba(0,0,0,.18);
+  }
+  .topbar-left{display:flex;align-items:center;gap:12px;}
+  .topbar-logo{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:700;color:#fff;}
+  .topbar-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;letter-spacing:1px;}
+  .topbar-badge{
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:20px;
+    padding:5px 14px;
+    font-size:12px;
+    color:rgba(255,255,255,.7);
+  }
+
+  /* ── 검색 바 ── */
+  .search-wrap{
+    max-width:960px;
+    margin:28px auto 0;
+    padding:0 20px;
+  }
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#fff;
+    border:1.5px solid var(--border2);
+    border-radius:12px;
+    padding:10px 16px;
+    box-shadow:var(--sh);
+    transition:all .2s;
+  }
+  .search-box:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(13,148,136,.1);}
+  .search-icon{font-size:18px;color:var(--t3);}
+  .search-input{
+    flex:1;border:none;outline:none;
+    font-size:14px;font-family:'Noto Sans KR',sans-serif;
+    color:var(--t1);background:transparent;
+  }
+  .search-input::placeholder{color:var(--t3);}
+  .search-clear{
+    background:none;border:none;cursor:pointer;
+    font-size:14px;color:var(--t3);padding:2px 6px;
+    border-radius:5px;transition:all .2s;
+    display:none;
+  }
+  .search-clear:hover{background:var(--slate);color:var(--t1);}
+
+  /* ── 메인 컨테이너 ── */
+  .container{
+    max-width:960px;
+    margin:18px auto 40px;
+    padding:0 20px;
+  }
+
+  /* ── 필터 탭 ── */
+  .pill-wrap{
+    display:flex;gap:7px;flex-wrap:wrap;
+    background:#fff;
+    border-radius:14px;
+    padding:14px 16px;
+    box-shadow:var(--sh);
+    border:1px solid var(--border);
+    margin-bottom:18px;
+  }
+  .pill-label{
+    font-size:11px;font-weight:700;color:var(--t3);
+    letter-spacing:.5px;align-self:center;
+    margin-right:4px;white-space:nowrap;
+  }
+  .ppt-btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:8px 18px;border-radius:22px;
+    border:1.5px solid var(--border);
+    font-size:13px;font-weight:700;cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif;
+    transition:all .2s;
+    background:#fff;color:var(--t2);
+  }
+  .ppt-btn:hover{filter:brightness(.96);}
+  .ppt-btn.on{color:#fff;border-color:transparent;}
+  .ppt-all.on{background:#374151;}
+  .ppt-damage.on{background:#2563eb;}
+  .ppt-life.on{background:#e11d48;}
+  .ppt-gongjae.on{background:#16a34a;}
+  .ppt-digital.on{background:#7c3aed;}
+
+  /* ── 결과 카운트 ── */
+  .result-info{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;
+    padding:0 2px;
+  }
+  .result-count{font-size:13px;color:var(--t3);}
+  .result-count strong{color:var(--navy);font-weight:700;}
+
+  /* ── 섹션 라벨 ── */
+  .cc-section-label{
+    grid-column:1/-1;
+    font-size:12px;font-weight:700;color:var(--t3);
+    letter-spacing:1.2px;text-transform:uppercase;
+    padding:10px 4px 6px;
+    border-bottom:1px solid var(--border);
+    margin-top:6px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .cc-section-label:first-child{padding-top:2px;margin-top:0;}
+  .cc-section-count{
+    background:var(--slate);
+    color:var(--t3);
+    font-size:10px;
+    padding:1px 6px;
+    border-radius:8px;
+    font-weight:600;
+    letter-spacing:0;
+  }
+
+  /* ── 카드 그리드 ── */
+  .company-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:8px;
+  }
+
+  .company-card{
+    border-radius:11px;
+    border:1.5px solid var(--border);
+    padding:12px 14px;
+    cursor:pointer;
+    transition:all .22s;
+    text-decoration:none;
+    display:flex;align-items:center;gap:11px;
+    background:#fff;
+  }
+  .company-card:hover{
+    border-color:var(--teal);
+    background:var(--teal-l);
+    transform:translateY(-2px);
+    box-shadow:0 4px 16px rgba(13,148,136,.13);
+  }
+  .company-card:hover .cc-name{color:var(--teal);}
+  .company-card:hover .cc-arrow{color:var(--teal);transform:translateX(3px);}
+
+  .cc-ico{
+    width:34px;height:34px;border-radius:9px;
+    background:var(--slate);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px;flex-shrink:0;
+  }
+  .cc-info{flex:1;min-width:0;}
+  .cc-name{
+    font-size:13px;font-weight:700;color:var(--t1);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    transition:color .2s;
+  }
+  .cc-badge{
+    display:inline-flex;align-items:center;
+    padding:1px 7px;border-radius:7px;
+    font-size:10px;font-weight:700;margin-top:3px;
+  }
+  .cc-badge-life{background:#fce7f3;color:#be185d;}
+  .cc-badge-damage{background:#dbeafe;color:#1d4ed8;}
+  .cc-badge-gongjae{background:#dcfce7;color:#15803d;}
+  .cc-badge-digital{background:#ede9fe;color:#6d28d9;}
+  .cc-arrow{
+    font-size:14px;color:var(--t3);flex-shrink:0;
+    transition:all .2s;
+  }
+
+  /* ── 검색결과 없음 ── */
+  .no-result{
+    grid-column:1/-1;
+    text-align:center;
+    padding:48px 20px;
+    color:var(--t3);
+  }
+  .no-result .no-icon{font-size:40px;margin-bottom:12px;}
+  .no-result .no-txt{font-size:15px;font-weight:700;color:var(--t2);margin-bottom:6px;}
+  .no-result .no-sub{font-size:13px;}
+
+  /* ── 안내 푸터 ── */
+  .footer-note{
+    max-width:960px;
+    margin:0 auto 30px;
+    padding:14px 20px;
+    font-size:11px;
+    color:var(--t3);
+    text-align:center;
+    line-height:1.7;
+  }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="topbar-logo">📊 보험사 상품공시실</div>
+      <div class="topbar-sub">INSURANCE PRODUCT DISCLOSURE</div>
+    </div>
+  </div>
+  <div class="topbar-badge">클릭 → 해당 보험사 공시실로 이동 (새 탭)</div>
+</header>
+
+<!-- 검색 -->
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" type="text"
+      placeholder="보험사명으로 검색... (예: 삼성, KB, 농협)"
+      oninput="onSearch(this.value)">
+    <button class="search-clear" id="clearBtn" onclick="clearSearch()">✕</button>
+  </div>
+</div>
+
+<!-- 메인 -->
+<div class="container">
+
+  <!-- 필터 탭 -->
+  <div class="pill-wrap">
+    <span class="pill-label">분류</span>
+    <button class="ppt-btn ppt-all on"     onclick="setPill('all')">전체</button>
+    <button class="ppt-btn ppt-damage"     onclick="setPill('damage')">🔰 손해보험</button>
+    <button class="ppt-btn ppt-life"       onclick="setPill('life')">❤️ 생명보험</button>
+    <button class="ppt-btn ppt-gongjae"    onclick="setPill('gongjae')">👥 공제</button>
+    <button class="ppt-btn ppt-digital"    onclick="setPill('digital')">💻 디지털 / 기타</button>
+  </div>
+
+  <!-- 결과 카운트 -->
+  <div class="result-info">
+    <div class="result-count" id="resultCount">전체 <strong>0</strong>개 보험사</div>
+  </div>
+
+  <!-- 카드 그리드 -->
+  <div class="company-grid" id="companyGrid"></div>
+
+</div>
+
+<!-- 푸터 안내 -->
+<div class="footer-note">
+  ※ 보험사 공시실 URL은 변경될 수 있습니다. 접속이 안 되는 경우 해당 보험사 홈페이지에서 직접 확인해 주세요.<br>
+  보장분석 Pro — 메타리치 시그널2본부 GA3-7지점
+</div>
+
+<script>
+// ──────────────────────────────────
+// 보험사 데이터 (URL 그대로)
+// ──────────────────────────────────
+const INSURERS = {
+  life: [
+    {name:'삼성생명',       ico:'🏛',  disclose:'https://www.samsunglife.com/individual/products/disclosure/sales/PDO-PRPRI010110M'},
+    {name:'한화생명',       ico:'🌟',  disclose:'https://www.hanwhalife.com/index.jsp'},
+    {name:'교보생명',       ico:'📚',  disclose:'https://www.kyobo.com/dgt/web/product-official/all-product/search'},
+    {name:'메트라이프',     ico:'🌍',  disclose:'https://brand.metlife.co.kr/pn/paReal/insuProductDisclMain.do'},
+    {name:'미래에셋생명',   ico:'📈',  disclose:'https://life.miraeasset.com/micro/disclosure/product/PC-HO-080301-000000.do'},
+    {name:'동양생명',       ico:'🟠',  disclose:'https://pbano.myangel.co.kr/notice/product/WE_PA_AP_01_00_00.jsp'},
+    {name:'KDB생명',        ico:'🏧',  disclose:'https://www.kdblife.com/ajax.do?scrId=HDLMA000M00P&pcmode=1'},
+    {name:'DB생명',         ico:'🔵',  disclose:'https://market.idblife.com/main.do'},
+    {name:'라이나생명',     ico:'💙',  disclose:'https://www.lina.co.kr/disclosure/insurance.htm'},
+    {name:'흥국생명',       ico:'🔴',  disclose:'https://www.heungkuklife.co.kr/front/public/priceProduct.do#none'},
+    {name:'AIA생명',        ico:'🔷',  disclose:'https://www.aia.co.kr/ko/our-products.html'},
+    {name:'신한라이프',     ico:'🔵',  disclose:'https://www.shinhanlife.co.kr/hp/cdhi0030.do'},
+    {name:'NH농협생명',     ico:'🌾',  disclose:'https://www.nhlife.co.kr/ho/on/HOON0004M00.nhl'},
+    {name:'ABL생명',        ico:'🌐',  disclose:'https://abllife.co.kr/st/custDesk/cspCntr/fncLvngInfo/fncLvngInfo3?page=index'},
+    {name:'처브라이프',     ico:'🛡️', disclose:'https://www.chubblife.co.kr/front/official/sale/list.do'},
+    {name:'KB라이프생명',   ico:'⭐',  disclose:'https://www.kblife.co.kr/customer-common/productList.do'},
+    {name:'하나생명',       ico:'💛',  disclose:'https://hanalife.co.kr/anm/product/allProduct.do?status=on'},
+    {name:'푸본현대생명',   ico:'🐉',  disclose:'https://www.fubonhyundai.com/#CUSI150102010101'},
+    {name:'IM라이프',       ico:'🏦',  disclose:'https://www.dgbfnlife.com/BA/BA_A020.do'},
+    {name:'BNP파리바카디프', ico:'🇫🇷', disclose:'https://www.cardif.co.kr/disclosure/papag101.do'},
+  ],
+  damage: [
+    {name:'삼성화재',       ico:'🔥',  disclose:'https://www.samsungfire.com/page/VH.REIF0011.do'},
+    {name:'현대해상',       ico:'🌊',  disclose:'https://www.hi.co.kr/bin/CI/ON/CION3200G.jsp'},
+    {name:'DB손해보험',     ico:'💎',  disclose:'https://www.idbins.com/FWMAIV1534.do'},
+    {name:'KB손해보험',     ico:'⭐',  disclose:'http://www.kbinsure.co.kr/CG802030001.ec'},
+    {name:'메리츠화재',     ico:'🟢',  disclose:'https://www.meritzfire.com/disclosure/product-announcement/product-list.do#!/'},
+    {name:'롯데손해보험',   ico:'🟡',  disclose:'http://www.lotteins.co.kr/web/C/D/H/cdh190.jsp'},
+    {name:'한화손해보험',   ico:'🌟',  disclose:'https://www.hwgeneralins.com/notice/ir/product-ing01.do'},
+    {name:'흥국화재',       ico:'🔴',  disclose:'https://www.heungkukfire.co.kr/FRW/announce/insGoodsGongsiSale.do'},
+    {name:'NH농협손해보험', ico:'🌾',  disclose:'https://www.nhfire.co.kr/announce/productAnnounce/retrieveInsuranceProductsAnnounce.nhfire'},
+    {name:'MG손해보험',     ico:'🏢',  disclose:'https://www.mggeneralins.com/PB031210DM.scp?menuId=MN0803006'},
+    {name:'AIG손해보험',    ico:'🌐',  disclose:'https://m.aig.co.kr/wm/content.html?contentId=DPWMS701'},
+  ],
+  gongjae: [
+    {name:'우체국보험',     ico:'📮',  disclose:'https://www.epostlife.go.kr/ASISDM00AT.do'},
+    {name:'더케이손해보험', ico:'🎓',  disclose:'https://www.ktcu.or.kr/index#none'},
+    {name:'MG새마을금고',   ico:'🏦',  disclose:'https://insure.kfcc.co.kr/#/PGE_IHJ_00003'},
+    {name:'수협보험',       ico:'🐟',  disclose:'https://www.suhyup-bank.com/product/disclosure'},
+    {name:'신협공제',       ico:'🤝',  disclose:'https://www.cu.co.kr/product/cm/cntnts/cntntsView.do?mi=100183&cntntsId=1235'},
+  ],
+  digital: [
+    {name:'AXA손해보험',    ico:'🌐',  disclose:'https://www.axa.co.kr/AsianPlatformInternet/html/axacms/common/intro/disclosure/insurance/index.html'},
+    {name:'캐롯손해보험',   ico:'🥕',  disclose:'https://www.hwgeneralins.com/notice/ir/product-ing01.do'},
+    {name:'카카오페이손보', ico:'💬',  disclose:'https://kakaopayinscorp.co.kr/disclosure/goods?code=goods_list'},
+    {name:'신한EZ손해보험', ico:'🔵',  disclose:'https://www.shinhanez.co.kr/static/pub/PUB2000T021.html'},
+    {name:'교보라이프플래닛',ico:'🌱', disclose:'https://www.lifeplanet.co.kr/disclosure/good/HPDA01S0.dev'},
+  ],
+};
+
+const CATS = [
+  {key:'damage',  label:'🔰 손해보험',   badge:'cc-badge-damage',  badgeTxt:'손해보험'},
+  {key:'life',    label:'❤️ 생명보험',   badge:'cc-badge-life',    badgeTxt:'생명보험'},
+  {key:'gongjae', label:'👥 공제',        badge:'cc-badge-gongjae', badgeTxt:'공제'},
+  {key:'digital', label:'💻 디지털/기타', badge:'cc-badge-digital', badgeTxt:'디지털'},
+];
+
+let currentPill = 'all';
+let searchQuery  = '';
+
+// ──────────────────────────────────
+// 렌더
+// ──────────────────────────────────
+function render(){
+  const grid = document.getElementById('companyGrid');
+  const q = searchQuery.trim().toLowerCase();
+  let html = '';
+  let totalCount = 0;
+
+  CATS.forEach(cat => {
+    if(currentPill !== 'all' && currentPill !== cat.key) return;
+
+    const list = (INSURERS[cat.key] || []).filter(c =>
+      !q || c.name.toLowerCase().includes(q)
+    );
+    if(!list.length) return;
+
+    totalCount += list.length;
+
+    // 섹션 라벨 (전체 탭에서만)
+    if(currentPill === 'all'){
+      html += `<div class="cc-section-label">
+        ${cat.label}
+        <span class="cc-section-count">${list.length}</span>
+      </div>`;
+    }
+
+    list.forEach(c => {
+      const nameHighlighted = q
+        ? c.name.replace(new RegExp(`(${q})`, 'gi'), '<mark style="background:#fef08a;border-radius:2px;padding:0 1px">$1</mark>')
+        : c.name;
+
+      html += `<a href="${c.disclose}" target="_blank" rel="noopener noreferrer" class="company-card">
+        <div class="cc-ico">${c.ico}</div>
+        <div class="cc-info">
+          <div class="cc-name">${nameHighlighted}</div>
+          <span class="cc-badge ${cat.badge}">${cat.badgeTxt}</span>
+        </div>
+        <span class="cc-arrow">→</span>
+      </a>`;
+    });
+  });
+
+  // 결과 없음
+  if(!html){
+    html = `<div class="no-result">
+      <div class="no-icon">🔍</div>
+      <div class="no-txt">"${q}" 검색 결과 없음</div>
+      <div class="no-sub">다른 이름으로 검색해 보세요</div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  document.getElementById('resultCount').innerHTML =
+    currentPill === 'all'
+      ? `전체 <strong>${totalCount}</strong>개 보험사`
+      : `<strong>${totalCount}</strong>개 보험사`;
+}
+
+// ──────────────────────────────────
+// 이벤트 핸들러
+// ──────────────────────────────────
+function setPill(type){
+  currentPill = type;
+  document.querySelectorAll('.ppt-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector('.ppt-' + type).classList.add('on');
+  render();
+}
+
+function onSearch(val){
+  searchQuery = val;
+  const clearBtn = document.getElementById('clearBtn');
+  clearBtn.style.display = val ? 'block' : 'none';
+  render();
+}
+
+function clearSearch(){
+  document.getElementById('searchInput').value = '';
+  searchQuery = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  render();
+  document.getElementById('searchInput').focus();
+}
+
+// ──────────────────────────────────
+// 초기 렌더
+// ──────────────────────────────────
+render();
+</script>
+</body>
+</html>

@@ -91,7 +91,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const totalCnt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_cnt || 0), 0);
   const totalDB = agents.reduce((s:any, a:any) => s + (a.performance?.db_assigned || 0), 0);
   const totalReturn = agents.reduce((s:any, a:any) => s + (a.performance?.db_returned || 0), 0);
-
   const totalCall = agents.reduce((s:any, a:any) => s + (a.performance?.call || 0), 0);
   const totalMeet = agents.reduce((s:any, a:any) => s + (a.performance?.meet || 0), 0);
   const totalPt = agents.reduce((s:any, a:any) => s + (a.performance?.pt || 0), 0);
@@ -109,7 +108,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       `}</style>
 
       <div className="bg-white w-full max-w-5xl rounded-[2rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
-        <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50">✕</button>
+        <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50 text-black">✕</button>
 
         {type === 'sys' && (
           <button onClick={saveSys} className="absolute top-6 right-16 md:top-8 md:right-20 bg-black text-[#d4af37] px-4 md:px-6 py-2 rounded-full text-xs italic font-black uppercase hover:bg-slate-800 transition-all z-50">
@@ -117,11 +116,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </button>
         )}
 
-        {/* --- [신규 추가] 직원 승인 관리 탭 --- */}
+        {/* --- [신규 추가] 직원 승인 관리 섹션 --- */}
         {type === 'users' && (
           <div className="space-y-6 md:space-y-10">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">User Management</h3>
-            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden">
+            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
               <table className="w-full text-left font-black">
                 <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase">
                   <tr>
@@ -137,12 +136,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     pendingUsers.map((u) => (
                       <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-4 md:p-6">
-                          <p className="font-black text-sm md:text-xl italic">{u.full_name || '이름없음'}</p>
-                          <p className="text-[10px] text-slate-400">{u.email}</p>
+                          <p className="font-black text-sm md:text-xl italic text-black">{u.full_name || '이름없음'}</p>
+                          <p className="text-[10px] text-slate-400 font-normal">{u.email}</p>
                         </td>
-                        <td className="p-4 md:p-6 text-center font-black text-xs md:text-sm">
+                        <td className="p-4 md:p-6 text-center font-black text-xs md:text-sm text-black">
                           {u.dept_name} / {u.branch_name}<br/>
-                          <span className="text-[10px] text-indigo-600">신청: {u.requested_title}</span>
+                          <span className="text-[10px] text-indigo-600 font-black italic">신청: {u.requested_title}</span>
                         </td>
                         <td className="p-4 md:p-6 text-center">
                           <button 
@@ -164,13 +163,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         {/* --- 기존 섹션: Team Performance --- */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Team Performance</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">Team Performance</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 font-black text-black">
               <StatBox label="매출 달성율" cur={totalAmt} tar={tarAmt} unit="만" color="bg-indigo-600" />
               <StatBox label="건수 달성율" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
               <StatBox label="도입 달성율" cur={curIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
             </div>
-            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden">
+            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
               <table className="w-full text-left font-black">
                 <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase">
                   <tr><th className="p-4 md:p-6">Employee Name</th><th className="p-4 md:p-6 text-center">Amount</th><th className="p-4 md:p-6 text-center">Status</th></tr>
@@ -182,8 +181,8 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     const blinkClass = isTenDaysIdle ? 'animate-pulse-yellow' : isLowAvg ? 'animate-pulse-red' : '';
                     return (
                       <tr key={a.id} className={`hover:bg-slate-50 transition-colors ${blinkClass}`}>
-                        <td className="p-4 md:p-6 font-black text-sm md:text-xl italic">{a.name} CA</td>
-                        <td className="p-4 md:p-6 text-center font-black text-lg md:text-2xl italic">{a.performance.contract_amt}만</td>
+                        <td className="p-4 md:p-6 font-black text-sm md:text-xl italic text-black">{a.name} CA</td>
+                        <td className="p-4 md:p-6 text-center font-black text-lg md:text-2xl italic text-black">{a.performance.contract_amt}만</td>
                         <td className="p-4 md:p-6 text-center">
                           <button onClick={() => handleApprove(a.id, a.performance.is_approved)} className={`px-4 md:px-6 py-1 md:py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black transition-all ${a.performance.is_approved ? 'bg-black text-[#d4af37]' : 'bg-white text-black hover:bg-slate-100'}`}>
                             {a.performance.is_approved ? 'APPROVED' : 'APPROVE'}
@@ -201,78 +200,56 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         {/* --- 기존 섹션: Activity & Funnel --- */}
         {type === 'act' && (
           <div className="space-y-6 md:space-y-8 font-black">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">Activity & Funnel</h3>
             {!selectedAgent ? (
               <div className="space-y-6 md:space-y-12 animate-in fade-in duration-500">
                 <div className="bg-slate-50 p-6 md:p-10 rounded-2xl md:rounded-[3rem] border-2 md:border-4 border-black grid grid-cols-3 gap-2 md:gap-6 text-center shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] md:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
-                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2">총 배정 DB</p><p className="text-lg md:text-3xl font-black italic">{totalDB}건</p></div>
-                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2">총 반품 DB</p><p className="text-lg md:text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
-                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2">전체 반품율</p><p className="text-lg md:text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
+                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">총 배정 DB</p><p className="text-lg md:text-3xl font-black italic text-black">{totalDB}건</p></div>
+                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">총 반품 DB</p><p className="text-lg md:text-3xl text-rose-500 font-black italic">{totalReturn}건</p></div>
+                   <div><p className="text-[9px] md:text-xs text-slate-400 uppercase mb-2 font-black">전체 반품율</p><p className="text-lg md:text-3xl text-rose-600 font-black italic">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
-
-                <div className="space-y-4">
-                  <p className="text-[10px] md:text-sm text-slate-400 italic uppercase ml-4">Team Total Activity</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
-                    <ActivityCountBox label="전화 합계" val={`총 ${totalCall}건`} />
-                    <ActivityCountBox label="만남 합계" val={`총 ${totalMeet}건`} />
-                    <ActivityCountBox label="제안 합계" val={`총 ${totalPt}건`} />
-                    <ActivityCountBox label="소개 합계" val={`총 ${totalIntro}건`} />
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
+                  <ActivityCountBox label="전화 합계" val={`총 ${totalCall}건`} />
+                  <ActivityCountBox label="만남 합계" val={`총 ${totalMeet}건`} />
+                  <ActivityCountBox label="제안 합계" val={`총 ${totalPt}건`} />
+                  <ActivityCountBox label="소개 합계" val={`총 ${totalIntro}건`} />
                 </div>
-
-                <div className="space-y-4">
-                  <p className="text-[10px] md:text-sm text-slate-400 italic uppercase ml-4">Team Conversion Funnel (%)</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
-                    <FunnelBox label="전화→만남" val={getRate(totalMeet, totalCall)} />
-                    <FunnelBox label="만남→제안" val={getRate(totalPt, totalMeet)} />
-                    <FunnelBox label="제안→계약" val={getRate(totalCnt, totalPt)} />
-                    <FunnelBox label="계약→소개" val={getRate(totalIntro, totalCnt)} />
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
+                  <FunnelBox label="전화→만남" val={getRate(totalMeet, totalCall)} />
+                  <FunnelBox label="만남→제안" val={getRate(totalPt, totalMeet)} />
+                  <FunnelBox label="제안→계약" val={getRate(totalCnt, totalPt)} />
+                  <FunnelBox label="계약→소개" val={getRate(totalIntro, totalCnt)} />
                 </div>
               </div>
             ) : (
-              <div className="space-y-6 md:space-y-10 animate-in slide-in-from-right-4 duration-300">
-                <div className="flex flex-col md:flex-row justify-between items-center bg-black p-6 md:p-8 rounded-2xl md:rounded-[2rem] text-white gap-4">
+              <div className="space-y-6 md:space-y-10 animate-in slide-in-from-right-4 duration-300 text-black">
+                <div className="flex flex-col md:flex-row justify-between items-center bg-black p-6 md:p-8 rounded-2xl md:rounded-[2rem] text-white gap-4 shadow-2xl">
                    <p className="text-xl md:text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Report</p>
                    <button onClick={() => handleApprove(selectedAgent.id, selectedAgent.performance.is_approved)} className={`w-full md:w-auto px-6 py-3 rounded-full text-xs font-black italic shadow-xl transition-transform active:scale-95 ${selectedAgent.performance.is_approved ? 'bg-rose-600 text-white' : 'bg-[#d4af37] text-black'}`}>
                     {selectedAgent.performance.is_approved ? 'REVOKE LOCK' : 'CONFIRM & LOCK'}
                    </button>
                 </div>
-
                 <div className="grid grid-cols-3 gap-2 md:gap-6">
-                   <div className="bg-blue-50 p-4 md:p-8 rounded-2xl md:rounded-[2rem] border-2 md:border-4 border-black text-center"><p className="text-[9px] md:text-xs text-blue-400 uppercase mb-2">배정 DB</p><p className="text-lg md:text-3xl text-blue-900 italic font-black">{selectedAgent.performance.db_assigned || 0}건</p></div>
-                   <div className="bg-rose-50 p-4 md:p-8 rounded-2xl md:rounded-[2rem] border-2 md:border-4 border-black text-center"><p className="text-[9px] md:text-xs text-rose-400 uppercase mb-2">반품 DB</p><p className="text-lg md:text-3xl text-rose-900 italic font-black">{selectedAgent.performance.db_returned || 0}건</p></div>
-                   <div className="bg-slate-900 p-4 md:p-8 rounded-2xl md:rounded-[2rem] border-2 md:border-4 border-black text-center"><p className="text-[9px] md:text-xs text-slate-500 uppercase mb-2">반품율</p><p className="text-lg md:text-3xl text-[#d4af37] italic font-black">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p></div>
+                   <div className="bg-blue-50 p-4 md:p-8 rounded-2xl md:rounded-[2rem] border-2 md:border-4 border-black text-center shadow-lg"><p className="text-[9px] md:text-xs text-blue-400 uppercase mb-2 font-black">배정 DB</p><p className="text-lg md:text-3xl text-blue-900 italic font-black">{selectedAgent.performance.db_assigned || 0}건</p></div>
+                   <div className="bg-rose-50 p-4 md:p-8 rounded-2xl md:rounded-[2rem] border-2 md:border-4 border-black text-center shadow-lg"><p className="text-[9px] md:text-xs text-rose-400 uppercase mb-2 font-black">반품 DB</p><p className="text-lg md:text-3xl text-rose-900 italic font-black">{selectedAgent.performance.db_returned || 0}건</p></div>
+                   <div className="bg-slate-900 p-4 md:p-8 rounded-2xl md:rounded-[2rem] border-2 md:border-4 border-black text-center shadow-lg"><p className="text-[9px] md:text-xs text-slate-500 uppercase mb-2 font-black">반품율</p><p className="text-lg md:text-3xl text-[#d4af37] italic font-black">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p></div>
                 </div>
-
-                <div className="space-y-4">
-                  <p className="text-[10px] md:text-sm text-slate-400 italic uppercase ml-4">Detailed Activity Metrics</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
-                    <ActivityCountBox label="전화" val={`${selectedAgent.performance.call}건`} />
-                    <ActivityCountBox label="만남" val={`${selectedAgent.performance.meet}건`} />
-                    <ActivityCountBox label="제안" val={`${selectedAgent.performance.pt}건`} />
-                    <ActivityCountBox label="소개" val={`${selectedAgent.performance.intro}건`} />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <p className="text-[10px] md:text-sm text-slate-400 italic uppercase ml-4">Conversion Funnel (%)</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
-                    <FunnelBox label="전화→만남" val={getRate(selectedAgent.performance.meet, selectedAgent.performance.call)} />
-                    <FunnelBox label="만남→제안" val={getRate(selectedAgent.performance.pt, selectedAgent.performance.meet)} />
-                    <FunnelBox label="제안→계약" val={getRate(selectedAgent.performance.contract_cnt, selectedAgent.performance.pt)} />
-                    <FunnelBox label="계약→소개" val={getRate(selectedAgent.performance.intro, selectedAgent.performance.contract_cnt)} />
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-6">
+                  <ActivityCountBox label="전화" val={`${selectedAgent.performance.call}건`} />
+                  <ActivityCountBox label="만남" val={`${selectedAgent.performance.meet}건`} />
+                  <ActivityCountBox label="제안" val={`${selectedAgent.performance.pt}건`} />
+                  <ActivityCountBox label="소개" val={`${selectedAgent.performance.intro}건`} />
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* --- 기존 섹션: Attendance & Training --- */}
+        {/* --- 기존 섹션: Attendance & Training (가로 스크롤 및 스티키 레이아웃 유지) --- */}
         {type === 'edu' && (
           <div className="space-y-6 md:space-y-10">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Daily Attendance & Training</h3>
-            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-x-auto font-black scrollbar-thin scrollbar-thumb-black">
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black text-black">Attendance & Training</h3>
+            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-x-auto scrollbar-thin scrollbar-thumb-black shadow-xl">
               <table className="w-full text-left font-black min-w-[600px]">
                 <thead className="bg-black text-[#d4af37] text-[9px] md:text-[10px] uppercase font-black">
                   <tr>
@@ -288,7 +265,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <tbody className="divide-y-2 divide-black bg-white">
                   {agents.map((a:any) => (
                     <tr key={a.id} className="hover:bg-slate-50">
-                      <td className="p-4 md:p-6 font-black text-sm md:text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name} CA</td>
+                      <td className="p-4 md:p-6 font-black text-sm md:text-lg italic sticky left-0 bg-white border-r-2 border-black/5 text-black">{a.name} CA</td>
                       <td className="p-4 md:p-6 text-center">
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[9px] font-black uppercase">
                           {a.performance.edu_status || '출석완료'}
@@ -304,15 +281,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-slate-400 italic md:hidden">* 옆으로 밀어서 전체 주차 확인 가능</p>
           </div>
         )}
 
-        {/* --- 기존 섹션: Admin Settings --- */}
+        {/* --- 기존 섹션: Admin Settings (커리큘럼 입력부 보존) --- */}
         {type === 'sys' && (
-          <div className="space-y-6 md:space-y-10 font-black">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase font-black">Admin Settings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 font-black">
+          <div className="space-y-6 md:space-y-10 font-black text-black">
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Admin Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
               <div className="space-y-4">
                 <InputRow label="팀 매출 목표 (만원)" val={tarAmt} onChange={setTarAmt} />
                 <InputRow label="팀 건수 목표 (건)" val={tarCnt} onChange={setTarCnt} />
@@ -322,14 +298,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
               <div className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Global Notice (Ticker)</p>
-                  <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-4 md:p-6 bg-slate-50 border-2 md:border-4 border-black rounded-2xl outline-none font-black italic text-sm md:text-lg" placeholder="공지사항 입력..." />
+                  <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-4 md:p-6 bg-slate-50 border-2 md:border-4 border-black rounded-2xl outline-none font-black italic text-sm md:text-lg text-black" placeholder="공지사항 입력..." />
                 </div>
                 <div className="space-y-2">
                   <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Weekly Education Curriculum</p>
                   {[1, 2, 3, 4, 5].map((w) => (
                     <div key={w} className="flex gap-2 mb-2">
-                       <span className="text-[9px] w-16 flex items-center justify-center bg-black text-white rounded-lg italic">{w===5 ? '추가' : w+'주차'}</span>
-                       <input type="text" value={eduWeeks[w as keyof typeof eduWeeks]} onChange={e => setEduWeeks({...eduWeeks, [w]: e.target.value})} className="flex-1 p-2 bg-slate-50 border-2 border-black rounded-xl outline-none italic text-sm" placeholder={`${w===5 ? '추가 교육' : w+'주차 교육'}`} />
+                       <span className="text-[9px] w-16 flex items-center justify-center bg-black text-[#d4af37] rounded-lg italic font-black uppercase">{w===5 ? 'Plus' : w+'W'}</span>
+                       <input type="text" value={eduWeeks[w as keyof typeof eduWeeks]} onChange={e => setEduWeeks({...eduWeeks, [w]: e.target.value})} className="flex-1 p-3 bg-slate-50 border-2 border-black rounded-xl outline-none italic text-sm font-black" placeholder={`${w===5 ? '추가 교육' : w+'주차 교육'}`} />
                     </div>
                   ))}
                 </div>
@@ -347,7 +323,7 @@ function ActivityCountBox({ label, val }: any) {
   return (
     <div className="bg-white p-4 md:p-6 rounded-2xl border-2 md:border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <p className="text-[9px] text-slate-400 uppercase mb-1 md:mb-2 font-black">{label}</p>
-      <p className="text-sm md:text-xl font-black italic">{val || 0}</p>
+      <p className="text-sm md:text-xl font-black italic text-black">{val || 0}</p>
     </div>
   ) 
 }
@@ -355,7 +331,7 @@ function ActivityCountBox({ label, val }: any) {
 function StatBox({ label, cur, tar, unit, color }: any) { 
   const pct = Math.min((cur / (tar || 1)) * 100, 100).toFixed(1); 
   return (
-    <div className="text-center space-y-2 md:space-y-6 font-black p-3 md:p-4">
+    <div className="text-center space-y-2 md:space-y-6 font-black p-3 md:p-4 text-black">
       <p className="text-[10px] text-slate-400 uppercase font-black">{label}</p>
       <p className="text-lg md:text-3xl font-black italic">{cur}{unit} / {tar}{unit}</p>
       <div className="w-full h-8 md:h-10 bg-slate-100 rounded-full border-2 md:border-4 border-black overflow-hidden relative font-black shadow-lg">
@@ -378,8 +354,8 @@ function FunnelBox({ label, val }: any) {
 function InputRow({ label, val, onChange }: any) { 
   return (
     <div className="flex justify-between items-center bg-slate-50 p-4 md:p-6 rounded-2xl border-2 md:border-4 border-black font-black shadow-md">
-      <label className="text-[10px] md:text-sm italic font-black uppercase">{label}</label>
-      <input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-20 md:w-32 p-2 md:p-3 bg-white border-2 border-black rounded-xl text-center outline-none font-black text-sm md:text-xl italic" />
+      <label className="text-[10px] md:text-sm italic font-black uppercase text-black">{label}</label>
+      <input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-20 md:w-32 p-2 md:p-3 bg-white border-2 border-black rounded-xl text-center outline-none font-black text-sm md:text-xl italic text-black" />
     </div>
   ) 
 }

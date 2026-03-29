@@ -1,16 +1,14 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AdminView.tsx
-// 관리자 화면 전담 파일 — UI/기능 수정은 이 파일만 건드리면 됩니다
-// 엑셀 출력 내용/스타일 수정은 exportExcel.ts 파일을 수정하세요
+// AdminView.tsx (Updated: 조직 및 권한 관리 시스템 통합)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
-import CalcModal from "./CalcModal" // 기존 퀵링크용 모달
-import FinancialCalc from "./FinancialCalc" // 새로 제작한 통합 금융계산기
+import CalcModal from "./CalcModal"
+import FinancialCalc from "./FinancialCalc"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import { exportExcel } from "./exportExcel"
@@ -30,9 +28,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
-  useEffect(() => { fetchTeamData(); }, [monthKey]);
+  useEffect(() => { fetchTeamData(); }, [monthKey, user]);
 
   async function fetchTeamData() {
+    // 1. 공지사항 및 팀 설정 로드
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
     setTeamMeta({
@@ -42,7 +41,18 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       actualIntro: Number(settings?.find(s => s.key === 'actual_intro_cnt')?.value)  || 0,
     });
 
-    const { data: users } = await supabase.from("users").select("*").eq("role", "agent");
+    // 2. 권한별 유저 필터링 로직 (마스터/사업부장/지점장)
+    let userQuery = supabase.from("users").select("*");
+    
+    // 마스터가 아니면 소속 기반 필터링 적용
+    if (user.role_level === 'director') {
+      userQuery = userQuery.eq('center', user.center); // 사업부장: 본인 센터만
+    } else if (user.role_level === 'manager') {
+      userQuery = userQuery.eq('branch', user.branch); // 지점장: 본인 지점만
+    }
+    // master는 필터 없이 전체
+
+    const { data: users } = await userQuery;
     const { data: allPerfs } = await supabase.from("daily_perf").select("*");
 
     if (users) {
@@ -51,7 +61,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         const currentPerf = userHistory.find(p => p.date === monthKey) || {
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
           contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
-          edu_status: '미참여', is_approved: false,
+          edu_status: '미참여', is_approved: u.is_approved || false,
         };
 
         const validHistory = userHistory.filter(h => Number(h.contract_amt) > 0);
@@ -82,16 +92,16 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     } else {
       const doc = new jsPDF();
       (doc as any).autoTable({
-        head: [['성명', '목표(만)', '실적(만)', '건수', '전화', '만남', '제안', '소개']],
+        head: [['성명', '소속', '직책', '실적(만)', '건수', '전화', '만남', '제안']],
         body: agents.map(a => [
           a.name,
-          Number(a.performance.target_amt   || 0),
-          Number(a.performance.contract_amt  || 0),
-          Number(a.performance.contract_cnt  || 0),
-          Number(a.performance.call          || 0),
-          Number(a.performance.meet          || 0),
-          Number(a.performance.pt            || 0),
-          Number(a.performance.intro         || 0),
+          `${a.center || ''} ${a.branch || ''}`,
+          a.role_level,
+          Number(a.performance.contract_amt || 0),
+          Number(a.performance.contract_cnt || 0),
+          Number(a.performance.call || 0),
+          Number(a.performance.meet || 0),
+          Number(a.performance.pt || 0),
         ]),
       });
       doc.save(`Team_Report_${monthKey}.pdf`);
@@ -104,15 +114,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  // 만약 현재 탭이 'finance'라면 통합 금융계산기 전용 뷰를 렌더링합니다.
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex justify-end p-4">
-          <button 
-            onClick={() => setActiveTab(null)} 
-            className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37] hover:invert transition-all"
-          >
+          <button onClick={() => setActiveTab(null)} className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37] hover:invert transition-all">
             CLOSE CALCULATOR ×
           </button>
         </div>
@@ -134,20 +140,22 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션 - 영업도구(계산기) 버튼 삭제됨 */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
+      {/* 퀵링크 섹션 - 영업도구 클릭 시 계산기 실행 */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
-        
-        <div className="relative">
+        <button onClick={() => setActiveTab('finance')} className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
+          영업도구
+        </button>
+        <div className="relative col-span-2">
           <button onClick={() => setShowExportOpt(!showExportOpt)}
-            className="w-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">
-            실적 출력
+            className="w-full h-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">
+            실적 리포트 출력
           </button>
           {showExportOpt && (
             <div className="absolute top-full right-0 mt-2 bg-white border-2 border-black rounded-2xl shadow-2xl z-50 w-full overflow-hidden">
-              <button onClick={() => handleExport('excel')} className="w-full p-4 hover:bg-slate-50 border-b text-left text-[11px] font-black">EXCEL 출력</button>
-              <button onClick={() => handleExport('pdf')} className="w-full p-4 hover:bg-slate-50 text-left text-[11px] font-black">PDF 출력</button>
+              <button onClick={() => handleExport('excel')} className="w-full p-4 hover:bg-slate-50 border-b text-left text-[11px] font-black uppercase">EXCEL Export</button>
+              <button onClick={() => handleExport('pdf')} className="w-full p-4 hover:bg-slate-50 text-left text-[11px] font-black uppercase">PDF Export</button>
             </div>
           )}
         </div>
@@ -165,21 +173,23 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* 메인 탭 메뉴 */}
+      {/* 메인 탭 메뉴 - 마스터만 '직원 승인/조직 관리' 접근 가능 */}
       <div className="grid grid-cols-5 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys', 'users'].map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
             className={`${activeTab === t ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black py-4 px-1 rounded-2xl text-[10px] md:text-sm italic font-black text-center transition-all ${t === 'users' ? 'border-dashed border-indigo-500' : ''}`}>
-            {t==='perf'?'실적 관리':t==='act'?'활동 관리':t==='edu'?'교육 관리':t==='sys'?'시스템 설정':'직원 승인'}
+            {t==='perf'?'실적 관리':t==='act'?'활동 관리':t==='edu'?'교육 관리':t==='sys'?'시스템 설정':'조직 관리'}
           </button>
         ))}
       </div>
 
       {/* 팀 모니터링 섹션 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
-        <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Team Monitoring</h2>
+        <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
+          {user.role_level === 'master' ? 'All Centers' : user.center} Monitoring
+        </h2>
         <div className="space-y-4 md:space-y-6">
-          {agents.map(a => {
+          {agents.filter(a => a.is_approved).map(a => {
             const amtRate = Math.round(((Number(a.performance.contract_amt) || 0) / (Number(a.performance.target_amt) || 1)) * 100);
             const cntRate = Math.round(((Number(a.performance.contract_cnt) || 0) / (Number(a.performance.target_cnt) || 1)) * 100);
 
@@ -191,7 +201,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
-                    <p className="text-xl font-black">{a.name} CA</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{a.role_level || 'planner'}</span>
+                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.branch || '미소속'})</span></p>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       <RecordBadge type="BEST" amt={a.best?.contract_amt} date={a.best ? formatDate(a.best.date) : ""} />
                       <RecordBadge type="LOW" amt={a.worst?.contract_amt} date={a.worst ? formatDate(a.worst.date) : ""} />
@@ -200,20 +213,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <MonitorBar 
-                    label="매출 달성률" 
-                    rate={amtRate} 
-                    current={a.performance.contract_amt} 
-                    target={a.performance.target_amt} 
-                    unit="만" 
-                  />
-                  <MonitorBar 
-                    label="건수 달성률" 
-                    rate={cntRate} 
-                    current={a.performance.contract_cnt} 
-                    target={a.performance.target_cnt} 
-                    unit="건" 
-                  />
+                  <MonitorBar label="매출 달성률" rate={amtRate} current={a.performance.contract_amt} target={a.performance.target_amt} unit="만" />
+                  <MonitorBar label="건수 달성률" rate={cntRate} current={a.performance.contract_cnt} target={a.performance.target_cnt} unit="건" />
                 </div>
               </div>
             );
@@ -221,11 +222,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </section>
 
-      {/* 팝업 모듈 - finance 탭 처리 유지 */}
+      {/* 팝업 모듈 - AdminPopups.tsx에서 'users' 타입 처리(승인/조직이동) 포함됨 */}
       {activeTab && !['finance'].includes(activeTab) && (
         <AdminPopups
           type={activeTab}
-          agents={agents}
+          agents={agents} // 전체 유저 데이터 (미승인 포함)
           selectedAgent={selectedAgent}
           teamMeta={teamMeta}
           onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }}
@@ -255,7 +256,7 @@ function MonitorBar({ label, rate, current, target, unit }: any) {
         </div>
         <span className={`text-3xl italic font-black ${styles.text}`}>{rate}%</span>
       </div>
-      <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+      <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden border border-black/5">
         <div className={`${styles.bar} h-full transition-all duration-1000 ease-out`} style={{ width: `${Math.min(rate, 100)}%` }} />
       </div>
     </div>

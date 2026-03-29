@@ -109,7 +109,8 @@ export default function Sidebar({
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
-    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: 'https://job.fss.or.kr/job/main/main.do', color: 'border-slate-400' },
+    // 공시실 URL 업데이트: public/gongsi.html 연결
+    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'http://www.koicd.kr/kcd/kcd.do', color: 'border-indigo-400' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '#', color: 'border-rose-400' },
   ];
