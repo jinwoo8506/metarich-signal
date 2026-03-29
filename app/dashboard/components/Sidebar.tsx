@@ -5,48 +5,44 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
+// onTabChange 프롭스를 통해 메인 컨텐츠의 탭을 전환합니다.
 export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack, externalMenuStatus, onMenuStatusChange, onTabChange, activeTab }: any) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false); 
+  const [isOpen, setIsOpen] = useState(false); // 모바일 사이드바 열림 상태
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 권한 로직 수정 (DB의 role 필드 및 이메일 교차 검증)
+  // [수정] 권한 로직 정의: 이메일 하드코딩과 DB의 role 필드를 교차 검증
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const userEmail = user?.email?.toLowerCase()?.trim();
-  
-  // 1. 마스터 권한: 이메일 일치 또는 role이 'master'인 경우
+  // 1. 마스터 권한 (이메일 혹은 DB role이 master)
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
-  
-  // 2. 관리자 권한: 특정 이메일 또는 role이 'admin'인 경우 (마스터 포함)
+  // 2. 관리자 권한 (이메일 혹은 DB role이 admin/master)
   const isAdmin = userEmail === 'jw20371035@gmail.com' || user?.role === 'admin' || isMaster;
-  
-  // 3. 승인 여부: 
-  // - DB에 is_approved 컬럼이 있다면 해당 값 참조
-  // - 컬럼이 없다면 master/admin은 자동 승인, 일반 agent는 true인 경우만 (또는 별도 로직 필요)
-  const isApproved = 
-    user?.is_approved === true || 
-    user?.is_approved === "true" || 
-    isAdmin; 
+  // 3. 승인 여부 (관리자이거나 DB의 is_approved가 true인 경우)
+  const isApproved = isAdmin || user?.is_approved === true || user?.is_approved === "true";
 
+  // 대시보드에서 관리하는 설정을 로컬 상태로 유지
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, show_cont: true
   });
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
+    // 승인된 사용자만 실적 및 공지사항 데이터를 가져옴
     if (isApproved) {
       fetchDailyData();
       fetch3MonthAvg();
     }
     fetchMenuSettings();
-    const savedPrivate = localStorage.getItem(`memo_${user.id}`);
+    const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
     setPrivateMemo(savedPrivate || "");
-  }, [dateStr, user.id, isApproved]);
+  }, [dateStr, user?.id, isApproved]);
 
+  // 대시보드에서 받아온 외부 상태가 바뀔 경우 동기화
   useEffect(() => {
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
@@ -59,6 +55,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         return acc;
       }, {});
       setMenuStatus((prev: any) => ({ ...prev, ...settings }));
+      // 메인 화면의 카드들도 이 설정을 따르도록 콜백 실행
       if (onMenuStatusChange) onMenuStatusChange({ ...menuStatus, ...settings });
     }
   }
@@ -69,6 +66,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     setMenuStatus(updatedStatus);
     
     if (onMenuStatusChange) onMenuStatusChange(updatedStatus);
+    
     await supabase.from("team_settings").upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
   };
 
@@ -98,7 +96,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
       .lt("date", endOfRange);
 
     if (!isAdmin) {
-      query = query.eq("user_id", user.id);
+      query = query.eq("user_id", user?.id);
     }
 
     const { data } = await query;
@@ -126,11 +124,21 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
 
   const savePrivateMemo = (val: string) => {
     setPrivateMemo(val);
-    localStorage.setItem(`memo_${user.id}`, val);
+    localStorage.setItem(`memo_${user?.id}`, val);
   };
+
+  // 퀵링크 아이템 정의 (진료기록 확인 탭 포함 및 게스트 접근 설정)
+  const quickLinks = [
+    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black', guest: true },
+    { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600', guest: true },
+    { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람', color: 'border-orange-500', guest: true },
+    { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500', guest: true },
+    { id: 'show_cafe', label: '성장연구소 카페', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]', guest: false }
+  ];
 
   return (
     <>
+      {/* 모바일 햄버거 버튼 */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-xs transition-transform active:scale-90"
@@ -138,6 +146,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         {isOpen ? 'CLOSE' : 'MENU'}
       </button>
 
+      {/* 사이드바 본체 */}
       <aside className={`
         fixed lg:relative inset-y-0 left-0 z-50
         w-[300px] lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm font-black overflow-y-auto transition-transform duration-300 ease-in-out
@@ -162,6 +171,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           )}
         </div>
 
+        {/* 미승인 사용자 안내 (게스트용) */}
         {!isApproved && (
           <div className="bg-amber-50 p-5 rounded-[2rem] border-2 border-amber-200 shadow-inner">
             <p className="text-[10px] font-black text-amber-600 uppercase italic mb-1 tracking-widest">Status: Pending</p>
@@ -171,6 +181,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           </div>
         )}
         
+        {/* 승인된 사용자에게만 노출되는 섹션 (캘린더 & 실적) */}
         {isApproved && mode === 'office' && (
           <>
             <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
@@ -206,9 +217,16 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         <div className="px-1 space-y-3">
           <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Main Menu</p>
 
+          {/* 금융계산기 탭 (상담업무 전용 이동 버튼) */}
           <button 
-            onClick={() => onTabChange && onTabChange('finance')}
-            className={`w-full flex items-center justify-center gap-3 py-5 border-4 rounded-[1.8rem] transition-all active:scale-95 ${activeTab === 'finance' ? 'bg-[#d4af37] border-black text-black' : 'bg-black border-black text-[#d4af37] hover:bg-slate-800'}`}
+            type="button"
+            onClick={() => {
+              if (onTabChange) {
+                onTabChange('finance');
+                setIsOpen(false); // 클릭 시 모바일 사이드바 닫기
+              }
+            }}
+            className={`w-full flex items-center justify-center gap-3 py-5 border-4 rounded-[1.8rem] transition-all active:scale-95 shadow-md ${activeTab === 'finance' ? 'bg-[#d4af37] border-black text-black' : 'bg-black border-black text-[#d4af37] hover:bg-slate-800'}`}
           >
             <span className="text-xl">🧮</span>
             <span className="text-[13px] font-black tracking-tight uppercase italic">Financial Calculator</span>
@@ -216,17 +234,20 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
 
           <p className="text-[9px] text-slate-400 uppercase italic mt-4 mb-1 tracking-widest font-black">Quick Links</p>
           
-          {[
-            { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black', guest: true },
-            { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600', guest: true },
-            { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람', color: 'border-orange-500', guest: false },
-            { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500', guest: true },
-            { id: 'show_cafe', label: '성장연구소 카페', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]', guest: false }
-          ].map((item) => (
+          {quickLinks.map((item) => (
             (menuStatus[item.id] || isEditMode) && (isApproved || item.guest) && (
               <div key={item.id} className="relative group">
                 <button 
-                  onClick={() => !isEditMode && window.open(item.url, "_blank")}
+                  onClick={() => {
+                    if (!isEditMode) {
+                      // 영업도구를 누르면 계산기가 나와야 한다는 규칙 적용 (필요 시 finance 탭으로 전환 가능)
+                      if (item.id === 'show_finance' && onTabChange) {
+                        onTabChange('finance');
+                      } else {
+                        window.open(item.url, "_blank");
+                      }
+                    }
+                  }}
                   className={`w-full flex items-center justify-center gap-3 py-4 border-2 ${item.color} rounded-[1.5rem] bg-white hover:bg-black hover:text-[#d4af37] transition-all active:scale-95 ${!menuStatus[item.id] && 'opacity-30 grayscale'}`}
                 >
                   <span className="text-xl">{item.icon}</span>
@@ -245,6 +266,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           ))}
         </div>
 
+        {/* 승인된 사용자만 메모 및 전달사항 이용 가능 */}
         {isApproved && mode === 'office' && (
           <div className="flex flex-col gap-4">
             <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-40">
@@ -276,6 +298,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         </button>
       </aside>
 
+      {/* 모바일 배경 오버레이 */}
       {isOpen && (
         <div 
           onClick={() => setIsOpen(false)}
