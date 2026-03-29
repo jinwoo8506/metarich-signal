@@ -5,28 +5,28 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
-export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack, externalMenuStatus, onMenuStatusChange, onTabChange, activeTab }: any) {
+// ✅ 부모(DashboardPage)로부터 isOpen, setIsOpen을 전달받음
+export default function Sidebar({ 
+  user, selectedDate, onDateChange, mode, onBack, 
+  externalMenuStatus, onMenuStatusChange, onTabChange, activeTab,
+  isOpen, setIsOpen 
+}: any) {
   const router = useRouter();
   
-  // [업데이트] 사이드바 열기/닫기 상태 (기본값 열림)
-  const [isOpen, setIsOpen] = useState(true); 
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 권한 로직: 마스터, 관리자, 직원(승인유저) 구분
+  // 권한 로직
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const userEmail = user?.email?.toLowerCase()?.trim();
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
   const isAdmin = userEmail === 'jw20371035@gmail.com' || user?.role === 'admin' || isMaster;
-  
-  // 직급 기반 승인 여부 (게스트와 직원 구분)
   const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
   const isApproved = isAdmin || isStaff || user?.is_approved === true || user?.is_approved === "true";
 
-  // 메뉴 상태 관리 (신규 메뉴들 포함)
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
@@ -97,14 +97,14 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
   };
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 퀵링크 정의: 고정 메뉴(fixed) 및 직원 전용 메뉴(staffOnly)
+  // 퀵링크 정의 (연결 경로 확인됨)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const quickLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]', fixed: true },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500', fixed: true },
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람', color: 'border-orange-500', fixed: true },
     
-    // 직원 전용 메뉴 (마스터 설정에 따름)
+    // ✅ 경로 재확인: /financial_planner.html 및 /insu.html
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black', staffOnly: true },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600', staffOnly: true },
     { id: 'show_gongsi', label: '보험사 공시실(약관)', icon: '📑', url: '#', color: 'border-slate-400', staffOnly: true },
@@ -114,7 +114,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
 
   return (
     <>
-      {/* [업데이트] 사이드바 열기/닫기 토글 버튼 */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90"
@@ -122,16 +121,12 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
-      {/* 사이드바 본체: 애니메이션 및 너비 가변 처리 */}
       <aside className={`
         fixed inset-y-0 left-0 z-50
         bg-white border-r p-6 flex flex-col gap-6 shadow-sm font-black overflow-y-auto transition-all duration-300 ease-in-out
         ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}
       `}>
-        
-        {/* 내부 컨텐츠가 사이드바가 닫힐 때 같이 사라지도록 처리 */}
         <div className={`${!isOpen && 'hidden'} transition-opacity duration-200 flex flex-col gap-6 h-full min-w-[250px]`}>
-          
           <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
             ← BACK TO SELECTOR
           </button>
@@ -194,16 +189,12 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           <div className="px-1 space-y-3">
             <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Main Menu</p>
 
-            {/* [업데이트] 금융계산기 버튼: 직원 이상만 노출 및 클릭 시 작동 보강 */}
             {isApproved && (
               <button 
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (onTabChange) {
-                    onTabChange('finance');
-                    // setIsOpen(false); // 필요 시 사이드바 자동 닫기 활성화
-                  }
+                  if (onTabChange) onTabChange('finance');
                 }}
                 className={`w-full flex items-center justify-center gap-3 py-5 border-4 rounded-[1.8rem] transition-all active:scale-95 shadow-md ${activeTab === 'finance' ? 'bg-[#d4af37] border-black text-black' : 'bg-black border-black text-[#d4af37] hover:bg-slate-800'}`}
               >
@@ -215,7 +206,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
             <p className="text-[9px] text-slate-400 uppercase italic mt-4 mb-1 tracking-widest font-black">Quick Links</p>
             
             {quickLinks.map((item) => {
-              // 노출 조건: (고정메뉴 혹은 마스터가 켠 메뉴) AND (고정메뉴 혹은 승인된 직원)
               const isVisible = item.fixed || menuStatus[item.id] || isEditMode;
               const hasPermission = item.fixed || isApproved;
 
@@ -225,6 +215,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
                     <button 
                       onClick={() => {
                         if (!isEditMode) {
+                          // ✅ 탭 전환 로직과 새 창 열기 로직 분리 확인
                           if (item.id === 'show_finance' && onTabChange) onTabChange('finance');
                           else window.open(item.url, "_blank");
                         }
@@ -281,7 +272,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         </div>
       </aside>
 
-      {/* 모바일 배경 오버레이 */}
       {isOpen && (
         <div 
           onClick={() => setIsOpen(false)}

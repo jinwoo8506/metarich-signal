@@ -86,9 +86,7 @@ function ConsultingView({ menuStatus, isApproved }: any) {
     }
   ];
 
-  // 필터링 로직:
-  // 1. 고정 메뉴(fixed)는 무조건 표시
-  // 2. 직원 전용 메뉴(staffOnly)는 승인된 유저(isApproved)이면서 관리자가 ON(menuStatus)한 경우만 표시
+  // 필터링 로직: 고정 메뉴 또는 승인된 직원의 활성화 메뉴
   const activeMenus = allMenus.filter(m => {
     if (m.fixed) return true; 
     if (m.staffOnly && isApproved && menuStatus[m.id]) return true;
@@ -129,6 +127,9 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
   
+  // ✅ 사이드바 열림 상태 관리 (기본값 true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const [menuStatus, setMenuStatus] = useState<any>({
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
@@ -163,7 +164,6 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 권한 체크: 직원 이상 혹은 승인된 유저인지 판별
   const userEmail = user?.email?.toLowerCase()?.trim();
   const isAdminOrMaster = user.role === 'admin' || user.role === 'master' || userEmail === 'qodbtjq@naver.com';
   const isApproved = isAdminOrMaster || user?.is_approved === true || user?.is_approved === "true" || ['agent', 'leader', 'manager'].includes(user?.role);
@@ -187,19 +187,30 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
       <Sidebar 
         user={user} selectedDate={selectedDate} onDateChange={setSelectedDate} 
         mode={viewMode} onBack={() => setViewMode('select')} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={handleMenuStatusChange}
+        // ✅ 사이드바 상태 제어 프롭스 추가
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
       />
-      <main className={`flex-1 p-4 lg:p-10 max-w-[1600px] mx-auto w-full transition-all duration-300`}>
-        {viewMode === 'office' ? (
-          isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
-        ) : (
-          <ConsultingView menuStatus={menuStatus} isApproved={isApproved} /> 
-        )}
+      {/* ✅ [수정 핵심] main 태그의 스타일
+        isSidebarOpen이 true일 때 lg:ml-80 (사이드바 너비 320px) 여백을 주어 겹침 방지
+      */}
+      <main className={`
+        flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
+        ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
+      `}>
+        <div className="max-w-[1600px] mx-auto">
+          {viewMode === 'office' ? (
+            isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
+          ) : (
+            <ConsultingView menuStatus={menuStatus} isApproved={isApproved} /> 
+          )}
+        </div>
       </main>
     </div>
   );
