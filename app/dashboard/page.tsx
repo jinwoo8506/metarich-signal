@@ -6,11 +6,11 @@ import { supabase } from "../../lib/supabase"
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/AdminView"
+import FinancialCalc from "./components/FinancialCalc" // ✅ 금융계산기 컴포넌트 호출
 
-// ✅ 상담 모드 메인 콘텐츠: 사이드바의 menuStatus와 실시간 동기화
-function ConsultingView({ menuStatus, isApproved }: any) {
+// ✅ 상담 모드 메인 콘텐츠
+function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
   const allMenus = [
-    // [고정 메뉴]
     { 
       id: "show_cafe", 
       title: "보험의 기준", 
@@ -38,13 +38,22 @@ function ConsultingView({ menuStatus, isApproved }: any) {
       color: "border-orange-500 text-orange-600",
       fixed: true 
     },
-    // [직원 전용 메뉴] - 사이드바 menuStatus 키값과 정확히 일치시킴
+    // ✅ 영업용 금융계산기 (내부 컴포넌트 연동)
+    { 
+      id: "show_calc", 
+      title: "영업용 금융계산기", 
+      desc: "대출 / 예적금 / 환율 계산기", 
+      icon: "🧮", 
+      url: "tab:finance", 
+      color: "border-blue-500 text-blue-600",
+      staffOnly: true 
+    },
     { 
       id: "show_finance", 
       title: "재무 / 보장분석", 
       desc: "종합 금융 플래닝 및 분석 리포트", 
       icon: "📊", 
-      url: "/financial_planner.html", // ✅ 연동 경로 수정 완료
+      url: "/financial_planner.html", 
       color: "border-black text-black",
       staffOnly: true 
     },
@@ -86,10 +95,8 @@ function ConsultingView({ menuStatus, isApproved }: any) {
     }
   ];
 
-  // ✅ 핵심 로직: 사이드바에서 관리자가 ON/OFF 한 상태를 그대로 반영
   const activeMenus = allMenus.filter(m => {
     if (m.fixed) return true; 
-    // 승인된 인원이고, 사이드바 menuStatus에서 해당 id가 true인 경우만 노출
     if (m.staffOnly && isApproved && menuStatus[m.id]) return true;
     return false;
   });
@@ -106,7 +113,13 @@ function ConsultingView({ menuStatus, isApproved }: any) {
         {activeMenus.map((m, i) => (
           <button 
             key={m.id || i}
-            onClick={() => m.url !== "#" && window.open(m.url, "_blank")}
+            onClick={() => {
+              if (m.url === 'tab:finance') {
+                onTabChange('finance');
+              } else if (m.url !== "#") {
+                window.open(m.url, "_blank");
+              }
+            }}
             className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all group active:scale-95`}
           >
             <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
@@ -128,11 +141,13 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  // ✅ 탭 상태 관리 추가 (finance 등)
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
-  // 초기 상태값을 모두 true로 설정하여 누락 방지
   const [menuStatus, setMenuStatus] = useState<any>({
-    show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
-    show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
+    show_finance: true, show_insu: true, show_calc: true, show_cafe: true, 
+    show_hira: true, show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
   });
 
   useEffect(() => {
@@ -149,7 +164,6 @@ export default function DashboardPage() {
           acc[curr.key] = curr.value === "true";
           return acc;
         }, {});
-        // DB 설정값을 현재 상태에 덮어씌움
         setMenuStatus((prev: any) => ({ ...prev, ...sObj }));
       }
 
@@ -159,9 +173,14 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
-  // 사이드바에서 변경된 상태를 메인 대시보드 상태로 업데이트
   const handleMenuStatusChange = (newStatus: any) => {
     setMenuStatus(newStatus);
+  };
+
+  // ✅ 탭 전환 핸들러
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setViewMode('office'); // 탭 내용 표시를 위해 office 모드 레이아웃 사용
   };
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
@@ -175,11 +194,11 @@ export default function DashboardPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
         <h1 className="text-5xl mb-16 italic tracking-tighter"><span className="text-blue-600">{user.name}</span>님, 환영합니다!</h1>
         <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
-          <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
+          <button onClick={() => { setViewMode('office'); setActiveTab(null); }} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
             <span className="text-8xl group-hover:scale-110 transition-transform">🏢</span>
             <h2 className="text-4xl font-black uppercase">사무실 업무</h2>
           </button>
-          <button onClick={() => setViewMode('consulting')} className="flex-1 h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
+          <button onClick={() => { setViewMode('consulting'); setActiveTab(null); }} className="flex-1 h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
             <span className="text-8xl group-hover:scale-110 transition-transform">🤝</span>
             <h2 className="text-4xl font-black uppercase">고객 상담</h2>
           </button>
@@ -191,22 +210,45 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-sans text-slate-900 overflow-x-hidden">
       <Sidebar 
-        user={user} selectedDate={selectedDate} onDateChange={setSelectedDate} 
-        mode={viewMode} onBack={() => setViewMode('select')} 
+        user={user} 
+        selectedDate={selectedDate} 
+        onDateChange={setSelectedDate} 
+        mode={viewMode} 
+        onBack={() => { setViewMode('select'); setActiveTab(null); }} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={handleMenuStatusChange}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        // ✅ 사이드바에서 탭 전환 연동
+        onTabChange={handleTabChange}
+        activeTab={activeTab}
       />
       <main className={`
         flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
       `}>
         <div className="max-w-[1600px] mx-auto">
-          {viewMode === 'office' ? (
+          {/* ✅ activeTab 상태에 따른 컴포넌트 분기 처리 */}
+          {activeTab === 'finance' ? (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="mb-6 flex justify-between items-center">
+                <button 
+                  onClick={() => setActiveTab(null)}
+                  className="px-6 py-2 bg-black text-white rounded-full font-black text-xs hover:bg-slate-800 transition-all"
+                >
+                  ← 돌아가기
+                </button>
+              </div>
+              <FinancialCalc />
+            </div>
+          ) : viewMode === 'office' ? (
             isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
           ) : (
-            <ConsultingView menuStatus={menuStatus} isApproved={isApproved} /> 
+            <ConsultingView 
+              menuStatus={menuStatus} 
+              isApproved={isApproved} 
+              onTabChange={handleTabChange} // ✅ 컨설팅 뷰 내 카드 클릭 연동
+            /> 
           )}
         </div>
       </main>

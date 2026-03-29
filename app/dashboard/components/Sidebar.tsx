@@ -24,9 +24,11 @@ export default function Sidebar({
   const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
   const isApproved = isAdmin || isStaff || user?.is_approved === true || user?.is_approved === "true";
 
+  // ✅ show_calc (금융계산기) 키 추가 및 초기 상태 동기화
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
-    show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
+    show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
+    show_calc: true 
   });
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -93,9 +95,6 @@ export default function Sidebar({
     localStorage.setItem(`memo_${user?.id}`, val);
   };
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 퀵링크 데이터 설정
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
@@ -103,7 +102,8 @@ export default function Sidebar({
   ];
 
   const consultTools = [
-    // ✅ 재무 분석 도구 경로를 public 폴더의 html 파일로 직접 지정
+    // ✅ 'tab:finance'를 통해 FinancialCalc 컴포넌트와 연동
+    { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: 'https://job.fss.or.kr/job/main/main.do', color: 'border-slate-400' },
@@ -111,24 +111,20 @@ export default function Sidebar({
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '#', color: 'border-rose-400' },
   ];
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 클릭 핸들러 (내부 탭 전환 및 외부 파일 연동)
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const handleLinkClick = (item: any) => {
     if (isEditMode) return;
 
-    // 만약 내부 React 탭을 사용하는 경우 (영업도구 - 계산기 등)
-    if (item.url === 'tab:finance') {
+    // ✅ 금융계산기 클릭 시 내부 탭 전환 로직 실행
+    if (item.url === 'tab:finance' || item.id === 'show_calc') {
       if (onTabChange) onTabChange('finance');
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
     }
 
-    // public 폴더의 html 파일 또는 외부 URL 오픈
     if (item.url && item.url !== '#') {
       window.open(item.url, "_blank");
-      setIsConsultModalOpen(false); // 팝업 닫기
+      setIsConsultModalOpen(false); 
     }
   };
 
@@ -186,10 +182,9 @@ export default function Sidebar({
               </div>
             </>
           )}
-          
+
           <div className="px-1 space-y-3">
             <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
-
             <div className="grid grid-cols-1 gap-2">
               {fixedLinks.map(item => (
                 <button key={item.id} onClick={() => handleLinkClick(item)}
@@ -229,7 +224,7 @@ export default function Sidebar({
         </div>
       </aside>
 
-      {/* 상담 도구 선택용 팝업 모달 */}
+      {/* 상담 도구 팝업 모달 */}
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
