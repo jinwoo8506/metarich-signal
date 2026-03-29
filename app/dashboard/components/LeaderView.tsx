@@ -22,7 +22,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
-  // 컴포넌트 전체에서 사용할 수 있도록 상단에 정의
   const currentUserEmail = user?.email?.toLowerCase()?.trim() || "";
   const isMaster = currentUserEmail === 'qodbtjq@naver.com' || user?.role === 'master';
 
@@ -39,9 +38,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       actualIntro: Number(settings?.find(s => s.key === 'actual_intro_cnt')?.value)  || 0,
     });
 
-    let userQuery = supabase.from("users").select("*");
+    // 1. 유저 쿼리: 실적 대상인 'agent'와 'manager'만 필터링
+    let userQuery = supabase.from("users").select("*").in("role", ["agent", "manager"]);
     
-    // 권한 필터링 로직
     if (!isMaster) {
       if (user?.center) {
         userQuery = userQuery.eq('center', user.center);
@@ -73,6 +72,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       });
       setAgents(mappedAgents);
 
+      // 2. 활동 합산 (필터링된 Agent와 Manager 데이터만 집계됨)
       const totals = mappedAgents.filter(a => a.is_approved).reduce((acc, curr) => ({
         call:  acc.call  + Number(curr.performance.call  || 0),
         meet:  acc.meet  + Number(curr.performance.meet  || 0),
@@ -128,7 +128,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 */}
+      {/* 퀵링크 (5개 유지 및 영업도구 연결) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
@@ -148,7 +148,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 합산 데이터 */}
+      {/* 활동 합산 데이터 (Agent + Manager 기준) */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -174,7 +174,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 모니터링 섹션 (에러 수정 부분) */}
+      {/* 모니터링 섹션 (Agent + Manager 리스트) */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
           {isMaster ? 'All Centers' : (user.center || 'My Branch')} Monitoring
@@ -188,7 +188,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{a.role_level || 'planner'}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md italic uppercase ${a.role === 'manager' ? 'bg-blue-600 text-white' : 'bg-black text-white'}`}>
+                        {a.role_level || a.role}
+                      </span>
                       <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.branch || '미소속'})</span></p>
                     </div>
                   </div>
@@ -217,7 +219,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-// 헬퍼 컴포넌트들 (RecordBadge, MonitorBar, QuickLink, TotalBox 등은 이전과 동일)
+// 헬퍼 컴포넌트들
 function MonitorBar({ label, rate, current, target, unit }: any) {
   const styles = rate >= 80 ? { bar: "bg-blue-500", text: "text-blue-600" } : rate >= 65 ? { bar: "bg-orange-500", text: "text-orange-600" } : rate >= 30 ? { bar: "bg-yellow-400", text: "text-yellow-500" } : { bar: "bg-red-500", text: "text-red-600" };
   return (
