@@ -41,6 +41,10 @@ export default function Sidebar({
   });
   const [isEditMode, setIsEditMode] = useState(false);
 
+  // --- [신규 추가] 권한 관리용 상태 ---
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [showStaffManager, setShowStaffManager] = useState(false);
+
   useEffect(() => {
     if (isApproved) {
       fetchDailyData();
@@ -49,11 +53,37 @@ export default function Sidebar({
     fetchMenuSettings();
     const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
     setPrivateMemo(savedPrivate || "");
+    
+    // 관리자일 경우 직원 목록 미리 로드
+    if (isAdmin) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
   useEffect(() => {
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
+
+  // --- [신규 추가] 직원 목록 및 권한 업데이트 로직 ---
+  async function fetchStaffList() {
+    const { data } = await supabase.from("users").select("*").order("name", { ascending: true });
+    if (data) setStaffList(data);
+  }
+
+  async function updateStaffRole(staffId: string, newRole: string) {
+    const { error } = await supabase.from("users").update({ role: newRole }).eq("id", staffId);
+    if (!error) {
+      alert("직급 권한이 변경되었습니다.");
+      fetchStaffList();
+    }
+  }
+
+  async function toggleStaffApproval(staffId: string, currentStatus: any) {
+    const nextStatus = !(currentStatus === true || currentStatus === "true");
+    const { error } = await supabase.from("users").update({ is_approved: nextStatus }).eq("id", staffId);
+    if (!error) {
+      alert(nextStatus ? "승인 완료되었습니다." : "승인이 취소되었습니다.");
+      fetchStaffList();
+    }
+  }
 
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");
@@ -109,7 +139,6 @@ export default function Sidebar({
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
-    // 공시실 URL 업데이트: public/gongsi.html 연결
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'http://www.koicd.kr/kcd/kcd.do', color: 'border-indigo-400' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '#', color: 'border-rose-400' },
@@ -138,16 +167,13 @@ export default function Sidebar({
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
-      {/* 사이드바 본체 */}
       <aside className={`
         fixed inset-y-0 left-0 z-50
         bg-white border-r flex flex-col shadow-sm font-black transition-all duration-300 ease-in-out
         ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}
       `}>
-        {/* 내부 컨테이너: flex-col 및 h-full로 높이 제어 */}
         <div className={`flex flex-col h-full transition-opacity duration-200 ${!isOpen && 'hidden'}`}>
           
-          {/* 상단 비스크롤 영역 (뒤로가기, 타이틀, 사용자 정보) */}
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-6">
             <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
               ← BACK TO SELECTOR
@@ -157,10 +183,10 @@ export default function Sidebar({
               <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
                 {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
               </h2>
-              {isMaster && (
-                <button onClick={() => setIsEditMode(!isEditMode)} 
-                  className={`text-[9px] px-2 py-1 rounded-full font-black ${isEditMode ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {isEditMode ? "FINISH" : "CONFIG"}
+              {isAdmin && (
+                <button onClick={() => setShowStaffManager(!showStaffManager)} 
+                  className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  {showStaffManager ? "CLOSE STAFF" : "MANAGE STAFF"}
                 </button>
               )}
             </div>
@@ -176,11 +202,40 @@ export default function Sidebar({
             )}
           </div>
 
-          {/* 중간 스크롤 영역 (달력, 통계, 퀵링크 등) */}
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
+            {/* --- [신규 추가] 관리자 전용 직원 권한 설정 패널 --- */}
+            {isAdmin && showStaffManager && (
+              <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200 animate-in slide-in-from-top-4 duration-300">
+                <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
+                <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
+                  {staffList.map((staff) => (
+                    <div key={staff.id} className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[11px] font-black">{staff.name || staff.email}</span>
+                        <button 
+                          onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
+                          className={`text-[8px] px-2 py-1 rounded-lg font-black ${ (staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                          {(staff.is_approved === true || staff.is_approved === "true") ? '승인됨' : '미승인'}
+                        </button>
+                      </div>
+                      <select 
+                        value={staff.role} 
+                        onChange={(e) => updateStaffRole(staff.id, e.target.value)}
+                        className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg outline-none border-none">
+                        <option value="agent">설계사 (Agent)</option>
+                        <option value="leader">팀장 (Leader)</option>
+                        <option value="manager">실장 (Manager)</option>
+                        <option value="admin">지점장 (Admin)</option>
+                        <option value="master">사업부장 (Master)</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {isApproved && mode === 'office' && (
               <>
-                {/* 달력: 크기 고정을 위해 min-h 설정 및 부모 패딩 조절 */}
                 <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2 flex-shrink-0">
                   <Calendar 
                     onChange={(d: any) => onDateChange(d)} 
@@ -248,7 +303,6 @@ export default function Sidebar({
             )}
           </div>
 
-          {/* 하단 비스크롤 영역 (로그아웃) */}
           <div className="p-6 pt-2 flex-shrink-0">
             <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} 
               className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic hover:bg-red-50 transition-colors">
@@ -258,7 +312,6 @@ export default function Sidebar({
         </div>
       </aside>
 
-      {/* 상담 도구 팝업 모달 */}
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
