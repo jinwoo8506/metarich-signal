@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase"
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/AdminView"
-import FinancialCalc from "./components/FinancialCalc" // ✅ 금융계산기 컴포넌트 호출
+import FinancialCalc from "./components/FinancialCalc"
 
 // ✅ 상담 모드 메인 콘텐츠
 function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
@@ -38,7 +38,6 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       color: "border-orange-500 text-orange-600",
       fixed: true 
     },
-    // ✅ 영업용 금융계산기 (내부 컴포넌트 연동)
     { 
       id: "show_calc", 
       title: "영업용 금융계산기", 
@@ -141,7 +140,6 @@ export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const [menuStatus, setMenuStatus] = useState<any>({
@@ -182,15 +180,17 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // ✅ 1. 이메일 정규화 (오타 및 대소문자 방지)
+  // ✅ [중요] 권한 판별 로직 분리 및 강화
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // ✅ 2. 관리자/마스터 판단 (가장 높은 우선순위)
-  const isMaster = user.role === 'master' || userEmail === 'qodbtjq@naver.com';
-  const isAdmin = user.role === 'admin' || userEmail === 'jw20371035@gmail.com';
-  const isAdminOrMaster = isAdmin || isMaster;
+  // 1. 관리자 여부 (이메일 혹은 DB Role 기준)
+  const isAdminOrMaster = 
+    userEmail === 'qodbtjq@naver.com' || 
+    userEmail === 'jw20371035@gmail.com' || 
+    user.role === 'admin' || 
+    user.role === 'master';
 
-  // ✅ 3. 승인 여부 판별 (관리자라면 승인 여부와 상관없이 '무조건 승인됨'으로 처리)
+  // 2. 최종 승인 여부 (관리자는 자동 승인, 직원은 DB 승인값 확인)
   const isApproved = isAdminOrMaster || (user?.is_approved === true || user?.is_approved === "true");
 
   if (viewMode === 'select') {
@@ -225,6 +225,7 @@ export default function DashboardPage() {
         setIsOpen={setIsSidebarOpen}
         onTabChange={handleTabChange}
         activeTab={activeTab}
+        isAdmin={isAdminOrMaster} // 사이드바에도 관리자 여부 전달
       />
       <main className={`
         flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
@@ -241,19 +242,19 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-slate-400 font-bold uppercase">영업 지원 금융 도구</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setActiveTab(null)}
-                  className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black"
-                >
-                  ×
-                </button>
+                <button onClick={() => setActiveTab(null)} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
               </div>
               <FinancialCalc />
             </div>
           ) : (
             <>
+              {/* ✅ 여기서 정확하게 관리자/직원 화면을 나눕니다 */}
               {viewMode === 'office' ? (
-                isAdminOrMaster ? <AdminView user={user} selectedDate={selectedDate} /> : <AgentView user={user} selectedDate={selectedDate} />
+                isAdminOrMaster ? (
+                  <AdminView user={user} selectedDate={selectedDate} /> 
+                ) : (
+                  <AgentView user={user} selectedDate={selectedDate} />
+                )
               ) : (
                 <ConsultingView 
                   menuStatus={menuStatus} 
