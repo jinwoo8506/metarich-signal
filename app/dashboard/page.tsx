@@ -7,7 +7,7 @@ import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/masterView"
 import LeaderView from "./components/LeaderView"
-import ManagerView from "./components/ManagerView" // ✅ ManagerView 임포트 추가
+import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
 // ✅ 상담 모드 메인 콘텐츠
@@ -182,20 +182,13 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // ✅ [수정] 권한 판별 로직 고도화
   const userEmail = user?.email?.toLowerCase()?.trim();
-  const userRole = user?.role_level || user?.role; // DB 구조에 따라 role_level 또는 role 참조
+  const userRole = user?.role_level || user?.role;
 
-  // 1. 마스터 (배진우님)
   const isMasterAccount = userEmail === 'qodbtjq@naver.com' || userRole === 'master';
-  
-  // 2. 사업부장 (리더뷰 - 박주완님 등)
   const isDirectorAccount = userRole === 'director' || userRole === 'leader';
-
-  // 3. 지점장 (매니저뷰)
   const isManagerAccount = userRole === 'manager';
 
-  // 승인 여부 (관리자급은 무조건 승인 처리)
   const isApproved = isMasterAccount || isDirectorAccount || isManagerAccount || (user?.is_approved === true || user?.is_approved === "true");
 
   if (viewMode === 'select') {
@@ -228,15 +221,16 @@ export default function DashboardPage() {
         onMenuStatusChange={handleMenuStatusChange}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
-        onTabChange={handleTabChange}
+        onTabChange={handleTabChange} // ✅ 사이드바 클릭 시 대시보드 상태를 직접 바꿈
         activeTab={activeTab}
-        isAdmin={isMasterAccount} // 사이드바 관리탭 권한
+        isAdmin={isMasterAccount}
       />
       <main className={`
         flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
       `}>
         <div className="max-w-[1600px] mx-auto">
+          {/* ✅ activeTab이 'finance'일 경우 어떤 모드(Office/Consulting)에서든 금융계산기 출력 */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
               <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -253,14 +247,13 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* ✅ 사무실 업무 권한별 뷰 분기 */}
               {viewMode === 'office' ? (
                 isMasterAccount ? (
                   <AdminView user={user} selectedDate={selectedDate} /> 
                 ) : isDirectorAccount ? (
                   <LeaderView user={user} selectedDate={selectedDate} />
                 ) : isManagerAccount ? (
-                  <ManagerView user={user} selectedDate={selectedDate} /> // ✅ 지점장은 매니저뷰로 연결
+                  <ManagerView user={user} selectedDate={selectedDate} />
                 ) : (
                   <AgentView user={user} selectedDate={selectedDate} />
                 )
@@ -268,7 +261,7 @@ export default function DashboardPage() {
                 <ConsultingView 
                   menuStatus={menuStatus} 
                   isApproved={isApproved} 
-                  onTabChange={handleTabChange}
+                  onTabChange={handleTabChange} // ✅ 그리드 내 버튼 클릭 시에도 탭 변경 가능하게 연결
                 /> 
               )}
             </>
