@@ -179,14 +179,24 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // ✅ 권한 판별 로직 정밀화 (AgentView 누락 방지)
+  // ✅ 권한 판별 로직 고도화 (DB 제약 조건 유연하게 대응)
   const userEmail = user?.email?.toLowerCase()?.trim();
-  const userRole = (user?.role_level || user?.role || 'agent').toLowerCase(); // 기본값 agent 설정
+  const userRoleLevel = (user?.role_level || "").toLowerCase(); // DB의 role_level
+  const userRoleType = (user?.role || "").toLowerCase();        // DB의 role
 
-  const isMasterAccount = userEmail === 'qodbtjq@naver.com' || userRole === 'master';
-  const isDirectorAccount = userRole === 'director' || userRole === 'leader';
-  const isManagerAccount = userRole === 'manager';
-  const isApproved = isMasterAccount || isDirectorAccount || isManagerAccount || (user?.is_approved === true || user?.is_approved === "true");
+  // 1. 마스터 권한
+  const isMasterAccount = userEmail === 'qodbtjq@naver.com' || userRoleLevel === 'master';
+  // 2. 리더/디렉터 권한
+  const isDirectorAccount = userRoleLevel === 'director' || userRoleLevel === 'leader';
+  // 3. 매니저(지점장) 권한
+  const isManagerAccount = userRoleLevel === 'manager';
+
+  // ✅ 승인 조건: 마스터/리더/매니저 계층이 아니더라도 role이 'agent'면 승인된 설계사로 간주
+  const isApproved = isMasterAccount || 
+                     isDirectorAccount || 
+                     isManagerAccount || 
+                     userRoleType === 'agent' || 
+                     (user?.is_approved === true || String(user?.is_approved) === "true");
 
   if (viewMode === 'select') {
     return (
@@ -233,7 +243,7 @@ export default function DashboardPage() {
             /* ✅ 2순위: 일반 모드 렌더링 */
             <>
               {viewMode === 'office' ? (
-                // 권한에 따른 분기 (모든 조건 실패 시 AgentView 출력)
+                // 상위 권한 분기 -> 조건 미달 시 최종적으로 AgentView 출력
                 isMasterAccount ? <AdminView user={user} selectedDate={selectedDate} /> :
                 isDirectorAccount ? <LeaderView user={user} selectedDate={selectedDate} /> :
                 isManagerAccount ? <ManagerView user={user} selectedDate={selectedDate} /> :
