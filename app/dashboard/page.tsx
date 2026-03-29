@@ -10,7 +10,7 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
-// ✅ 상담 모드 메인 콘텐츠
+// ✅ 상담 모드 메인 콘텐츠 (수정됨)
 function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
   const allMenus = [
     { 
@@ -45,7 +45,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "영업용 금융계산기", 
       desc: "대출 / 예적금 / 환율 계산기", 
       icon: "🧮", 
-      url: "tab:finance", 
+      url: "tab:finance", // ✅ 사이드바 탭 'finance'와 연결
       color: "border-blue-500 text-blue-600",
       staffOnly: true 
     },
@@ -54,7 +54,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "재무 / 보장분석", 
       desc: "종합 금융 플래닝 및 분석 리포트", 
       icon: "📊", 
-      url: "/financial_planner.html", 
+      url: "tab:finance_planner", // ✅ 사이드바 탭과 일치시켜야 함
       color: "border-black text-black",
       staffOnly: true 
     },
@@ -72,7 +72,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "보험사 공시실(약관)", 
       desc: "각 보험사별 상품 공시실 바로가기", 
       icon: "📑", 
-      url: "https://job.fss.or.kr/job/main/main.do", 
+      url: "tab:gongsi", // 🔴 중요: 외부 링크가 아닌 사이드바 '공시실' 탭으로 연결
       color: "border-slate-400 text-slate-500",
       staffOnly: true 
     },
@@ -90,7 +90,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       title: "수술비 검색", 
       desc: "종별 수술비 및 약관상 수술 분류 조회", 
       icon: "✂️", 
-      url: "#", 
+      url: "tab:surgery", // ✅ 수술비 검색도 탭 연결
       color: "border-rose-400 text-rose-500",
       staffOnly: true 
     }
@@ -115,8 +115,10 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
           <button 
             key={m.id || i}
             onClick={() => {
-              if (m.url === 'tab:finance') {
-                onTabChange('finance');
+              // ✅ 'tab:'으로 시작하는 url은 사이드바 탭 전환 로직(onTabChange)을 수행함
+              if (m.url.startsWith('tab:')) {
+                const targetTab = m.url.split(':')[1];
+                onTabChange(targetTab);
               } else if (m.url !== "#") {
                 window.open(m.url, "_blank");
               }
@@ -221,7 +223,7 @@ export default function DashboardPage() {
         onMenuStatusChange={handleMenuStatusChange}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
-        onTabChange={handleTabChange} // ✅ 사이드바 클릭 시 대시보드 상태를 직접 바꿈
+        onTabChange={handleTabChange}
         activeTab={activeTab}
         isAdmin={isMasterAccount}
       />
@@ -230,7 +232,7 @@ export default function DashboardPage() {
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
       `}>
         <div className="max-w-[1600px] mx-auto">
-          {/* ✅ activeTab이 'finance'일 경우 어떤 모드(Office/Consulting)에서든 금융계산기 출력 */}
+          {/* ✅ 사이드바 탭의 상태(activeTab)에 따른 화면 출력 로직 */}
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
               <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -244,6 +246,11 @@ export default function DashboardPage() {
                 <button onClick={() => setActiveTab(null)} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
               </div>
               <FinancialCalc />
+            </div>
+          ) : activeTab === 'gongsi' ? (
+            <div className="p-10 text-center font-black">
+              <h2 className="text-3xl italic">공시실 화면 연결 준비 중...</h2>
+              <button onClick={() => setActiveTab(null)} className="mt-4 text-blue-600 underline">뒤로가기</button>
             </div>
           ) : (
             <>
@@ -261,7 +268,7 @@ export default function DashboardPage() {
                 <ConsultingView 
                   menuStatus={menuStatus} 
                   isApproved={isApproved} 
-                  onTabChange={handleTabChange} // ✅ 그리드 내 버튼 클릭 시에도 탭 변경 가능하게 연결
+                  onTabChange={handleTabChange}
                 /> 
               )}
             </>
