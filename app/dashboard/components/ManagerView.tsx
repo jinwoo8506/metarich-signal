@@ -1,9 +1,5 @@
 "use client"
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ManagerView.tsx (지점장: 지점 목표 관리 및 설계사 활동 밀착 모니터링)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
@@ -21,7 +17,7 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
   const [showExportOpt, setShowExportOpt] = useState(false);
 
   const [branchTotal, setBranchTotal] = useState({ 
-    amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0, targetAmt: 2000 
+    amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, targetAmt: 2000 
   });
 
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
@@ -55,8 +51,7 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
         call: acc.call + Number(curr.performance.call || 0),
         meet: acc.meet + Number(curr.performance.meet || 0),
         pt: acc.pt + Number(curr.performance.pt || 0),
-        intro: acc.intro + Number(curr.performance.intro || 0),
-      }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0, intro: 0 });
+      }), { amt: 0, cnt: 0, call: 0, meet: 0, pt: 0 });
 
       setBranchTotal({ ...totals, targetAmt: branchTarget });
     }
@@ -64,11 +59,14 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
 
   const handleExport = (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
-      // 빌드 에러 해결: teamMeta 객체 추가
+      // ✅ 타입 에러 해결: 허용된 프로퍼티(targetAmt, targetCnt)만 전달
       exportExcel({ 
         agents, 
         monthKey, 
-        teamMeta: { targetAmt: branchTotal.targetAmt, targetCnt: 50, targetIntro: 10, actualIntro: branchTotal.intro } 
+        teamMeta: { 
+          targetAmt: branchTotal.targetAmt, 
+          targetCnt: 50 
+        } 
       });
     } else {
       const doc = new jsPDF();
@@ -84,7 +82,9 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in duration-500">
-        <div className="flex justify-end p-4"><button onClick={() => setActiveTab(null)} className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37]">CLOSE ×</button></div>
+        <div className="flex justify-end p-4">
+          <button onClick={() => setActiveTab(null)} className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37]">CLOSE ×</button>
+        </div>
         <FinancialCalc />
       </div>
     );
@@ -114,9 +114,9 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
       </div>
 
       <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-        <button onClick={() => setActiveTab('finance')} className="whitespace-nowrap bg-white border-2 border-black px-6 py-4 rounded-2xl text-xs italic font-black uppercase hover:bg-black hover:text-[#d4af37] transition-all">영업용 계산기</button>
+        <button onClick={() => setActiveTab('finance')} className="whitespace-nowrap bg-white border-2 border-black px-6 py-4 rounded-2xl text-xs italic font-black uppercase hover:bg-black hover:text-[#d4af37] transition-all">영업도구</button>
         <button onClick={() => setShowExportOpt(!showExportOpt)} className="whitespace-nowrap bg-white border-2 border-black px-6 py-4 rounded-2xl text-xs italic font-black uppercase relative">
-          실적 리포트 출력
+          리포트 출력
           {showExportOpt && (
             <div className="absolute top-full left-0 mt-2 bg-white border-2 border-black rounded-xl shadow-2xl z-50 min-w-[140px] text-black overflow-hidden">
               <button onClick={() => handleExport('excel')} className="w-full p-4 border-b hover:bg-slate-100 text-xs">EXCEL Export</button>

@@ -1,9 +1,5 @@
 "use client"
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// LeaderView.tsx (사업부장: 소속 지점별 현황 및 전체 실적 모니터링)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
@@ -21,7 +17,6 @@ export default function LeaderView({ user, selectedDate }: { user: any, selected
   const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
   const [showExportOpt, setShowExportOpt] = useState(false);
 
-  // 사업부 전체 실적 및 활동 합산
   const [totalActivity, setTotalActivity] = useState({ 
     call: 0, meet: 0, pt: 0, intro: 0, amt: 0, cnt: 0 
   });
@@ -47,7 +42,6 @@ export default function LeaderView({ user, selectedDate }: { user: any, selected
         };
         const validHistory = userHistory.filter(h => Number(h.contract_amt) > 0);
         const sorted = [...validHistory].sort((a, b) => Number(b.contract_amt) - Number(a.contract_amt));
-        
         return { ...u, performance: currentPerf, best: sorted[0] || null };
       });
       setAgents(mappedAgents);
@@ -77,11 +71,14 @@ export default function LeaderView({ user, selectedDate }: { user: any, selected
 
   const handleExport = (type: 'excel' | 'pdf') => {
     if (type === 'excel') {
-      // 빌드 에러 해결: teamMeta 객체 추가
+      // ✅ 타입 에러 해결: 허용된 프로퍼티(targetAmt, targetCnt)만 전달
       exportExcel({ 
         agents, 
         monthKey, 
-        teamMeta: { targetAmt: 3000, targetCnt: 100, targetIntro: 10, actualIntro: totalActivity.intro } 
+        teamMeta: { 
+          targetAmt: 3000, 
+          targetCnt: 100 
+        } 
       });
     } else {
       const doc = new jsPDF();
@@ -103,7 +100,9 @@ export default function LeaderView({ user, selectedDate }: { user: any, selected
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in duration-500">
-        <div className="flex justify-end p-4"><button onClick={() => setActiveTab(null)} className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37]">CLOSE CALCULATOR ×</button></div>
+        <div className="flex justify-end p-4">
+          <button onClick={() => setActiveTab(null)} className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37]">CLOSE ×</button>
+        </div>
         <FinancialCalc />
       </div>
     );
@@ -141,7 +140,7 @@ export default function LeaderView({ user, selectedDate }: { user: any, selected
       </div>
 
       <section className="bg-white p-6 rounded-[2.5rem] border-2 border-black shadow-sm">
-        <h2 className="text-lg mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Branch Monitoring</h2>
+        <h2 className="text-lg mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Branch Performance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {branchStats.map(branch => (
             <div key={branch.name} className="p-5 bg-slate-900 text-white rounded-[1.5rem] border-2 border-black">
