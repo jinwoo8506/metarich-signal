@@ -5,28 +5,39 @@ import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
 
-// onTabChange 프롭스를 추가하여 메인 컨텐츠의 탭을 전환할 수 있도록 합니다.
 export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack, externalMenuStatus, onMenuStatusChange, onTabChange, activeTab }: any) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false); // 모바일 사이드바 열림 상태
+  const [isOpen, setIsOpen] = useState(false); 
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
   const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
-  // 권한 로직 정의
-  const isMaster = user.email === 'qodbtjq@naver.com';
-  const isAdmin = user.email === 'jw20371035@gmail.com' || isMaster;
-  const isApproved = user.is_approved === true || isMaster || isAdmin;
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 권한 로직 수정 (DB의 role 필드 및 이메일 교차 검증)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  const userEmail = user?.email?.toLowerCase()?.trim();
+  
+  // 1. 마스터 권한: 이메일 일치 또는 role이 'master'인 경우
+  const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
+  
+  // 2. 관리자 권한: 특정 이메일 또는 role이 'admin'인 경우 (마스터 포함)
+  const isAdmin = userEmail === 'jw20371035@gmail.com' || user?.role === 'admin' || isMaster;
+  
+  // 3. 승인 여부: 
+  // - DB에 is_approved 컬럼이 있다면 해당 값 참조
+  // - 컬럼이 없다면 master/admin은 자동 승인, 일반 agent는 true인 경우만 (또는 별도 로직 필요)
+  const isApproved = 
+    user?.is_approved === true || 
+    user?.is_approved === "true" || 
+    isAdmin; 
 
-  // 대시보드에서 관리하는 설정을 로컬 상태로 유지
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, show_cont: true
   });
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
-    // 승인된 사용자만 실적 및 공지사항 데이터를 가져옴
     if (isApproved) {
       fetchDailyData();
       fetch3MonthAvg();
@@ -36,7 +47,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     setPrivateMemo(savedPrivate || "");
   }, [dateStr, user.id, isApproved]);
 
-  // 대시보드에서 받아온 외부 상태가 바뀔 경우 동기화
   useEffect(() => {
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
@@ -59,7 +69,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
     setMenuStatus(updatedStatus);
     
     if (onMenuStatusChange) onMenuStatusChange(updatedStatus);
-    
     await supabase.from("team_settings").upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
   };
 
@@ -92,7 +101,7 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
       query = query.eq("user_id", user.id);
     }
 
-    const { data, error } = await query;
+    const { data } = await query;
     
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
@@ -122,7 +131,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
 
   return (
     <>
-      {/* 모바일 햄버거 버튼 */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-xs transition-transform active:scale-90"
@@ -130,7 +138,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         {isOpen ? 'CLOSE' : 'MENU'}
       </button>
 
-      {/* 사이드바 본체 */}
       <aside className={`
         fixed lg:relative inset-y-0 left-0 z-50
         w-[300px] lg:w-80 bg-white border-r p-6 flex flex-col gap-6 shadow-sm font-black overflow-y-auto transition-transform duration-300 ease-in-out
@@ -155,7 +162,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           )}
         </div>
 
-        {/* 미승인 사용자 안내 (게스트용) */}
         {!isApproved && (
           <div className="bg-amber-50 p-5 rounded-[2rem] border-2 border-amber-200 shadow-inner">
             <p className="text-[10px] font-black text-amber-600 uppercase italic mb-1 tracking-widest">Status: Pending</p>
@@ -165,7 +171,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           </div>
         )}
         
-        {/* 승인된 사용자에게만 노출되는 섹션 (캘린더 & 실적) */}
         {isApproved && mode === 'office' && (
           <>
             <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
@@ -201,7 +206,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         <div className="px-1 space-y-3">
           <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Main Menu</p>
 
-          {/* 금융계산기 탭 (상담업무 전용 이동 버튼) */}
           <button 
             onClick={() => onTabChange && onTabChange('finance')}
             className={`w-full flex items-center justify-center gap-3 py-5 border-4 rounded-[1.8rem] transition-all active:scale-95 ${activeTab === 'finance' ? 'bg-[#d4af37] border-black text-black' : 'bg-black border-black text-[#d4af37] hover:bg-slate-800'}`}
@@ -241,7 +245,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
           ))}
         </div>
 
-        {/* 승인된 사용자만 메모 및 전달사항 이용 가능 */}
         {isApproved && mode === 'office' && (
           <div className="flex flex-col gap-4">
             <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-40">
@@ -273,7 +276,6 @@ export default function Sidebar({ user, selectedDate, onDateChange, mode, onBack
         </button>
       </aside>
 
-      {/* 모바일 배경 오버레이 */}
       {isOpen && (
         <div 
           onClick={() => setIsOpen(false)}
