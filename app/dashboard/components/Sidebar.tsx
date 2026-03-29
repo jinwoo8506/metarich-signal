@@ -24,7 +24,6 @@ export default function Sidebar({
   const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
   const isApproved = isAdmin || isStaff || user?.is_approved === true || user?.is_approved === "true";
 
-  // 직책 한글 변환 로직 (user.role 기반)
   const getRankDisplay = (role: string) => {
     switch(role) {
       case 'master': return '사업부장';
@@ -100,11 +99,6 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  const savePrivateMemo = (val: string) => {
-    setPrivateMemo(val);
-    localStorage.setItem(`memo_${user?.id}`, val);
-  };
-
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
@@ -143,107 +137,127 @@ export default function Sidebar({
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
+      {/* 사이드바 본체 */}
       <aside className={`
         fixed inset-y-0 left-0 z-50
-        bg-white border-r p-6 flex flex-col gap-6 shadow-sm font-black overflow-y-auto transition-all duration-300 ease-in-out
+        bg-white border-r flex flex-col shadow-sm font-black transition-all duration-300 ease-in-out
         ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}
       `}>
-        <div className={`${!isOpen && 'hidden'} transition-opacity duration-200 flex flex-col gap-6 h-full min-w-[250px]`}>
-          <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
-            ← BACK TO SELECTOR
-          </button>
+        {/* 내부 컨테이너: flex-col 및 h-full로 높이 제어 */}
+        <div className={`flex flex-col h-full transition-opacity duration-200 ${!isOpen && 'hidden'}`}>
+          
+          {/* 상단 비스크롤 영역 (뒤로가기, 타이틀, 사용자 정보) */}
+          <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-6">
+            <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
+              ← BACK TO SELECTOR
+            </button>
 
-          <div className="flex justify-between items-center border-b-4 border-black pb-1">
-            <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
-              {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
-            </h2>
-            {isMaster && (
-              <button onClick={() => setIsEditMode(!isEditMode)} 
-                className={`text-[9px] px-2 py-1 rounded-full font-black ${isEditMode ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                {isEditMode ? "FINISH" : "CONFIG"}
-              </button>
-            )}
-          </div>
-
-          {/* 🟢 업데이트: 사용자 정보 (성함 및 직책) - 달력 위에 배치 */}
-          {isApproved && (
-            <div className="bg-black text-white p-5 rounded-[2rem] border-2 border-[#d4af37] shadow-lg -mb-2">
-              <p className="text-[9px] text-[#d4af37] uppercase font-black tracking-widest leading-none mb-1 opacity-80">
-                Logged in as
-              </p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl italic font-black text-white">{user?.user_metadata?.full_name || user?.name || "사용자"}</span>
-                <span className="text-sm font-black text-[#d4af37] italic opacity-90">{getRankDisplay(user?.role)}</span>
-              </div>
-            </div>
-          )}
-
-          {isApproved && mode === 'office' && (
-            <>
-              <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
-                <Calendar onChange={(d: any) => onDateChange(d)} value={selectedDate} formatDay={(_, date) => date.getDate().toString()} 
-                  className="border-0 w-full font-black text-xs" calendarType="gregory" next2Label={null} prev2Label={null} />
-              </div>
-              <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
-                <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">
-                  {isAdmin ? "Team Performance" : "My Performance"}
-                </p>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="border-r border-white/10">
-                    <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Amt</p>
-                    <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
-                  </div>
-                  <div>
-                    <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Cnt</p>
-                    <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="px-1 space-y-3">
-            <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
-            <div className="grid grid-cols-1 gap-2">
-              {fixedLinks.map(item => (
-                <button key={item.id} onClick={() => handleLinkClick(item)}
-                  className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 transition-all active:scale-95`}>
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="text-[11px] font-black text-black">{item.label}</span>
+            <div className="flex justify-between items-center border-b-4 border-black pb-1">
+              <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
+                {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
+              </h2>
+              {isMaster && (
+                <button onClick={() => setIsEditMode(!isEditMode)} 
+                  className={`text-[9px] px-2 py-1 rounded-full font-black ${isEditMode ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  {isEditMode ? "FINISH" : "CONFIG"}
                 </button>
-              ))}
+              )}
             </div>
 
             {isApproved && (
-              <button 
-                onClick={() => setIsConsultModalOpen(true)}
-                className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 transition-all active:scale-95 shadow-xl group"
-              >
-                <span className="text-2xl group-hover:scale-110 transition-transform">💼</span>
-                <span className="text-[13px] font-black uppercase italic tracking-tighter">Open Consult Tools</span>
-                <span className="text-[8px] opacity-60 font-black">전문 상담 전용 도구함</span>
-              </button>
+              <div className="bg-black text-white p-5 rounded-[2rem] border-2 border-[#d4af37] shadow-lg">
+                <p className="text-[9px] text-[#d4af37] uppercase font-black tracking-widest leading-none mb-1 opacity-80">Logged in as</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl italic font-black text-white">{user?.user_metadata?.full_name || user?.name || "사용자"}</span>
+                  <span className="text-sm font-black text-[#d4af37] italic opacity-90">{getRankDisplay(user?.role)}</span>
+                </div>
+              </div>
             )}
           </div>
 
-          {isApproved && mode === 'office' && (
-            <div className="flex flex-col gap-4">
-              <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col h-32">
-                <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Instruction</p>
-                <textarea value={dailyAdminNotice} onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} readOnly={!isAdmin}
-                  className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-1 bg-white/30 rounded-lg'}`} />
-              </div>
-            </div>
-          )}
+          {/* 중간 스크롤 영역 (달력, 통계, 퀵링크 등) */}
+          <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
+            {isApproved && mode === 'office' && (
+              <>
+                {/* 달력: 크기 고정을 위해 min-h 설정 및 부모 패딩 조절 */}
+                <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2 flex-shrink-0">
+                  <Calendar 
+                    onChange={(d: any) => onDateChange(d)} 
+                    value={selectedDate} 
+                    formatDay={(_, date) => date.getDate().toString()} 
+                    className="border-0 w-full font-black text-xs" 
+                    calendarType="gregory" 
+                    next2Label={null} 
+                    prev2Label={null} 
+                  />
+                </div>
+                
+                <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
+                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 tracking-widest px-1 font-black text-center">
+                    {isAdmin ? "Team Performance" : "My Performance"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="border-r border-white/10">
+                      <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Amt</p>
+                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
+                    </div>
+                    <div>
+                      <p className="text-[8px] opacity-40 uppercase mb-1 font-black">Avg Cnt</p>
+                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
-          <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} 
-            className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic mt-auto hover:bg-red-50 transition-colors">
-            Logout System
-          </button>
+            <div className="space-y-3">
+              <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
+              <div className="grid grid-cols-1 gap-2">
+                {fixedLinks.map(item => (
+                  <button key={item.id} onClick={() => handleLinkClick(item)}
+                    className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 transition-all active:scale-95`}>
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-[11px] font-black text-black">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {isApproved && (
+                <button 
+                  onClick={() => setIsConsultModalOpen(true)}
+                  className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 transition-all active:scale-95 shadow-xl group"
+                >
+                  <span className="text-2xl group-hover:scale-110 transition-transform">💼</span>
+                  <span className="text-[13px] font-black uppercase italic tracking-tighter">Open Consult Tools</span>
+                  <span className="text-[8px] opacity-60 font-black">전문 상담 전용 도구함</span>
+                </button>
+              )}
+            </div>
+
+            {isApproved && mode === 'office' && (
+              <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col min-h-[128px]">
+                <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Instruction</p>
+                <textarea 
+                  value={dailyAdminNotice} 
+                  onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
+                  readOnly={!isAdmin}
+                  className={`w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900 ${!isAdmin ? 'cursor-default' : 'p-1 bg-white/30 rounded-lg'}`} 
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 하단 비스크롤 영역 (로그아웃) */}
+          <div className="p-6 pt-2 flex-shrink-0">
+            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} 
+              className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic hover:bg-red-50 transition-colors">
+              Logout System
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* 상담 도구 팝업 모달 (유지) */}
+      {/* 상담 도구 팝업 모달 */}
       {isConsultModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
@@ -255,7 +269,7 @@ export default function Sidebar({
               <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black hover:scale-110 transition-transform">×</button>
             </div>
             
-            <div className="p-6 grid grid-cols-1 gap-3">
+            <div className="p-6 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar">
               {consultTools.map((item) => {
                 const isVisible = menuStatus[item.id] || isEditMode;
                 if (!isVisible) return null;
@@ -293,6 +307,8 @@ export default function Sidebar({
         .react-calendar { border: none !important; width: 100% !important; font-family: inherit !important; }
         .react-calendar__tile--active { background: black !important; color: #d4af37 !important; border-radius: 12px !important; }
         abbr[title] { text-decoration: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </>
   );
