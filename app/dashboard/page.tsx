@@ -180,17 +180,16 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // ✅ [중요] 권한 판별 로직 분리 및 강화
+  // ✅ [수정] 마스터 계정(qodbtjq@naver.com) 권한 강제 부여
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // 1. 관리자 여부 (이메일 혹은 DB Role 기준)
-  const isAdminOrMaster = 
-    userEmail === 'qodbtjq@naver.com' || 
-    userEmail === 'jw20371035@gmail.com' || 
-    user.role === 'admin' || 
-    user.role === 'master';
+  // 마스터 계정 여부 확인
+  const isMasterAccount = userEmail === 'qodbtjq@naver.com';
+  
+  // 관리자 권한 여부 (마스터 계정이거나 role이 admin/master인 경우)
+  const isAdminOrMaster = isMasterAccount || user.role === 'admin' || user.role === 'master';
 
-  // 2. 최종 승인 여부 (관리자는 자동 승인, 직원은 DB 승인값 확인)
+  // 승인 여부 (관리자라면 무조건 승인됨으로 처리)
   const isApproved = isAdminOrMaster || (user?.is_approved === true || user?.is_approved === "true");
 
   if (viewMode === 'select') {
@@ -225,7 +224,7 @@ export default function DashboardPage() {
         setIsOpen={setIsSidebarOpen}
         onTabChange={handleTabChange}
         activeTab={activeTab}
-        isAdmin={isAdminOrMaster} // 사이드바에도 관리자 여부 전달
+        isAdmin={isAdminOrMaster} // 사이드바에도 마스터 권한 전달
       />
       <main className={`
         flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
@@ -248,7 +247,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* ✅ 여기서 정확하게 관리자/직원 화면을 나눕니다 */}
+              {/* ✅ 여기서 qodbtjq@naver.com 계정이 AdminView를 보게 함 */}
               {viewMode === 'office' ? (
                 isAdminOrMaster ? (
                   <AdminView user={user} selectedDate={selectedDate} /> 

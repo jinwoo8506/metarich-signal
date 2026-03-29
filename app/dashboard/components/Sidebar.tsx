@@ -19,20 +19,32 @@ export default function Sidebar({
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
   const userEmail = user?.email?.toLowerCase()?.trim();
+  
+  // ✅ [수정] 직급 권한 체계 정의
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master';
+  const isLeader = user?.role === 'leader' || isMaster;
+  const isManager = user?.role === 'manager' || isLeader;
+  const isAgent = user?.role === 'agent' || isManager;
+  
+  // 관리자 기능(직원관리, 공지수정 등) 권한: 지점장(admin) 이상 혹은 마스터
   const isAdmin = userEmail === 'jw20371035@gmail.com' || user?.role === 'admin' || isMaster;
-  const isStaff = ['agent', 'leader', 'manager', 'master', 'admin'].includes(user?.role);
+  
+  // 사무실 업무 접근 가능 직급: 설계사(agent) 이상
+  const isStaff = isAgent;
   
   // 승인 여부: 관리자이거나, 직급이 있으면서 승인 상태가 true여야 함
   const isApproved = isAdmin || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
 
+  // ✅ [수정] 직급 표시 명칭 업데이트
   const getRankDisplay = (role: string) => {
     if (!isApproved) return '게스트(승인대기)';
+    if (userEmail === 'qodbtjq@naver.com') return '최고관리자';
     switch(role) {
       case 'master': return '사업부장';
-      case 'admin': return '지점장';
-      case 'manager': return '팀장';
+      case 'leader': return '사업부장'; // 요청하신 체계에 따름
+      case 'manager': return '지점장';
       case 'agent': return '설계사';
+      case 'admin': return '시스템관리자';
       default: return '사용자';
     }
   };
@@ -47,18 +59,17 @@ export default function Sidebar({
   const [showStaffManager, setShowStaffManager] = useState(false);
 
   useEffect(() => {
-    // 승인된 사용자만 사무실 데이터 로드
     if (isApproved) {
       fetchDailyData();
       fetch3MonthAvg();
     }
     fetchMenuSettings();
     
-    // 개인 메모 기능 유지
     const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
     setPrivateMemo(savedPrivate || "");
     
-    if (isAdmin) fetchStaffList();
+    // 마스터 계정이나 관리자만 직원 리스트 호출
+    if (isAdmin || isMaster) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
   useEffect(() => {
@@ -110,8 +121,12 @@ export default function Sidebar({
     const d = new Date(selectedDate);
     const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
     const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
+    
     let query = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
+    
+    // 관리자(지점장 이상)가 아니면 본인 데이터만, 관리자면 전체 데이터 합산
     if (!isAdmin) query = query.eq("user_id", user?.id);
+    
     const { data } = await query;
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
@@ -172,7 +187,7 @@ export default function Sidebar({
               <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
                 {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
               </h2>
-              {isAdmin && (
+              {(isAdmin || isMaster) && (
                 <button onClick={() => setShowStaffManager(!showStaffManager)} 
                   className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
                   {showStaffManager ? "CLOSE STAFF" : "MANAGE STAFF"}
@@ -192,7 +207,7 @@ export default function Sidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
-            {isAdmin && showStaffManager && (
+            {(isAdmin || isMaster) && showStaffManager && (
               <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200 animate-in slide-in-from-top-4 duration-300">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
                 <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
@@ -205,12 +220,12 @@ export default function Sidebar({
                           {(staff.is_approved === true || staff.is_approved === "true") ? '승인됨' : '미승인'}
                         </button>
                       </div>
-                      <select value={staff.role} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg outline-none border-none">
+                      <select value={staff.role || 'guest'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg outline-none border-none">
+                        <option value="guest">게스트 (Guest)</option>
                         <option value="agent">설계사 (Agent)</option>
-                        <option value="leader">팀장 (Leader)</option>
-                        <option value="manager">실장 (Manager)</option>
-                        <option value="admin">지점장 (Admin)</option>
-                        <option value="master">사업부장 (Master)</option>
+                        <option value="manager">지점장 (Manager)</option>
+                        <option value="leader">사업부장 (Leader)</option>
+                        <option value="master">최고관리자 (Master)</option>
                       </select>
                     </div>
                   ))}
@@ -218,7 +233,6 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* [권한] 승인 사용자만 사무실 기능 노출 */}
             {isApproved && mode === 'office' && (
               <>
                 <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2 flex-shrink-0">
@@ -237,7 +251,6 @@ export default function Sidebar({
               </>
             )}
 
-            {/* [권한] 미승인 게스트가 사무실 탭 진입 시 경고 */}
             {!isApproved && mode === 'office' && (
               <div className="bg-rose-50 p-6 rounded-[2rem] border border-rose-100 text-center space-y-2">
                 <span className="text-2xl">🔒</span>
@@ -245,7 +258,6 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* [공통] 퀵링크 (게스트도 사용 가능) */}
             <div className="space-y-3">
               <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
               <div className="grid grid-cols-1 gap-2">
@@ -257,7 +269,6 @@ export default function Sidebar({
                 ))}
               </div>
               
-              {/* [권한] 상담 도구함(계산기 등)은 승인된 경우만 버튼 노출 */}
               {isApproved && (
                 <button onClick={() => setIsConsultModalOpen(true)} className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 transition-all active:scale-95 shadow-xl group">
                   <span className="text-2xl group-hover:scale-110 transition-transform">💼</span>
@@ -267,7 +278,6 @@ export default function Sidebar({
               )}
             </div>
 
-            {/* [권한] 승인 사용자만 공지사항 노출 */}
             {isApproved && mode === 'office' && (
               <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 flex flex-col min-h-[128px]">
                 <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2 tracking-widest">Instruction</p>
@@ -284,7 +294,7 @@ export default function Sidebar({
         </div>
       </aside>
 
-      {/* 상담 도구 팝업 (전체 기능 유지) */}
+      {/* 상담 도구 팝업 */}
       {isConsultModalOpen && isApproved && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
