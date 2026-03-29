@@ -7,10 +7,10 @@ import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/AdminView"
 
-// ✅ 상담 모드 메인 콘텐츠: 권한과 사이드바 설정에 따라 메뉴 필터링
+// ✅ 상담 모드 메인 콘텐츠: 사이드바의 menuStatus와 실시간 동기화
 function ConsultingView({ menuStatus, isApproved }: any) {
   const allMenus = [
-    // [고정 메뉴] 게스트 포함 누구나 접근 가능
+    // [고정 메뉴]
     { 
       id: "show_cafe", 
       title: "보험의 기준", 
@@ -38,20 +38,20 @@ function ConsultingView({ menuStatus, isApproved }: any) {
       color: "border-orange-500 text-orange-600",
       fixed: true 
     },
-    // [직원 전용 메뉴] 승인된 인원(isApproved)만 보이며, 마스터가 활성화해야 함
+    // [직원 전용 메뉴] - 사이드바 menuStatus 키값과 정확히 일치시킴
     { 
       id: "show_finance", 
       title: "재무 / 보장분석", 
       desc: "종합 금융 플래닝 및 분석 리포트", 
       icon: "📊", 
-      url: "/financial_planner.html", 
+      url: "/financial_planner.html", // ✅ 연동 경로 수정 완료
       color: "border-black text-black",
       staffOnly: true 
     },
     { 
       id: "show_insu", 
       title: "보장분석 PRO (유료)", 
-      desc: "Gemini AI 기반 정밀 보장분석 시스템", 
+      desc: "AI 기반 정밀 보장분석 시스템", 
       icon: "🛡️", 
       url: "/insu.html", 
       color: "border-blue-500 text-blue-600",
@@ -62,7 +62,7 @@ function ConsultingView({ menuStatus, isApproved }: any) {
       title: "보험사 공시실(약관)", 
       desc: "각 보험사별 상품 공시실 바로가기", 
       icon: "📑", 
-      url: "#", 
+      url: "https://job.fss.or.kr/job/main/main.do", 
       color: "border-slate-400 text-slate-500",
       staffOnly: true 
     },
@@ -71,7 +71,7 @@ function ConsultingView({ menuStatus, isApproved }: any) {
       title: "질병코드 조회", 
       desc: "한국표준질병사인분류(KCD) 검색", 
       icon: "🧬", 
-      url: "#", 
+      url: "http://www.koicd.kr/kcd/kcd.do", 
       color: "border-indigo-400 text-indigo-500",
       staffOnly: true 
     },
@@ -86,9 +86,10 @@ function ConsultingView({ menuStatus, isApproved }: any) {
     }
   ];
 
-  // 필터링 로직: 고정 메뉴 또는 승인된 직원의 활성화 메뉴
+  // ✅ 핵심 로직: 사이드바에서 관리자가 ON/OFF 한 상태를 그대로 반영
   const activeMenus = allMenus.filter(m => {
     if (m.fixed) return true; 
+    // 승인된 인원이고, 사이드바 menuStatus에서 해당 id가 true인 경우만 노출
     if (m.staffOnly && isApproved && menuStatus[m.id]) return true;
     return false;
   });
@@ -104,8 +105,8 @@ function ConsultingView({ menuStatus, isApproved }: any) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {activeMenus.map((m, i) => (
           <button 
-            key={i}
-            onClick={() => window.open(m.url, "_blank")}
+            key={m.id || i}
+            onClick={() => m.url !== "#" && window.open(m.url, "_blank")}
             className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all group active:scale-95`}
           >
             <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
@@ -126,10 +127,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
-  
-  // ✅ 사이드바 열림 상태 관리 (기본값 true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // 초기 상태값을 모두 true로 설정하여 누락 방지
   const [menuStatus, setMenuStatus] = useState<any>({
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true
@@ -149,6 +149,7 @@ export default function DashboardPage() {
           acc[curr.key] = curr.value === "true";
           return acc;
         }, {});
+        // DB 설정값을 현재 상태에 덮어씌움
         setMenuStatus((prev: any) => ({ ...prev, ...sObj }));
       }
 
@@ -158,6 +159,7 @@ export default function DashboardPage() {
     init();
   }, [router]);
 
+  // 사이드바에서 변경된 상태를 메인 대시보드 상태로 업데이트
   const handleMenuStatusChange = (newStatus: any) => {
     setMenuStatus(newStatus);
   };
@@ -193,13 +195,9 @@ export default function DashboardPage() {
         mode={viewMode} onBack={() => setViewMode('select')} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={handleMenuStatusChange}
-        // ✅ 사이드바 상태 제어 프롭스 추가
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
-      {/* ✅ [수정 핵심] main 태그의 스타일
-        isSidebarOpen이 true일 때 lg:ml-80 (사이드바 너비 320px) 여백을 주어 겹침 방지
-      */}
       <main className={`
         flex-1 p-4 lg:p-10 w-full transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}
