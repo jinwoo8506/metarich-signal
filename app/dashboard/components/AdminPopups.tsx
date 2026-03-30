@@ -4,32 +4,39 @@ import React, { useState, useEffect } from "react"
 import { supabase } from "../../../lib/supabase"
 
 export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onClose }: any) {
-  // --- 기존 및 신규 상태 유지 ---
-  const [tarAmt, setTarAmt] = useState(teamMeta.targetAmt);
-  const [tarCnt, setTarCnt] = useState(teamMeta.targetCnt);
-  const [tarIntro, setTarIntro] = useState(teamMeta.targetIntro);
-  const [curIntro, setCurIntro] = useState(teamMeta.actualIntro);
+  // --- 상태 관리 ---
+  const [tarAmt, setTarAmt] = useState(teamMeta?.targetAmt || 0);
+  const [tarCnt, setTarCnt] = useState(teamMeta?.targetCnt || 0);
+  const [tarIntro, setTarIntro] = useState(teamMeta?.targetIntro || 0);
+  const [curIntro, setCurIntro] = useState(teamMeta?.actualIntro || 0);
   const [notice, setNotice] = useState("");
-  const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: " ", 5: "" });
+  const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
 
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [existingDepts, setExistingDepts] = useState<string[]>([]);
   const [existingTeams, setExistingTeams] = useState<{dept: string, team: string}[]>([]);
 
-  // [수정된 직급 권한 체계] 숫자가 높을수록 낮은 직급
+  // [규칙 반영] UI 표시용 한글 ↔ DB 저장용 영문 매핑
+  const rankMap: { [key: string]: string } = {
+    'master': '마스터',
+    'leader': '사업부장',
+    'manager': '지점장',
+    'agent': '설계사',
+    'guest': '사용자'
+  };
+
+  // [규칙 반영] 권한 체계 (숫자가 낮을수록 높음)
   const rankPriority: { [key: string]: number } = {
-    '마스터': 1,
-    '관리자': 1,
-    '사업부장': 2,
-    '지점장': 3,
-    '팀장': 4,
-    '설계사': 5,
-    '사용자': 6
+    'master': 1,
+    'leader': 2,
+    'manager': 3,
+    'agent': 4,
+    'guest': 5
   };
 
   useEffect(() => {
     async function load() {
-      // 1. 현재 접속한 관리자 정보 가져오기 (직급 확인용)
+      // 1. 현재 접속한 관리자 정보 및 권한 확인
       const { data: { user: authUser } } = await supabase.auth.getUser();
       let myRankValue = 100; 
 
@@ -59,7 +66,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         }
       }
       
-      // 3. 조직 정보 로드 및 전체 유저 로드 (권한 필터링 적용)
+      // 3. 조직 정보 및 유저 리스트 로드 (타입이 'users'일 때만)
       if (type === 'users') {
         const { data: bData } = await supabase.from("branches").select("dept_name, name");
         if (bData) {
@@ -76,12 +83,10 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           .order("name", { ascending: true });
 
         if (uData) {
-          // [핵심 로직] 마스터는 전체 노출, 그 외에는 본인보다 하위 직급만 노출
           const filteredUsers = uData.filter(u => {
             const userRankValue = rankPriority[u.rank] || 999;
-            // 본인이 마스터/관리자면 모두 보여주고, 아니면 하위 직급만
-            if (myRankValue === 1) return true;
-            return userRankValue > myRankValue; 
+            if (myRankValue === 1) return true; // 마스터는 전체 노출
+            return userRankValue > myRankValue; // 본인보다 하위 직급만 노출
           });
 
           setAllUsers(filteredUsers.map(u => ({ 
@@ -97,11 +102,10 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     load();
   }, [type]);
 
-  // 유저 정보 업데이트 헬퍼
+  // 유저 정보 로컬 상태 업데이트
   const updateUserInfo = (userId: string, field: string, value: string) => {
     setAllUsers(prev => prev.map(u => {
       if (u.id !== userId) return u;
-      
       const updated = { ...u };
       if (field === 'department') {
         if (value === 'CUSTOM_INPUT') { updated.department = ''; updated.isCustomDept = true; }
@@ -116,12 +120,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     }));
   };
 
+  // 실적 승인 처리
   const handleApprovePerf = async (agentId: string, currentStatus: boolean) => {
     const { error } = await supabase.from("daily_perf").update({ is_approved: !currentStatus }).eq("user_id", agentId);
     if (error) { alert("오류가 발생했습니다."); } 
     else { alert(!currentStatus ? "승인되었습니다." : "해제되었습니다."); onClose(); }
   };
 
+  // 유저 정보(사업부/지점) DB 저장
   const handleUserSave = async (user: any) => {
     if(!user.department || !user.team) {
       alert("사업부와 지점을 모두 입력해주세요.");
@@ -143,6 +149,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     }
   };
 
+  // 시스템 설정 저장
   const saveSys = async () => {
     await supabase.from("team_settings").upsert([
       { key: 'target_amt', value: String(tarAmt) }, 
@@ -157,16 +164,19 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   };
 
   const getRate = (part: number, total: number) => total > 0 ? ((part / total) * 100).toFixed(1) : "0.0";
-  const totalAmt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_amt || 0), 0);
-  const totalCnt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_cnt || 0), 0);
-  const totalDB = agents.reduce((s:any, a:any) => s + (a.performance?.db_assigned || 0), 0);
-  const totalReturn = agents.reduce((s:any, a:any) => s + (a.performance?.db_returned || 0), 0);
+  
+  // 통계 계산
+  const totalAmt = agents?.reduce((s:any, a:any) => s + (a.performance?.contract_amt || 0), 0) || 0;
+  const totalCnt = agents?.reduce((s:any, a:any) => s + (a.performance?.contract_cnt || 0), 0) || 0;
+  const totalDB = agents?.reduce((s:any, a:any) => s + (a.performance?.db_assigned || 0), 0) || 0;
+  const totalReturn = agents?.reduce((s:any, a:any) => s + (a.performance?.db_returned || 0), 0) || 0;
 
   return (
     <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 font-black text-black">
       <div className="bg-white w-full max-w-6xl rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50">✕</button>
 
+        {/* 1. 직원 관리 탭 */}
         {type === 'users' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Employee Management</h3>
@@ -185,9 +195,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                       <td className="p-4 md:p-6">
                         <div className="flex items-center gap-2">
                           <p className="font-black text-sm md:text-xl italic">{u.name}</p>
-                          {/* 이름 바로 옆에 직급 배지 표시 */}
+                          {/* DB 영문값을 한글 직급으로 변환 표시 */}
                           <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] md:text-[11px] rounded-md font-black uppercase">
-                            {u.rank || '설계사'}
+                            {rankMap[u.rank] || '설계사'}
                           </span>
                           {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}
                         </div>
@@ -228,7 +238,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* --- 나머지 탭(perf, act, edu, sys) 기존 로직 유지 --- */}
+        {/* 2. 팀 실적 탭 */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Team Performance</h3>
@@ -243,13 +253,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                   <tr><th className="p-4 md:p-6">Employee</th><th className="p-4 md:p-6 text-center">Today Amount</th><th className="p-4 md:p-6 text-center">Status</th></tr>
                 </thead>
                 <tbody className="divide-y-2 divide-black">
-                  {agents.map((a: any) => (
+                  {agents?.map((a: any) => (
                     <tr key={a.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4 md:p-6 text-sm md:text-xl italic">{a.name} CA</td>
-                      <td className="p-4 md:p-6 text-center text-lg md:text-2xl italic">{a.performance.contract_amt || 0}만</td>
+                      <td className="p-4 md:p-6 text-center text-lg md:text-2xl italic">{a.performance?.contract_amt || 0}만</td>
                       <td className="p-4 md:p-6 text-center">
-                        <button onClick={() => handleApprovePerf(a.id, a.performance.is_approved)} className={`px-4 py-2 rounded-full text-[10px] font-black border-2 border-black ${a.performance.is_approved ? 'bg-black text-[#d4af37]' : 'bg-white'}`}>
-                          {a.performance.is_approved ? 'APPROVED' : 'APPROVE'}
+                        <button onClick={() => handleApprovePerf(a.id, a.performance?.is_approved)} className={`px-4 py-2 rounded-full text-[10px] font-black border-2 border-black ${a.performance?.is_approved ? 'bg-black text-[#d4af37]' : 'bg-white'}`}>
+                          {a.performance?.is_approved ? 'APPROVED' : 'APPROVE'}
                         </button>
                       </td>
                     </tr>
@@ -260,6 +270,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
+        {/* 3. 활동량 분석 탭 */}
         {type === 'act' && (
           <div className="space-y-6 md:space-y-8 font-black animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Activity & Funnel</h3>
@@ -267,29 +278,29 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
               <div className="space-y-6">
                 <div className="bg-black p-6 rounded-2xl text-white flex justify-between items-center shadow-2xl">
                   <p className="text-xl md:text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Analysis</p>
-                  <button onClick={() => handleApprovePerf(selectedAgent.id, selectedAgent.performance.is_approved)} className={`px-6 py-3 rounded-full text-xs font-black italic ${selectedAgent.performance.is_approved ? 'bg-rose-600' : 'bg-[#d4af37] text-black'}`}>
-                    {selectedAgent.performance.is_approved ? 'REVOKE LOCK' : 'CONFIRM & LOCK'}
+                  <button onClick={() => handleApprovePerf(selectedAgent.id, selectedAgent.performance?.is_approved)} className={`px-6 py-3 rounded-full text-xs font-black italic ${selectedAgent.performance?.is_approved ? 'bg-rose-600' : 'bg-[#d4af37] text-black'}`}>
+                    {selectedAgent.performance?.is_approved ? 'REVOKE LOCK' : 'CONFIRM & LOCK'}
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-blue-50 p-6 rounded-2xl border-4 border-black text-center">
                     <p className="text-[10px] text-blue-400 uppercase mb-2">배정 DB</p>
-                    <p className="text-2xl font-black italic">{selectedAgent.performance.db_assigned || 0}건</p>
+                    <p className="text-2xl font-black italic">{selectedAgent.performance?.db_assigned || 0}건</p>
                   </div>
                   <div className="bg-rose-50 p-6 rounded-2xl border-4 border-black text-center">
                     <p className="text-[10px] text-rose-400 uppercase mb-2">반품 DB</p>
-                    <p className="text-2xl font-black italic text-rose-600">{selectedAgent.performance.db_returned || 0}건</p>
+                    <p className="text-2xl font-black italic text-rose-600">{selectedAgent.performance?.db_returned || 0}건</p>
                   </div>
                   <div className="bg-slate-900 p-6 rounded-2xl border-4 border-black text-center text-[#d4af37]">
                     <p className="text-[10px] opacity-50 uppercase mb-2">반품율</p>
-                    <p className="text-2xl font-black italic">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p>
+                    <p className="text-2xl font-black italic">{getRate(selectedAgent.performance?.db_returned, selectedAgent.performance?.db_assigned)}%</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <ActivityCountBox label="전화" val={`${selectedAgent.performance.call}건`} />
-                  <ActivityCountBox label="만남" val={`${selectedAgent.performance.meet}건`} />
-                  <ActivityCountBox label="제안" val={`${selectedAgent.performance.pt}건`} />
-                  <ActivityCountBox label="소개" val={`${selectedAgent.performance.intro}건`} />
+                  <ActivityCountBox label="전화" val={`${selectedAgent.performance?.call || 0}건`} />
+                  <ActivityCountBox label="만남" val={`${selectedAgent.performance?.meet || 0}건`} />
+                  <ActivityCountBox label="제안" val={`${selectedAgent.performance?.pt || 0}건`} />
+                  <ActivityCountBox label="소개" val={`${selectedAgent.performance?.intro || 0}건`} />
                 </div>
               </div>
             ) : (
@@ -300,16 +311,17 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                     <div><p className="text-[10px] text-slate-400 uppercase mb-1">전체 반품율</p><p className="text-2xl italic text-rose-600">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <ActivityCountBox label="전화 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.call||0),0)}건`} />
-                  <ActivityCountBox label="만남 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.meet||0),0)}건`} />
-                  <ActivityCountBox label="제안 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.pt||0),0)}건`} />
-                  <ActivityCountBox label="소개 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.intro||0),0)}건`} />
+                  <ActivityCountBox label="전화 합계" val={`총 ${agents?.reduce((s:any,a:any)=>s+(a.performance?.call||0),0) || 0}건`} />
+                  <ActivityCountBox label="만남 합계" val={`총 ${agents?.reduce((s:any,a:any)=>s+(a.performance?.meet||0),0) || 0}건`} />
+                  <ActivityCountBox label="제안 합계" val={`총 ${agents?.reduce((s:any,a:any)=>s+(a.performance?.pt||0),0) || 0}건`} />
+                  <ActivityCountBox label="소개 합계" val={`총 ${agents?.reduce((s:any,a:any)=>s+(a.performance?.intro||0),0) || 0}건`} />
                 </div>
               </div>
             )}
           </div>
         )}
 
+        {/* 4. 교육 및 출석 탭 */}
         {type === 'edu' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Attendance & Training</h3>
@@ -322,12 +334,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                   </tr>
                 </thead>
                 <tbody className="divide-y-2 divide-black bg-white">
-                  {agents.map((a:any) => (
+                  {agents?.map((a:any) => (
                     <tr key={a.id} className="hover:bg-slate-50">
                       <td className="p-6 font-black text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name} CA</td>
                       {[1, 2, 3, 4, 5].map((w) => (
                         <td key={w} className="p-6 text-center">
-                          <div className={`w-10 h-10 mx-auto rounded-xl border-4 flex items-center justify-center text-xl transition-all ${a.performance[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black scale-110 shadow-lg' : 'border-slate-100 text-transparent'}`}>✓</div>
+                          <div className={`w-10 h-10 mx-auto rounded-xl border-4 flex items-center justify-center text-xl transition-all ${a.performance?.[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black scale-110 shadow-lg' : 'border-slate-100 text-transparent'}`}>✓</div>
                         </td>
                       ))}
                     </tr>
@@ -338,6 +350,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
+        {/* 5. 시스템 설정 탭 */}
         {type === 'sys' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
             <div className="flex justify-between items-end border-b-4 md:border-b-8 border-black pb-4">
@@ -372,7 +385,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-// --- 헬퍼 컴포넌트 유지 ---
+// --- 헬퍼 컴포넌트 ---
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-6 rounded-2xl border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] transition-transform">

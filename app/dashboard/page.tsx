@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 import Sidebar from "./components/Sidebar"
@@ -11,13 +11,12 @@ import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
 // [상담 도구 뷰 컴포넌트]
-function ConsultingView({ menuStatus, isApproved }: any) {
+function ConsultingView({ menuStatus, isApproved, onOpenCalc }: any) {
   const allMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
     { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
     { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
-    // url을 tab: 대신 실제 경로로 수정하여 window.open이 동작하게 함
-    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "/calculator.html", color: "border-blue-500 text-blue-600", staffOnly: true },
+    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "INTERNAL_CALC", color: "border-blue-500 text-blue-600", staffOnly: true },
     { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
     { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
     { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
@@ -37,7 +36,10 @@ function ConsultingView({ menuStatus, isApproved }: any) {
         {activeMenus.map((m) => (
           <button 
             key={m.id} 
-            onClick={() => window.open(m.url, "_blank", "noopener,noreferrer")} 
+            onClick={() => {
+              if(m.url === "INTERNAL_CALC") onOpenCalc();
+              else window.open(m.url, "_blank", "noopener,noreferrer");
+            }} 
             className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
           >
             <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
@@ -62,53 +64,51 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
 
-  useEffect(() => {
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return router.replace("/login");
+  // 시스템 초기화 (useCallback으로 무한 루프 방지)
+  const init = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return router.replace("/login");
 
-      const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
-      if (!userInfo) return router.replace("/login");
+    const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
+    if (!userInfo) return router.replace("/login");
 
-      const { data: settings } = await supabase.from("team_settings").select("key, value");
-      setMenuStatus(settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), {}) || {});
-      setUser(userInfo);
-      setLoading(false);
-    }
-    init();
+    const { data: settings } = await supabase.from("team_settings").select("key, value");
+    const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), {}) || {};
+
+    setMenuStatus(statusMap);
+    setUser(userInfo);
+    setLoading(false);
   }, [router]);
+
+  useEffect(() => {
+    init();
+  }, [init]);
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 🛡️ 권한 계층 정의
-  const email = (user.email || "").toLowerCase().trim();
-  const userRank = user.rank || "설계사"; // DB의 rank 필드 기준
-  
-  const isMaster = email === 'qodbtjq@naver.com' || userRank === '마스터';
-  const isLeader = !isMaster && userRank === '사업부장';
-  const isManager = !isMaster && !isLeader && (userRank === '지점장' || userRank === '팀장');
-  const isApproved = isMaster || isLeader || isManager || userRank === '설계사' || String(user.is_approved) === "true";
+  // 🛡️ 직급 권한 변수 (DB 영문값 기준)
+  const userRank = user.rank || "agent"; 
+  const isMaster = userRank === 'master';
+  const isLeader = userRank === 'leader';
+  const isManager = userRank === 'manager';
+  // 설계사 이하급은 승인 여부(is_approved) 확인
+  const isApproved = isMaster || isLeader || isManager || String(user.is_approved) === "true";
 
-  // ⭐️ 핵심 수정: 하위 뷰에 본인의 직급 정보를 넘겨 필터링이 가능하게 함
   const renderOfficeView = () => {
-    const props = { 
-      user, 
-      selectedDate, 
-      onTabChange: setActiveTab,
-      currentUserRank: userRank // 관리자 화면에서 필터링 기준으로 사용
-    };
+    const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRank: userRank };
     if (isMaster) return <AdminView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
     return <AgentView {...props} />;
   };
 
+  // 1. 초기 모드 선택 화면
   if (viewMode === 'select') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
         <h1 className="text-5xl mb-16 italic tracking-tighter">
-          <span className="text-blue-600">{user.name || user.full_name}</span>
-          <span className="ml-2 text-2xl text-slate-400">[{userRank}]</span>님, 환영합니다!
+          <span className="text-blue-600">{user.name}</span>
+          <span className="ml-2 text-2xl text-slate-400 uppercase">[{userRank}]</span>
         </h1>
         <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
           <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
@@ -124,36 +124,47 @@ export default function DashboardPage() {
     );
   }
 
+  // 2. 메인 대시보드 화면
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
       <Sidebar 
-        user={user} selectedDate={selectedDate} onDateChange={setSelectedDate} mode={viewMode} 
+        user={user} 
+        selectedDate={selectedDate} 
+        onDateChange={setSelectedDate} 
+        mode={viewMode} 
         onBack={() => { setViewMode('select'); setActiveTab(null); }} 
-        externalMenuStatus={menuStatus} onMenuStatusChange={setMenuStatus}
-        isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen}
+        externalMenuStatus={menuStatus} 
+        onMenuStatusChange={setMenuStatus}
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen}
         onTabChange={(tab) => {
-          // 사이드바에서 특정 탭 클릭 시에도 새 창으로 열리게 하고 싶을 경우 window.open 사용
+          // 퀵링크 규칙: 'finance' 탭 클릭 시 내부 금융계산기 활성화
           const externalLinks: any = {
             'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
-            'surgery': 'https://www.khidi.or.kr',
-            'finance': '/calculator.html'
+            'surgery': 'https://www.khidi.or.kr'
           };
-          if (externalLinks[tab]) {
-            window.open(externalLinks[tab], "_blank");
-          } else {
-            setActiveTab(tab);
-          }
+          if (externalLinks[tab]) window.open(externalLinks[tab], "_blank");
+          else setActiveTab(tab);
         }} 
-        activeTab={activeTab} isAdmin={isMaster}
+        activeTab={activeTab} 
+        isAdmin={isMaster}
       />
+
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
-          {/* 내부 탭으로 열리는 컴포넌트 유지(필요시) */}
+          {/* 금융계산기(영업도구) 탭 처리 */}
           {activeTab === 'finance' ? (
-            <><HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} /><FinancialCalc /></>
+            <>
+              <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
+              <FinancialCalc />
+            </>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
-              <ConsultingView menuStatus={menuStatus} isApproved={isApproved} />
+              <ConsultingView 
+                menuStatus={menuStatus} 
+                isApproved={isApproved} 
+                onOpenCalc={() => setActiveTab('finance')} 
+              />
             )
           )}
         </div>
