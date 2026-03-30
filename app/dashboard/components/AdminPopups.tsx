@@ -16,10 +16,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [existingDepts, setExistingDepts] = useState<string[]>([]);
   const [existingTeams, setExistingTeams] = useState<{dept: string, team: string}[]>([]);
 
-  // 직급 순위 정의 (숫자가 높을수록 낮은 직급)
+  // [수정된 직급 권한 체계] 숫자가 높을수록 낮은 직급
   const rankPriority: { [key: string]: number } = {
+    '마스터': 1,
     '관리자': 1,
-    '본부장': 2,
+    '사업부장': 2,
     '지점장': 3,
     '팀장': 4,
     '설계사': 5,
@@ -30,7 +31,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     async function load() {
       // 1. 현재 접속한 관리자 정보 가져오기 (직급 확인용)
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      let myRankValue = 100; // 기본값 (가장 낮은 순위)
+      let myRankValue = 100; 
 
       if (authUser) {
         const { data: myData } = await supabase
@@ -58,7 +59,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         }
       }
       
-      // 3. 조직 정보 로드 및 전체 유저 로드 (필터링 포함)
+      // 3. 조직 정보 로드 및 전체 유저 로드 (권한 필터링 적용)
       if (type === 'users') {
         const { data: bData } = await supabase.from("branches").select("dept_name, name");
         if (bData) {
@@ -75,9 +76,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           .order("name", { ascending: true });
 
         if (uData) {
-          // [수정] 본인보다 직급 숫자가 큰(낮은 직급) 사람만 필터링
+          // [핵심 로직] 마스터는 전체 노출, 그 외에는 본인보다 하위 직급만 노출
           const filteredUsers = uData.filter(u => {
             const userRankValue = rankPriority[u.rank] || 999;
+            // 본인이 마스터/관리자면 모두 보여주고, 아니면 하위 직급만
+            if (myRankValue === 1) return true;
             return userRankValue > myRankValue; 
           });
 
@@ -180,11 +183,15 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                   {allUsers.map((u) => (
                     <tr key={u.id} className={`${u.is_approved ? 'bg-white' : 'bg-amber-50'} hover:bg-slate-50 transition-colors`}>
                       <td className="p-4 md:p-6">
-                        <p className="font-black text-sm md:text-xl italic">
-                          {u.name} <span className="text-xs text-indigo-600">[{u.rank || '설계사'}]</span>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-sm md:text-xl italic">{u.name}</p>
+                          {/* 이름 바로 옆에 직급 배지 표시 */}
+                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] md:text-[11px] rounded-md font-black uppercase">
+                            {u.rank || '설계사'}
+                          </span>
                           {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}
-                        </p>
-                        <p className="text-[10px] text-slate-400 font-normal">{u.email}</p>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-normal mt-1">{u.email}</p>
                       </td>
                       <td className="p-4 md:p-6 text-center">
                         <div className="flex flex-col gap-2 max-w-[250px] mx-auto">
@@ -221,7 +228,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 나머지 탭(perf, act, edu, sys)은 기존 로직 동일 유지 */}
+        {/* --- 나머지 탭(perf, act, edu, sys) 기존 로직 유지 --- */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Team Performance</h3>
@@ -365,6 +372,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
+// --- 헬퍼 컴포넌트 유지 ---
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-6 rounded-2xl border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] transition-transform">

@@ -11,17 +11,18 @@ import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
 // [상담 도구 뷰 컴포넌트]
-function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
+function ConsultingView({ menuStatus, isApproved }: any) {
   const allMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
     { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
     { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
-    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "tab:finance", color: "border-blue-500 text-blue-600", staffOnly: true },
+    // url을 tab: 대신 실제 경로로 수정하여 window.open이 동작하게 함
+    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "/calculator.html", color: "border-blue-500 text-blue-600", staffOnly: true },
     { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
     { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "tab:gongsi", color: "border-slate-400 text-slate-500", staffOnly: true },
+    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
     { id: "show_disease", title: "질병코드 조회", desc: "한국표준질병사인분류(KCD) 검색", icon: "🧬", url: "http://www.koicd.kr/kcd/kcd.do", color: "border-indigo-400 text-indigo-500", staffOnly: true },
-    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "tab:surgery", color: "border-rose-400 text-rose-500", staffOnly: true }
+    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "https://www.khidi.or.kr", color: "border-rose-400 text-rose-500", staffOnly: true }
   ];
 
   const activeMenus = allMenus.filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]));
@@ -36,7 +37,7 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
         {activeMenus.map((m) => (
           <button 
             key={m.id} 
-            onClick={() => m.url?.startsWith('tab:') ? onTabChange(m.url.split(':')[1]) : window.open(m.url, "_blank")} 
+            onClick={() => window.open(m.url, "_blank", "noopener,noreferrer")} 
             className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
           >
             <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
@@ -51,7 +52,6 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
   );
 }
 
-// [메인 대시보드 페이지]
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -80,18 +80,23 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
+  // 🛡️ 권한 계층 정의
   const email = (user.email || "").toLowerCase().trim();
-  const role = (user.role || "").toLowerCase();
-  const level = (user.role_level || "").toLowerCase();
+  const userRank = user.rank || "설계사"; // DB의 rank 필드 기준
+  
+  const isMaster = email === 'qodbtjq@naver.com' || userRank === '마스터';
+  const isLeader = !isMaster && userRank === '사업부장';
+  const isManager = !isMaster && !isLeader && (userRank === '지점장' || userRank === '팀장');
+  const isApproved = isMaster || isLeader || isManager || userRank === '설계사' || String(user.is_approved) === "true";
 
-  const isMaster = email === 'qodbtjq@naver.com' || role === 'master' || level === 'master';
-  const isLeader = !isMaster && (role === 'leader' || level === 'director' || level === 'leader');
-  const isManager = !isMaster && !isLeader && (role === 'manager' || level === 'manager');
-  const isApproved = isMaster || isLeader || isManager || role === 'agent' || String(user.is_approved) === "true";
-
-  // ⭐️ 핵심 수정: 각 뷰에 onTabChange(setActiveTab)를 전달하여 사이드바와 기능을 공유하게 함
+  // ⭐️ 핵심 수정: 하위 뷰에 본인의 직급 정보를 넘겨 필터링이 가능하게 함
   const renderOfficeView = () => {
-    const props = { user, selectedDate, onTabChange: setActiveTab };
+    const props = { 
+      user, 
+      selectedDate, 
+      onTabChange: setActiveTab,
+      currentUserRank: userRank // 관리자 화면에서 필터링 기준으로 사용
+    };
     if (isMaster) return <AdminView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
@@ -102,7 +107,8 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
         <h1 className="text-5xl mb-16 italic tracking-tighter">
-          <span className="text-blue-600">{user.name || user.full_name}</span>님, 환영합니다!
+          <span className="text-blue-600">{user.name || user.full_name}</span>
+          <span className="ml-2 text-2xl text-slate-400">[{userRank}]</span>님, 환영합니다!
         </h1>
         <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
           <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
@@ -125,19 +131,29 @@ export default function DashboardPage() {
         onBack={() => { setViewMode('select'); setActiveTab(null); }} 
         externalMenuStatus={menuStatus} onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen}
-        onTabChange={setActiveTab} activeTab={activeTab} isAdmin={isMaster}
+        onTabChange={(tab) => {
+          // 사이드바에서 특정 탭 클릭 시에도 새 창으로 열리게 하고 싶을 경우 window.open 사용
+          const externalLinks: any = {
+            'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
+            'surgery': 'https://www.khidi.or.kr',
+            'finance': '/calculator.html'
+          };
+          if (externalLinks[tab]) {
+            window.open(externalLinks[tab], "_blank");
+          } else {
+            setActiveTab(tab);
+          }
+        }} 
+        activeTab={activeTab} isAdmin={isMaster}
       />
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
+          {/* 내부 탭으로 열리는 컴포넌트 유지(필요시) */}
           {activeTab === 'finance' ? (
             <><HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} /><FinancialCalc /></>
-          ) : activeTab === 'gongsi' ? (
-            <><HeaderBar title="Insurance Gongsi" icon="📑" onBack={() => setActiveTab(null)} /><iframe src="/gongsi.html" className="w-full h-[80vh] border-4 border-black rounded-[2rem] bg-white shadow-xl" /></>
-          ) : activeTab === 'surgery' ? (
-            <><HeaderBar title="Surgery Search" icon="✂️" onBack={() => setActiveTab(null)} /><iframe src="/susul.html" className="w-full h-[80vh] border-4 border-black rounded-[2rem] bg-white shadow-xl" /></>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
-              <ConsultingView menuStatus={menuStatus} isApproved={isApproved} onTabChange={setActiveTab} />
+              <ConsultingView menuStatus={menuStatus} isApproved={isApproved} />
             )
           )}
         </div>
