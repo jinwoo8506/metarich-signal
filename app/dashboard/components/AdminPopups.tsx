@@ -33,8 +33,17 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         }
       }
       
-      // 2. 조직 정보 및 전체 유저 로드
+      // 2. 조직 정보 로드 (branches 테이블 기준) 및 전체 유저 로드
       if (type === 'users') {
+        // [수정] 부서/지점 목록을 실제 기준 테이블인 'branches'에서 가져옵니다.
+        const { data: bData } = await supabase.from("branches").select("dept_name, name");
+        if (bData) {
+          const depts = Array.from(new Set(bData.map(b => b.dept_name).filter(Boolean))) as string[];
+          const teams = bData.map(b => ({ dept: b.dept_name, team: b.name }));
+          setExistingDepts(depts.sort());
+          setExistingTeams(teams);
+        }
+
         const { data: uData } = await supabase
           .from("users")
           .select("*")
@@ -42,24 +51,21 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           .order("name", { ascending: true });
 
         if (uData) {
-          setAllUsers(uData.map(u => ({ ...u, isCustomDept: false, isCustomTeam: false })));
-          
-          const depts = Array.from(new Set(uData.map(u => u.department).filter(Boolean))) as string[];
-          const teamMap = new Set(uData.filter(u => u.department && u.team).map(u => `${u.department}|${u.team}`));
-          const teams = Array.from(teamMap).map(str => {
-            const [dept, team] = str.split('|');
-            return { dept, team };
-          });
-          
-          setExistingDepts(depts.sort());
-          setExistingTeams(teams);
+          // [수정] DB 컬럼명인 department_name과 branch_name을 UI 상태와 매핑
+          setAllUsers(uData.map(u => ({ 
+            ...u, 
+            department: u.department_name || "", 
+            team: u.branch_name || "",
+            isCustomDept: false, 
+            isCustomTeam: false 
+          })));
         }
       }
     }
     load();
   }, [type]);
 
-  // 유저 정보 업데이트 헬퍼 (포커스 유실 방지를 위해 로직 보강)
+  // 유저 정보 업데이트 헬퍼
   const updateUserInfo = (userId: string, field: string, value: string) => {
     setAllUsers(prev => prev.map(u => {
       if (u.id !== userId) return u;
@@ -85,19 +91,23 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     else { alert(!currentStatus ? "승인되었습니다." : "해제되었습니다."); onClose(); }
   };
 
-  // [기능 2] 직원 정보 업데이트 및 승인
+  // [기능 2] 직원 정보 업데이트 및 승인 (DB 컬럼명 불일치 해결)
   const handleUserSave = async (user: any) => {
     if(!user.department || !user.team) {
       alert("사업부와 지점을 모두 입력해주세요.");
       return;
     }
+    // [수정] DB의 실제 컬럼명인 department_name과 branch_name으로 업데이트 요청
     const { error } = await supabase.from("users").update({ 
       is_approved: true,
-      department: user.department,
-      team: user.team 
+      department_name: user.department,
+      branch_name: user.team 
     }).eq("id", user.id);
 
-    if (error) { alert("저장 중 오류 발생"); } 
+    if (error) { 
+      console.error(error);
+      alert("저장 중 오류 발생: " + error.message); 
+    } 
     else { alert(`${user.name}님의 정보가 업데이트 되었습니다.`); }
   };
 
@@ -127,7 +137,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       <div className="bg-white w-full max-w-6xl rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50">✕</button>
 
-        {/* 1. User Management (입력 버그 수정됨) */}
+        {/* 1. User Management */}
         {type === 'users' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Employee Management</h3>
@@ -155,7 +165,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                             <input 
                               type="text" 
                               autoFocus
-                              placeholder="사업부 입력" 
+                              placeholder="사업부 직접 입력" 
                               className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" 
                               value={u.department || ""}
                               onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} 
@@ -171,7 +181,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                             <input 
                               type="text" 
                               autoFocus
-                              placeholder="지점 입력" 
+                              placeholder="지점 직접 입력" 
                               className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" 
                               value={u.team || ""}
                               onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} 
@@ -198,7 +208,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 2. Team Performance (기존 코드 100% 유지) */}
+        {/* 2. Team Performance (기존 코드 유지) */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Team Performance</h3>
@@ -230,7 +240,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 3. Activity (기존 코드 100% 유지) */}
+        {/* 3. Activity (기존 코드 유지) */}
         {type === 'act' && (
           <div className="space-y-6 md:space-y-8 font-black animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Activity & Funnel</h3>
@@ -266,9 +276,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
             ) : (
               <div className="space-y-8 animate-in fade-in">
                 <div className="bg-slate-50 p-6 rounded-2xl border-4 border-black grid grid-cols-3 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                   <div><p className="text-[10px] text-slate-400 uppercase mb-1">총 배정 DB</p><p className="text-2xl italic">{totalDB}건</p></div>
-                   <div><p className="text-[10px] text-slate-400 uppercase mb-1">총 반품 DB</p><p className="text-2xl italic text-rose-500">{totalReturn}건</p></div>
-                   <div><p className="text-[10px] text-slate-400 uppercase mb-1">전체 반품율</p><p className="text-2xl italic text-rose-600">{getRate(totalReturn, totalDB)}%</p></div>
+                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">총 배정 DB</p><p className="text-2xl italic">{totalDB}건</p></div>
+                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">총 반품 DB</p><p className="text-2xl italic text-rose-500">{totalReturn}건</p></div>
+                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">전체 반품율</p><p className="text-2xl italic text-rose-600">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <ActivityCountBox label="전화 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.call||0),0)}건`} />
@@ -281,7 +291,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 4. Training (교육관리 - 출력 보강됨) */}
+        {/* 4. Training (교육관리) */}
         {type === 'edu' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Attendance & Training</h3>
@@ -310,7 +320,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 5. System Settings (기존 코드 100% 유지) */}
+        {/* 5. System Settings (기존 코드 유지) */}
         {type === 'sys' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
             <div className="flex justify-between items-end border-b-4 md:border-b-8 border-black pb-4">
@@ -351,7 +361,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-// --- 하단 헬퍼 컴포넌트들 (모두 원본 유지) ---
+// --- 하단 헬퍼 컴포넌트들 (기존 코드 유지) ---
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-6 rounded-2xl border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] transition-transform">
