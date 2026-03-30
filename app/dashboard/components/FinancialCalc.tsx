@@ -33,12 +33,12 @@ const fmtM = (n: number) => {
 /* ─── 공통 섹션 제목 ─────────────────────────────────────────── */
 function SectionTitle({ label, sub }: { label: string; sub?: string }) {
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div style={{ marginBottom: 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 3, height: 16, background: C.gold, borderRadius: 2 }} />
-        <span style={{ fontSize: 14, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>{label}</span>
+        <div style={{ width: 3, height: 20, background: C.gold, borderRadius: 2 }} />
+        <span style={{ fontSize: 17, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>{label}</span>
       </div>
-      {sub && <p style={{ fontSize: 11, color: C.muted, marginTop: 4, marginLeft: 13 }}>{sub}</p>}
+      {sub && <p style={{ fontSize: 13, color: C.muted, marginTop: 5, marginLeft: 13 }}>{sub}</p>}
     </div>
   );
 }
@@ -51,11 +51,11 @@ function InputRow({
   unit?: string; min?: number; max?: number; step?: number; hint?: string;
 }) {
   return (
-    <div style={{ marginBottom: 10 }}>
-      <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.6px" }}>
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.slate, marginBottom: 6, letterSpacing: "0px" }}>
         {label}
       </label>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: `1px solid ${C.border}`, borderRadius: 8, padding: "0 12px", height: 40, transition: "border-color 0.15s" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fff", border: `1.5px solid ${C.border}`, borderRadius: 8, padding: "0 14px", height: 46, transition: "border-color 0.15s" }}>
         <input
           type="number"
           value={val}
@@ -63,11 +63,11 @@ function InputRow({
           max={max}
           step={step ?? 1}
           onChange={(e) => onChange(Number(e.target.value))}
-          style={{ flex: 1, border: "none", outline: "none", fontSize: 15, fontWeight: 700, color: C.text, background: "transparent", minWidth: 0 }}
+          style={{ flex: 1, border: "none", outline: "none", fontSize: 16, fontWeight: 700, color: C.text, background: "transparent", minWidth: 0 }}
         />
-        {unit && <span style={{ fontSize: 11, color: C.muted, whiteSpace: "nowrap", fontWeight: 500 }}>{unit}</span>}
+        {unit && <span style={{ fontSize: 13, color: C.muted, whiteSpace: "nowrap", fontWeight: 600 }}>{unit}</span>}
       </div>
-      {hint && <p style={{ fontSize: 11, color: C.blue, marginTop: 3, fontWeight: 500 }}>{hint}</p>}
+      {hint && <p style={{ fontSize: 12, color: C.blue, marginTop: 4, fontWeight: 600 }}>{hint}</p>}
     </div>
   );
 }
@@ -101,7 +101,7 @@ function CalcBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      style={{ width: "100%", height: 42, background: C.navy, color: C.gold, border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, letterSpacing: "0.3px", cursor: "pointer" }}
+      style={{ width: "100%", height: 46, background: C.navy, color: C.gold, border: "none", borderRadius: 10, fontSize: 15, fontWeight: 700, letterSpacing: "0.3px", cursor: "pointer" }}
       onMouseEnter={(e) => { e.currentTarget.style.background = C.navyMid; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = C.navy; }}
     >
@@ -303,51 +303,57 @@ function CompareCalc() {
   return (
     <div>
       <SectionTitle label="보험 vs 은행 적금 비교" sub="동일한 납입 조건에서 만기 수령액을 비교합니다" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 10, marginBottom: 24, alignItems: "flex-end" }}>
-        <InputRow label="월 납입액" val={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" hint={fmt(inp.monthly) + "원"} />
-        <InputRow label="납입 기간" val={inp.payY} onChange={(v) => setInp({ ...inp, payY: v })} unit="년" />
-        <InputRow label="적금 이율 (연)" val={inp.rateS} onChange={(v) => setInp({ ...inp, rateS: v })} unit="%" step={0.1} />
-        <InputRow label="보험 환급률" val={inp.rateI} onChange={(v) => setInp({ ...inp, rateI: v })} unit="%" />
-        <CalcBtn label="비교" onClick={calc} />
+
+      {/* 입력 영역: 2행으로 분리 */}
+      <div style={{ background: C.slateLight, borderRadius: 14, padding: "20px 22px", marginBottom: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <InputRow label="월 납입액" val={inp.monthly} onChange={(v) => setInp({ ...inp, monthly: v })} unit="원" hint={fmt(inp.monthly) + "원"} />
+          <InputRow label="납입 기간" val={inp.payY} onChange={(v) => setInp({ ...inp, payY: v })} unit="년" />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
+          <InputRow label="은행 적금 이율 (연)" val={inp.rateS} onChange={(v) => setInp({ ...inp, rateS: v })} unit="%" step={0.1} />
+          <InputRow label="보험 환급률" val={inp.rateI} onChange={(v) => setInp({ ...inp, rateI: v })} unit="%" />
+        </div>
+        <CalcBtn label="결과 비교하기" onClick={calc} />
       </div>
 
       {res ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-          <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: "22px 24px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.blue }} />
-              <p style={{ fontSize: 13, fontWeight: 700, color: C.slate }}>은행 적금 (세후)</p>
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, padding: "24px 26px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: C.blue }} />
+              <p style={{ fontSize: 15, fontWeight: 700, color: C.slate }}>은행 적금 (세후)</p>
             </div>
-            <p style={{ fontSize: 10, color: C.muted, marginBottom: 3 }}>세후 수령액</p>
-            <p style={{ fontSize: 26, fontWeight: 800, color: C.text, marginBottom: 12, letterSpacing: "-0.5px" }}>{fmt(res.bank)}원</p>
-            <p style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>원금 {fmt(res.principal)}원 + 세후 이자 (이자소득세 15.4%)</p>
+            <p style={{ fontSize: 13, color: C.muted, marginBottom: 5 }}>세후 수령액</p>
+            <p style={{ fontSize: 30, fontWeight: 800, color: C.text, marginBottom: 14, letterSpacing: "-0.5px" }}>{fmt(res.bank)}원</p>
+            <p style={{ fontSize: 13, color: C.muted, marginBottom: 8 }}>원금 {fmt(res.principal)}원 + 세후 이자 (이자소득세 15.4%)</p>
             <GaugeBar pct={(res.bank / maxV) * 100} color={C.blue} />
           </div>
 
-          <div style={{ background: C.navy, border: "none", borderRadius: 14, padding: "22px 24px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold }} />
-              <p style={{ fontSize: 13, fontWeight: 700, color: C.gold }}>비과세 보험</p>
+          <div style={{ background: C.navy, border: "none", borderRadius: 14, padding: "24px 26px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: C.gold }} />
+              <p style={{ fontSize: 15, fontWeight: 700, color: C.gold }}>비과세 보험</p>
             </div>
-            <p style={{ fontSize: 10, color: `${C.gold}80`, marginBottom: 3 }}>비과세 수령액</p>
-            <p style={{ fontSize: 26, fontWeight: 800, color: C.gold, marginBottom: 12, letterSpacing: "-0.5px" }}>{fmt(res.insu)}원</p>
-            <p style={{ fontSize: 11, color: `${C.gold}70`, marginBottom: 6 }}>원금 {fmt(res.principal)}원 × 환급률 {inp.rateI}%</p>
-            <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: 4, height: 6, overflow: "hidden" }}>
+            <p style={{ fontSize: 13, color: `${C.gold}80`, marginBottom: 5 }}>비과세 수령액</p>
+            <p style={{ fontSize: 30, fontWeight: 800, color: C.gold, marginBottom: 14, letterSpacing: "-0.5px" }}>{fmt(res.insu)}원</p>
+            <p style={{ fontSize: 13, color: `${C.gold}70`, marginBottom: 8 }}>원금 {fmt(res.principal)}원 × 환급률 {inp.rateI}%</p>
+            <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: 4, height: 8, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${(res.insu / maxV) * 100}%`, background: C.gold, borderRadius: 4, transition: "width 0.6s" }} />
             </div>
           </div>
 
-          <div style={{ gridColumn: "1/-1", background: res.diff >= 0 ? C.tealLight : C.roseLight, border: `1px solid ${res.diff >= 0 ? C.teal : C.rose}25`, borderRadius: 12, padding: "14px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ fontSize: 13, color: C.slate }}>
+          <div style={{ gridColumn: "1/-1", background: res.diff >= 0 ? C.tealLight : C.roseLight, border: `1px solid ${res.diff >= 0 ? C.teal : C.rose}25`, borderRadius: 12, padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: C.slate }}>
               {res.diff >= 0 ? "보험이 은행 대비 더 유리합니다" : "보험이 은행 대비 더 적습니다"}
             </p>
-            <p style={{ fontSize: 24, fontWeight: 800, color: res.diff >= 0 ? C.teal : C.rose }}>
+            <p style={{ fontSize: 28, fontWeight: 800, color: res.diff >= 0 ? C.teal : C.rose }}>
               {res.diff >= 0 ? "+" : "-"}{fmt(Math.abs(res.diff))}원
             </p>
           </div>
         </div>
       ) : (
-        <Empty text="위 항목을 입력하고 비교 버튼을 눌러 주세요" />
+        <Empty text="위 항목을 입력하고 결과 비교하기 버튼을 눌러 주세요" />
       )}
     </div>
   );
@@ -366,37 +372,41 @@ function InflationCalc() {
   return (
     <div>
       <SectionTitle label="화폐 구매력 하락 분석" sub="물가 상승으로 미래에 같은 금액으로 살 수 있는 것이 얼마나 줄어드는지 계산합니다" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, marginBottom: 24, alignItems: "flex-end" }}>
-        <InputRow label="현재 금액" val={inp.amt} onChange={(v) => setInp({ ...inp, amt: v })} unit="원" hint={fmt(inp.amt) + "원"} />
-        <InputRow label="경과 기간" val={inp.yrs} onChange={(v) => setInp({ ...inp, yrs: v })} unit="년" />
-        <InputRow label="연 물가상승률" val={inp.inf} onChange={(v) => setInp({ ...inp, inf: v })} unit="%" step={0.1} />
-        <CalcBtn label="계산" onClick={calc} />
+
+      {/* 입력 영역 */}
+      <div style={{ background: C.slateLight, borderRadius: 14, padding: "20px 22px", marginBottom: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
+          <InputRow label="현재 금액" val={inp.amt} onChange={(v) => setInp({ ...inp, amt: v })} unit="원" hint={fmt(inp.amt) + "원"} />
+          <InputRow label="경과 기간" val={inp.yrs} onChange={(v) => setInp({ ...inp, yrs: v })} unit="년" />
+          <InputRow label="연 물가상승률" val={inp.inf} onChange={(v) => setInp({ ...inp, inf: v })} unit="%" step={0.1} />
+        </div>
+        <CalcBtn label="구매력 계산하기" onClick={calc} />
       </div>
 
       {res !== null && (
         <>
-          <div style={{ background: C.roseLight, border: `1px solid ${C.rose}20`, borderRadius: 16, padding: "28px 32px", marginBottom: 18, textAlign: "center" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: C.rose, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 8 }}>{inp.yrs}년 후 실질 구매력</p>
-            <p style={{ fontSize: 46, fontWeight: 800, color: C.rose, letterSpacing: "-1.5px", marginBottom: 6 }}>{fmt(res)}원</p>
-            <p style={{ fontSize: 13, color: C.slate }}>
-              오늘의 <strong>{fmt(inp.amt)}원</strong>과 같은 구매력 —
+          <div style={{ background: C.roseLight, border: `1px solid ${C.rose}20`, borderRadius: 16, padding: "32px 36px", marginBottom: 20, textAlign: "center" }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.rose, marginBottom: 10 }}>{inp.yrs}년 후 실질 구매력</p>
+            <p style={{ fontSize: 52, fontWeight: 800, color: C.rose, letterSpacing: "-1.5px", marginBottom: 8 }}>{fmt(res)}원</p>
+            <p style={{ fontSize: 15, color: C.slate, lineHeight: 1.7 }}>
+              오늘의 <strong>{fmt(inp.amt)}원</strong>과 같은 구매력 —<br />
               명목 금액은 <strong style={{ color: C.rose }}>{loss}% 더 많아야</strong> 합니다.
             </p>
           </div>
 
-          <div style={{ background: C.slateLight, borderRadius: 14, padding: "20px 24px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.5px" }}>구매력 비교</p>
+          <div style={{ background: C.slateLight, borderRadius: 14, padding: "22px 26px" }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.slate, marginBottom: 16 }}>구매력 비교</p>
             {[["현재 구매력", 100, C.teal], [`${inp.yrs}년 후 구매력`, 100 - loss, C.rose]].map(([l, p, color]) => (
-              <div key={l as string} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                  <span style={{ fontSize: 13, color: C.slate }}>{l}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: color as string }}>{p}%</span>
+              <div key={l as string} style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                  <span style={{ fontSize: 14, color: C.slate }}>{l}</span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: color as string }}>{p}%</span>
                 </div>
                 <GaugeBar pct={p as number} color={color as string} />
               </div>
             ))}
-            <p style={{ fontSize: 11, color: C.muted, marginTop: 12 }}>
-              손실액: {fmt(inp.amt - res)}원 / 공식: 현재금액 ÷ (1 + {inp.inf}%)^{inp.yrs}
+            <p style={{ fontSize: 13, color: C.muted, marginTop: 14 }}>
+              손실액: <strong>{fmt(inp.amt - res)}원</strong> / 공식: 현재금액 ÷ (1 + {inp.inf}%)^{inp.yrs}
             </p>
           </div>
         </>
@@ -429,31 +439,33 @@ function CompoundCalc() {
     : [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* 72법칙 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div style={{ background: C.slateLight, borderRadius: 14, padding: "20px 22px" }}>
+        <div style={{ background: C.slateLight, borderRadius: 14, padding: "22px 24px" }}>
           <SectionTitle label="72의 법칙" sub="원금이 2배가 되는 기간을 계산합니다" />
           <InputRow label="연 수익률" val={r72} onChange={setR72} unit="%" step={0.5} />
-          <p style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>공식: 72 ÷ 수익률(%) = 2배 달성 기간 (년)</p>
+          <p style={{ fontSize: 13, color: C.muted, marginTop: 8, lineHeight: 1.6 }}>공식: 72 ÷ 수익률(%) = 2배 달성 기간 (년)</p>
         </div>
-        <div style={{ background: C.navy, borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-          <p style={{ fontSize: 10, fontWeight: 700, color: `${C.gold}80`, textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: 8 }}>원금 2배 달성 기간</p>
-          <p style={{ fontSize: 54, fontWeight: 900, color: C.gold, letterSpacing: "-2px", lineHeight: 1 }}>
-            {double72}<span style={{ fontSize: 18, fontWeight: 600, color: "#fff", marginLeft: 5 }}>년</span>
+        <div style={{ background: C.navy, borderRadius: 14, padding: "22px 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: `${C.gold}90`, marginBottom: 10 }}>원금 2배 달성 기간</p>
+          <p style={{ fontSize: 60, fontWeight: 900, color: C.gold, letterSpacing: "-2px", lineHeight: 1 }}>
+            {double72}<span style={{ fontSize: 22, fontWeight: 600, color: "#fff", marginLeft: 6 }}>년</span>
           </p>
-          <p style={{ fontSize: 11, color: `${C.gold}55`, marginTop: 10, fontStyle: "italic" }}>"복리는 세계 8대 불가사의다" — 아인슈타인</p>
+          <p style={{ fontSize: 13, color: `${C.gold}60`, marginTop: 12, fontStyle: "italic" }}>"복리는 세계 8대 불가사의다" — 아인슈타인</p>
         </div>
       </div>
 
       {/* 복리 계산기 */}
       <div>
         <SectionTitle label="단리 vs 복리 시뮬레이션" sub="세후 15.4% 이자소득세 반영" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, marginBottom: 18, alignItems: "flex-end" }}>
-          <InputRow label="일시납 원금" val={inp.principal} onChange={(v) => setInp({ ...inp, principal: v })} unit="원" hint={fmt(inp.principal) + "원"} />
-          <InputRow label="거치 기간" val={inp.yrs} onChange={(v) => setInp({ ...inp, yrs: v })} unit="년" />
-          <InputRow label="연 이율" val={inp.rate} onChange={(v) => setInp({ ...inp, rate: v })} unit="%" step={0.1} />
-          <CalcBtn label="시뮬레이션" onClick={calc} />
+        <div style={{ background: C.slateLight, borderRadius: 14, padding: "20px 22px", marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
+            <InputRow label="일시납 원금" val={inp.principal} onChange={(v) => setInp({ ...inp, principal: v })} unit="원" hint={fmt(inp.principal) + "원"} />
+            <InputRow label="거치 기간" val={inp.yrs} onChange={(v) => setInp({ ...inp, yrs: v })} unit="년" />
+            <InputRow label="연 이율" val={inp.rate} onChange={(v) => setInp({ ...inp, rate: v })} unit="%" step={0.1} />
+          </div>
+          <CalcBtn label="복리 시뮬레이션 실행" onClick={calc} />
         </div>
 
         {res && (
