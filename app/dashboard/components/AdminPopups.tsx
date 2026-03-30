@@ -35,7 +35,6 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       
       // 2. 조직 정보 로드 (branches 테이블 기준) 및 전체 유저 로드
       if (type === 'users') {
-        // [수정] 부서/지점 목록을 실제 기준 테이블인 'branches'에서 가져옵니다.
         const { data: bData } = await supabase.from("branches").select("dept_name, name");
         if (bData) {
           const depts = Array.from(new Set(bData.map(b => b.dept_name).filter(Boolean))) as string[];
@@ -51,7 +50,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           .order("name", { ascending: true });
 
         if (uData) {
-          // [수정] DB 컬럼명인 department_name과 branch_name을 UI 상태와 매핑
+          // [수정 완료] DB의 department_name -> UI의 department, branch_name -> UI의 team으로 매핑
           setAllUsers(uData.map(u => ({ 
             ...u, 
             department: u.department_name || "", 
@@ -65,7 +64,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     load();
   }, [type]);
 
-  // 유저 정보 업데이트 헬퍼
+  // 유저 정보 업데이트 헬퍼 (UI 상태 변경)
   const updateUserInfo = (userId: string, field: string, value: string) => {
     setAllUsers(prev => prev.map(u => {
       if (u.id !== userId) return u;
@@ -91,24 +90,29 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     else { alert(!currentStatus ? "승인되었습니다." : "해제되었습니다."); onClose(); }
   };
 
-  // [기능 2] 직원 정보 업데이트 및 승인 (DB 컬럼명 불일치 해결)
+  // [기능 2] 직원 정보 업데이트 및 승인 (컬럼명 불일치 해결 완료)
   const handleUserSave = async (user: any) => {
     if(!user.department || !user.team) {
       alert("사업부와 지점을 모두 입력해주세요.");
       return;
     }
-    // [수정] DB의 실제 컬럼명인 department_name과 branch_name으로 업데이트 요청
+
+    // [수정 완료] 수파베이스의 실제 컬럼명인 department_name, branch_name으로 데이터 전송
     const { error } = await supabase.from("users").update({ 
       is_approved: true,
-      department_name: user.department,
-      branch_name: user.team 
+      department_name: user.department, // UI의 department 값을 DB의 department_name 컬럼으로
+      branch_name: user.team            // UI의 team 값을 DB의 branch_name 컬럼으로
     }).eq("id", user.id);
 
     if (error) { 
-      console.error(error);
+      console.error("수파베이스 저장 에러:", error);
       alert("저장 중 오류 발생: " + error.message); 
     } 
-    else { alert(`${user.name}님의 정보가 업데이트 되었습니다.`); }
+    else { 
+      alert(`${user.name}님의 정보가 업데이트 되었습니다.`); 
+      // 로컬 상태 업데이트 (승인 완료 처리)
+      setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_approved: true } : u));
+    }
   };
 
   // [기능 3] 시스템 설정 저장
@@ -208,7 +212,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 2. Team Performance (기존 코드 유지) */}
+        {/* 2. Team Performance */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Team Performance</h3>
@@ -240,7 +244,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 3. Activity (기존 코드 유지) */}
+        {/* 3. Activity */}
         {type === 'act' && (
           <div className="space-y-6 md:space-y-8 font-black animate-in fade-in">
             <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Activity & Funnel</h3>
@@ -320,7 +324,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 5. System Settings (기존 코드 유지) */}
+        {/* 5. System Settings */}
         {type === 'sys' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
             <div className="flex justify-between items-end border-b-4 md:border-b-8 border-black pb-4">
@@ -361,7 +365,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-// --- 하단 헬퍼 컴포넌트들 (기존 코드 유지) ---
+// --- 하단 헬퍼 컴포넌트들 ---
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-6 rounded-2xl border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] transition-transform">
