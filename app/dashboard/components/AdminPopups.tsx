@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { supabase } from "../../../lib/supabase"
 
 export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onClose }: any) {
-  // --- 기존 및 신규 상태 유지 ---
+  // --- 1. 상태 관리 (시스템 설정) ---
   const [tarAmt, setTarAmt] = useState(teamMeta.targetAmt);
   const [tarCnt, setTarCnt] = useState(teamMeta.targetCnt);
   const [tarIntro, setTarIntro] = useState(teamMeta.targetIntro);
@@ -12,13 +12,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [notice, setNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
 
-  const [allUsers, setAllUsers] = useState<any[]>([]); // 전체 유저 관리를 위해 변경
+  // --- 2. 상태 관리 (직원 관리 전용) ---
+  const [allUsers, setAllUsers] = useState<any[]>([]);
   const [existingDepts, setExistingDepts] = useState<string[]>([]);
   const [existingTeams, setExistingTeams] = useState<{dept: string, team: string}[]>([]);
 
   useEffect(() => {
     async function load() {
-      // 1. 시스템 설정 로드
+      // 시스템 설정 로드
       const { data: settings } = await supabase.from("team_settings").select("*");
       if (settings) {
         setNotice(settings.find(s => s.key === 'global_notice')?.value || "");
@@ -27,31 +28,21 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           try { 
             const parsed = typeof savedEdu === 'string' ? JSON.parse(savedEdu) : savedEdu;
             setEduWeeks(parsed); 
-          } catch (e) { 
-            setEduWeeks({ 1: "", 2: "", 3: "", 4: "", 5: "" }); 
-          }
+          } catch (e) { setEduWeeks({ 1: "", 2: "", 3: "", 4: "", 5: "" }); }
         }
       }
       
-      // 2. 조직 정보 및 전체 유저 로드 (승인 여부 상관없이)
+      // 유저 및 조직 데이터 로드
       if (type === 'users') {
-        const { data: uData } = await supabase
-          .from("users")
-          .select("*")
-          .order("is_approved", { ascending: true }) // 미승인자가 위로 오게
-          .order("name", { ascending: true });
-
+        const { data: uData } = await supabase.from("users").select("*").order("is_approved", { ascending: true }).order("name", { ascending: true });
         if (uData) {
           setAllUsers(uData.map(u => ({ ...u, isCustomDept: false, isCustomTeam: false })));
-          
-          // 기존 부서/지점 추출 (중복 제거)
           const depts = Array.from(new Set(uData.map(u => u.department).filter(Boolean))) as string[];
           const teamMap = new Set(uData.filter(u => u.department && u.team).map(u => `${u.department}|${u.team}`));
           const teams = Array.from(teamMap).map(str => {
             const [dept, team] = str.split('|');
             return { dept, team };
           });
-          
           setExistingDepts(depts.sort());
           setExistingTeams(teams);
         }
@@ -60,27 +51,34 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     load();
   }, [type]);
 
-  // 유저 정보 업데이트 헬퍼 (allUsers 상태 변경)
+  // 유저 정보 실시간 업데이트 (직접 입력 오류 해결의 핵심)
   const updateUserInfo = (userId: string, field: string, value: string) => {
     setAllUsers(prev => prev.map(u => {
       if (u.id !== userId) return u;
-      if (field === 'department' && value === 'CUSTOM_INPUT') return { ...u, department: '', isCustomDept: true };
-      if (field === 'team' && value === 'CUSTOM_INPUT') return { ...u, team: '', isCustomTeam: true };
+      
+      if (field === 'department') {
+        if (value === 'CUSTOM_INPUT') return { ...u, isCustomDept: true, department: '' };
+        return { ...u, department: value, isCustomDept: false };
+      }
+      if (field === 'team') {
+        if (value === 'CUSTOM_INPUT') return { ...u, isCustomTeam: true, team: '' };
+        return { ...u, team: value, isCustomTeam: false };
+      }
       return { ...u, [field]: value };
     }));
   };
 
-  // [기능 1] 실적 승인
+  // 실적 승인 처리
   const handleApprovePerf = async (agentId: string, currentStatus: boolean) => {
     const { error } = await supabase.from("daily_perf").update({ is_approved: !currentStatus }).eq("user_id", agentId);
-    if (error) { alert("오류가 발생했습니다."); } 
-    else { alert(!currentStatus ? "승인되었습니다." : "해제되었습니다."); onClose(); }
+    if (error) alert("오류가 발생했습니다.");
+    else { alert(!currentStatus ? "승인되었습니다." : "승인 해제되었습니다."); onClose(); }
   };
 
-  // [기능 2] 직원 정보 업데이트 및 승인
+  // 직원 정보 저장
   const handleUserSave = async (user: any) => {
-    if(!user.department || !user.team) {
-      alert("사업부와 지점을 모두 입력해주세요.");
+    if (!user.department?.trim() || !user.team?.trim()) {
+      alert("사업부와 지점을 정확히 입력해주세요.");
       return;
     }
     const { error } = await supabase.from("users").update({ 
@@ -89,11 +87,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       team: user.team 
     }).eq("id", user.id);
 
-    if (error) { alert("저장 중 오류 발생"); } 
-    else { alert(`${user.name}님의 정보가 업데이트 되었습니다.`); }
+    if (error) alert("저장 실패: " + error.message);
+    else alert(`${user.name}님의 정보가 업데이트 되었습니다.`);
   };
 
-  // [기능 3] 시스템 설정 저장
+  // 시스템 설정 통합 저장
   const saveSys = async () => {
     await supabase.from("team_settings").upsert([
       { key: 'target_amt', value: String(tarAmt) }, 
@@ -103,11 +101,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       { key: 'global_notice', value: notice }, 
       { key: 'edu_content', value: JSON.stringify(eduWeeks) }
     ], { onConflict: 'key' });
-    alert("시스템 설정이 저장되었습니다.");
+    alert("설정이 저장되었습니다.");
     onClose();
   };
 
-  // --- 통계 로직 ---
+  // 통계 계산
   const getRate = (part: number, total: number) => total > 0 ? ((part / total) * 100).toFixed(1) : "0.0";
   const totalAmt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_amt || 0), 0);
   const totalCnt = agents.reduce((s:any, a:any) => s + (a.performance?.contract_cnt || 0), 0);
@@ -119,16 +117,16 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       <div className="bg-white w-full max-w-6xl rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50">✕</button>
 
-        {/* 1. User Management (전체 직원 관리 및 소속 수정) */}
+        {/* --- 탭 1: 직원 관리 --- */}
         {type === 'users' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Employee Management</h3>
-            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
+            <h3 className="text-2xl md:text-4xl italic border-b-8 border-black inline-block uppercase">Employee Management</h3>
+            <div className="border-4 border-black rounded-[2.5rem] overflow-hidden shadow-xl">
               <table className="w-full text-left font-black">
-                <thead className="bg-black text-[#d4af37] text-[10px] uppercase font-black">
+                <thead className="bg-black text-[#d4af37] text-[10px] uppercase">
                   <tr>
-                    <th className="p-4 md:p-6">Employee Info</th>
-                    <th className="p-4 md:p-6 text-center">Set Dept / Branch</th>
+                    <th className="p-4 md:p-6">Employee</th>
+                    <th className="p-4 md:p-6 text-center">Department / Team</th>
                     <th className="p-4 md:p-6 text-center">Action</th>
                   </tr>
                 </thead>
@@ -136,26 +134,24 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                   {allUsers.map((u) => (
                     <tr key={u.id} className={`${u.is_approved ? 'bg-white' : 'bg-amber-50'} hover:bg-slate-50 transition-colors`}>
                       <td className="p-4 md:p-6">
-                        <p className="font-black text-sm md:text-xl italic">
-                          {u.name} {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}
-                        </p>
+                        <p className="font-black text-sm md:text-xl italic">{u.name} {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}</p>
                         <p className="text-[10px] text-slate-400 font-normal">{u.email}</p>
                       </td>
                       <td className="p-4 md:p-6 text-center">
                         <div className="flex flex-col gap-2 max-w-[250px] mx-auto">
                           {u.isCustomDept ? (
-                            <input type="text" placeholder="사업부 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black" onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} />
+                            <input type="text" placeholder="사업부 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-indigo-50" value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} />
                           ) : (
-                            <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
+                            <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-xs font-black">
                               <option value="">사업부 선택</option>
                               {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
                               <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
                             </select>
                           )}
                           {u.isCustomTeam ? (
-                            <input type="text" placeholder="지점 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black" onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} />
+                            <input type="text" placeholder="지점 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-indigo-50" value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} />
                           ) : (
-                            <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department && !u.isCustomDept} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
+                            <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department && !u.isCustomDept} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-xs font-black disabled:opacity-30">
                               <option value="">지점 선택</option>
                               {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
                               <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
@@ -176,21 +172,21 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 2. Team Performance (실적 리스트 및 지표) */}
+        {/* --- 탭 2: 팀 실적 --- */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Team Performance</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            <h3 className="text-2xl md:text-4xl italic border-b-8 border-black inline-block uppercase font-black">Team Performance</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatBox label="매출 달성율" cur={totalAmt} tar={tarAmt} unit="만" color="bg-indigo-600" />
               <StatBox label="건수 달성율" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
               <StatBox label="도입 달성율" cur={curIntro} tar={tarIntro} unit="명" color="bg-amber-500" />
             </div>
-            <div className="border-2 md:border-4 border-black rounded-2xl overflow-hidden shadow-xl mt-6">
+            <div className="border-4 border-black rounded-[2.5rem] overflow-hidden mt-6 shadow-xl">
               <table className="w-full text-left font-black">
-                <thead className="bg-black text-[#d4af37] text-[10px] uppercase">
+                <thead className="bg-black text-[#d4af37] text-[10px] uppercase font-black">
                   <tr><th className="p-4 md:p-6">Employee</th><th className="p-4 md:p-6 text-center">Today Amount</th><th className="p-4 md:p-6 text-center">Status</th></tr>
                 </thead>
-                <tbody className="divide-y-2 divide-black">
+                <tbody className="divide-y-2 divide-black font-black">
                   {agents.map((a: any) => (
                     <tr key={a.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-4 md:p-6 text-sm md:text-xl italic">{a.name} CA</td>
@@ -208,35 +204,33 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 3. Activity (DB 배정/반품 통계 복구 완료) */}
+        {/* --- 탭 3: 활동 분석 --- */}
         {type === 'act' && (
-          <div className="space-y-6 md:space-y-8 font-black animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Activity & Funnel</h3>
+          <div className="space-y-6 md:space-y-8 animate-in fade-in">
+            <h3 className="text-2xl md:text-4xl italic border-b-8 border-black inline-block uppercase font-black">Activity & Funnel</h3>
             {selectedAgent ? (
               <div className="space-y-6">
                 <div className="bg-black p-6 rounded-2xl text-white flex justify-between items-center shadow-2xl">
-                  <p className="text-xl md:text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Analysis</p>
-                  <button onClick={() => handleApprovePerf(selectedAgent.id, selectedAgent.performance.is_approved)} className={`px-6 py-3 rounded-full text-xs font-black italic ${selectedAgent.performance.is_approved ? 'bg-rose-600' : 'bg-[#d4af37] text-black'}`}>
+                  <p className="text-xl md:text-3xl italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Analysis</p>
+                  <button onClick={() => handleApprovePerf(selectedAgent.id, selectedAgent.performance.is_approved)} className={`px-6 py-3 rounded-full text-xs italic font-black ${selectedAgent.performance.is_approved ? 'bg-rose-600' : 'bg-[#d4af37] text-black'}`}>
                     {selectedAgent.performance.is_approved ? 'REVOKE LOCK' : 'CONFIRM & LOCK'}
                   </button>
                 </div>
-                {/* DB 상세 통계 */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-4 font-black">
                   <div className="bg-blue-50 p-6 rounded-2xl border-4 border-black text-center">
                     <p className="text-[10px] text-blue-400 uppercase mb-2">배정 DB</p>
-                    <p className="text-2xl font-black italic">{selectedAgent.performance.db_assigned || 0}건</p>
+                    <p className="text-2xl italic">{selectedAgent.performance.db_assigned || 0}건</p>
                   </div>
-                  <div className="bg-rose-50 p-6 rounded-2xl border-4 border-black text-center">
+                  <div className="bg-rose-50 p-6 rounded-2xl border-4 border-black text-center font-black">
                     <p className="text-[10px] text-rose-400 uppercase mb-2">반품 DB</p>
-                    <p className="text-2xl font-black italic text-rose-600">{selectedAgent.performance.db_returned || 0}건</p>
+                    <p className="text-2xl italic text-rose-600">{selectedAgent.performance.db_returned || 0}건</p>
                   </div>
-                  <div className="bg-slate-900 p-6 rounded-2xl border-4 border-black text-center text-[#d4af37]">
+                  <div className="bg-slate-900 p-6 rounded-2xl border-4 border-black text-center text-[#d4af37] font-black">
                     <p className="text-[10px] opacity-50 uppercase mb-2">반품율</p>
-                    <p className="text-2xl font-black italic">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p>
+                    <p className="text-2xl italic">{getRate(selectedAgent.performance.db_returned, selectedAgent.performance.db_assigned)}%</p>
                   </div>
                 </div>
-                {/* 활동 4종 */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-black">
                   <ActivityCountBox label="전화" val={`${selectedAgent.performance.call}건`} />
                   <ActivityCountBox label="만남" val={`${selectedAgent.performance.meet}건`} />
                   <ActivityCountBox label="제안" val={`${selectedAgent.performance.pt}건`} />
@@ -244,14 +238,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 </div>
               </div>
             ) : (
-              /* 전체 합계 및 반품 통계 */
-              <div className="space-y-8 animate-in fade-in">
+              <div className="space-y-8 font-black">
                 <div className="bg-slate-50 p-6 rounded-2xl border-4 border-black grid grid-cols-3 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">총 배정 DB</p><p className="text-2xl italic">{totalDB}건</p></div>
                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">총 반품 DB</p><p className="text-2xl italic text-rose-500">{totalReturn}건</p></div>
                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">전체 반품율</p><p className="text-2xl italic text-rose-600">{getRate(totalReturn, totalDB)}%</p></div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-black">
                   <ActivityCountBox label="전화 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.call||0),0)}건`} />
                   <ActivityCountBox label="만남 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.meet||0),0)}건`} />
                   <ActivityCountBox label="제안 합계" val={`총 ${agents.reduce((s:any,a:any)=>s+(a.performance.pt||0),0)}건`} />
@@ -262,13 +255,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 4. Attendance (기존 유지) */}
+        {/* --- 탭 4: 출결 및 교육 --- */}
         {type === 'edu' && (
-          <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Attendance & Training</h3>
-            <div className="border-2 md:border-4 border-black rounded-2xl overflow-x-auto shadow-xl">
-              <table className="w-full text-left min-w-[600px]">
-                <thead className="bg-black text-[#d4af37] text-[10px] uppercase">
+          <div className="space-y-6 md:space-y-10 animate-in fade-in">
+            <h3 className="text-2xl md:text-4xl italic border-b-8 border-black inline-block uppercase font-black">Attendance & Training</h3>
+            <div className="border-4 border-black rounded-[2.5rem] overflow-x-auto shadow-xl">
+              <table className="w-full text-left min-w-[600px] font-black">
+                <thead className="bg-black text-[#d4af37] text-[10px] uppercase font-black">
                   <tr>
                     <th className="p-6 sticky left-0 bg-black">Name</th>
                     {[1, 2, 3, 4, 5].map(w => <th key={w} className="p-6 text-center">{w === 5 ? 'PLUS' : w+'W'}</th>)}
@@ -276,11 +269,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 </thead>
                 <tbody className="divide-y-2 divide-black">
                   {agents.map((a:any) => (
-                    <tr key={a.id} className="hover:bg-slate-50">
+                    <tr key={a.id} className="hover:bg-slate-50 transition-colors font-black">
                       <td className="p-6 font-black text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name} CA</td>
                       {[1, 2, 3, 4, 5].map((w) => (
-                        <td key={w} className="p-6 text-center">
-                          <div className={`w-8 h-8 mx-auto rounded-lg border-2 flex items-center justify-center ${a.performance[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black' : 'border-slate-200 text-transparent'}`}>✓</div>
+                        <td key={w} className="p-6 text-center font-black">
+                          <div className={`w-8 h-8 mx-auto rounded-lg border-2 flex items-center justify-center font-black ${a.performance[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black' : 'border-slate-200 text-transparent'}`}>✓</div>
                         </td>
                       ))}
                     </tr>
@@ -291,43 +284,34 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 5. System Settings (교육 입력란 추가 완료) */}
+        {/* --- 탭 5: 시스템 설정 --- */}
         {type === 'sys' && (
-          <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
-            <div className="flex justify-between items-end border-b-4 md:border-b-8 border-black pb-4">
-              <h3 className="text-2xl md:text-4xl italic uppercase">Admin Settings</h3>
+          <div className="space-y-6 md:space-y-10 animate-in fade-in">
+            <div className="flex justify-between items-end border-b-8 border-black pb-4">
+              <h3 className="text-2xl md:text-4xl italic uppercase font-black">Admin Settings</h3>
               <button onClick={saveSys} className="bg-black text-[#d4af37] px-6 py-2 rounded-full text-xs italic font-black hover:invert transition-all">SAVE CHANGES</button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {/* 목표 설정 */}
-              <div className="space-y-4">
-                <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Performance Goals</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 font-black">
+              <div className="space-y-4 font-black">
+                <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Goals & Notices</p>
                 <InputRow label="팀 매출 목표 (만원)" val={tarAmt} onChange={setTarAmt} />
                 <InputRow label="팀 건수 목표 (건)" val={tarCnt} onChange={setTarCnt} />
                 <InputRow label="도입 인원 목표 (명)" val={tarIntro} onChange={setTarIntro} />
-                <div className="pt-4">
+                <div className="pt-4 font-black">
                   <p className="text-[10px] text-slate-400 uppercase font-black ml-2 mb-2">Global Notice</p>
                   <input type="text" value={notice} onChange={e=>setNotice(e.target.value)} className="w-full p-5 bg-slate-50 border-4 border-black rounded-2xl outline-none italic font-black text-lg shadow-inner" placeholder="공지사항 입력..." />
                 </div>
               </div>
 
-              {/* 교육 입력란 (중요: 이 부분이 복구되었습니다) */}
-              <div className="space-y-4">
+              <div className="space-y-4 font-black">
                 <p className="text-[10px] text-slate-400 uppercase font-black ml-2">Weekly Training Curriculum</p>
                 {[1, 2, 3, 4, 5].map((w) => (
-                  <div key={w} className="flex gap-2">
-                    <span className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-xl text-[10px] italic">{w === 5 ? 'PLUS' : w+'W'}</span>
-                    <input 
-                      type="text" 
-                      value={eduWeeks[w as keyof typeof eduWeeks] || ""} 
-                      onChange={e => setEduWeeks({...eduWeeks, [w]: e.target.value})} 
-                      className="flex-1 p-3 bg-white border-2 border-black rounded-xl outline-none text-sm font-black italic shadow-sm focus:border-indigo-500" 
-                      placeholder={`${w === 5 ? '추가 교육 내용' : w + '주차 교육 커리큘럼'}`}
-                    />
+                  <div key={w} className="flex gap-2 font-black">
+                    <span className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-xl text-[10px] italic font-black">{w === 5 ? 'PLUS' : w+'W'}</span>
+                    <input type="text" value={eduWeeks[w as keyof typeof eduWeeks] || ""} onChange={e => setEduWeeks({...eduWeeks, [w]: e.target.value})} className="flex-1 p-3 bg-white border-2 border-black rounded-xl outline-none text-sm font-black italic shadow-sm focus:border-indigo-500" placeholder={`${w === 5 ? '추가 교육 내용' : w + '주차 교육 커리큘럼'}`} />
                   </div>
                 ))}
-                <p className="text-[9px] text-slate-400 italic mt-2">* 저장된 내용은 직원의 메인 화면 교육 세션에 즉시 노출됩니다.</p>
               </div>
             </div>
           </div>
@@ -337,11 +321,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   )
 }
 
-// --- 헬퍼 컴포넌트들 ---
+// --- 헬퍼 컴포넌트 (누락 없음) ---
 function ActivityCountBox({ label, val }: any) { 
   return (
     <div className="bg-white p-6 rounded-2xl border-4 border-black text-center font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[-2px] transition-transform">
-      <p className="text-[9px] text-slate-400 uppercase mb-2">{label}</p>
+      <p className="text-[9px] text-slate-400 uppercase mb-2 font-black">{label}</p>
       <p className="text-xl font-black italic">{val || 0}</p>
     </div>
   ) 
@@ -351,7 +335,7 @@ function StatBox({ label, cur, tar, unit, color }: any) {
   const pct = Math.min((cur / (tar || 1)) * 100, 100).toFixed(1); 
   return (
     <div className="text-center space-y-4 p-5 font-black border-4 border-black rounded-3xl bg-slate-50 shadow-lg">
-      <p className="text-[10px] text-slate-400 uppercase">{label}</p>
+      <p className="text-[10px] text-slate-400 uppercase font-black">{label}</p>
       <p className="text-2xl font-black italic">{cur}{unit} / {tar}{unit}</p>
       <div className="w-full h-10 bg-white rounded-full border-4 border-black overflow-hidden relative">
         <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${pct}%` }} />
@@ -361,18 +345,9 @@ function StatBox({ label, cur, tar, unit, color }: any) {
   ) 
 }
 
-function FunnelBox({ label, val }: any) { 
-  return (
-    <div className="p-4 bg-slate-50 rounded-2xl border-4 border-black border-dashed text-center font-black">
-      <p className="text-2xl italic text-indigo-600 mb-1">{val}%</p>
-      <p className="text-[9px] text-slate-400 uppercase">{label}</p>
-    </div>
-  ) 
-}
-
 function InputRow({ label, val, onChange }: any) { 
   return (
-    <div className="flex justify-between items-center bg-slate-50 p-5 rounded-2xl border-4 border-black shadow-md">
+    <div className="flex justify-between items-center bg-slate-50 p-5 rounded-2xl border-4 border-black shadow-md font-black">
       <label className="text-xs italic font-black uppercase">{label}</label>
       <input type="number" value={val} onChange={e=>onChange(Number(e.target.value))} className="w-28 p-2 bg-white border-2 border-black rounded-xl text-center outline-none text-xl italic font-black" />
     </div>
