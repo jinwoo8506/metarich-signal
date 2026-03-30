@@ -64,7 +64,6 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
 
-  // 시스템 초기화 (useCallback으로 무한 루프 방지)
   const init = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return router.replace("/login");
@@ -86,12 +85,10 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 🛡️ 직급 권한 변수 (DB 영문값 기준)
   const userRank = user.rank || "agent"; 
   const isMaster = userRank === 'master';
   const isLeader = userRank === 'leader';
   const isManager = userRank === 'manager';
-  // 설계사 이하급은 승인 여부(is_approved) 확인
   const isApproved = isMaster || isLeader || isManager || String(user.is_approved) === "true";
 
   const renderOfficeView = () => {
@@ -102,7 +99,6 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
-  // 1. 초기 모드 선택 화면
   if (viewMode === 'select') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
@@ -124,7 +120,6 @@ export default function DashboardPage() {
     );
   }
 
-  // 2. 메인 대시보드 화면
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
       <Sidebar 
@@ -137,9 +132,9 @@ export default function DashboardPage() {
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
-        onTabChange={(tab) => {
-          // 퀵링크 규칙: 'finance' 탭 클릭 시 내부 금융계산기 활성화
-          const externalLinks: any = {
+        // ⚠️ 이 부분이 에러 포인트였습니다. tab에 string 타입을 명시했습니다.
+        onTabChange={(tab: string) => {
+          const externalLinks: Record<string, string> = {
             'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
             'surgery': 'https://www.khidi.or.kr'
           };
@@ -152,7 +147,6 @@ export default function DashboardPage() {
 
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
-          {/* 금융계산기(영업도구) 탭 처리 */}
           {activeTab === 'finance' ? (
             <>
               <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
