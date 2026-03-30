@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "../lib/supabase" // 경로 확인 필요
+import { supabase } from "@/lib/supabase"
 
 export default function SignupPage() {
   const router = useRouter();
