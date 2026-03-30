@@ -10,12 +10,13 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
-// [상담 도구 뷰 컴포넌트] - 기존 로직 유지
+// [상담 도구 뷰 컴포넌트] - 사이드바와 기능을 동기화
 function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
   const allMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
     { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
     { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
+    // 탭 전환 방식(onTabChange)으로 통일하여 사이드바와 동기화
     { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "tab:finance", color: "border-blue-500 text-blue-600", staffOnly: true },
     { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
     { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
@@ -34,8 +35,18 @@ function ConsultingView({ menuStatus, isApproved, onTabChange }: any) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {activeMenus.map((m) => (
-          <button key={m.id} onClick={() => m.url?.startsWith('tab:') ? onTabChange(m.url.split(':')[1]) : window.open(m.url, "_blank")} 
-            className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}>
+          <button 
+            key={m.id} 
+            onClick={() => {
+              // tab: 으로 시작하면 내부 탭 변경(onTabChange), 아니면 새창
+              if (m.url?.startsWith('tab:')) {
+                onTabChange(m.url.split(':')[1]);
+              } else {
+                window.open(m.url, "_blank", "noopener,noreferrer");
+              }
+            }} 
+            className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
+          >
             <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
             <div className="text-center px-4">
               <h3 className="text-2xl font-black mb-1">{m.title}</h3>
@@ -64,9 +75,7 @@ export default function DashboardPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return router.replace("/login");
 
-      // [업데이트] 테이블명을 "users"로 통일하여 정보 조회
       const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
-      
       if (!userInfo) return router.replace("/login");
 
       const { data: settings } = await supabase.from("team_settings").select("key, value");
@@ -79,7 +88,6 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 🛡️ 계정 분리 절대 로직 유지
   const email = (user.email || "").toLowerCase().trim();
   const role = (user.role || "").toLowerCase();
   const level = (user.role_level || "").toLowerCase();
@@ -87,9 +95,6 @@ export default function DashboardPage() {
   const isMaster = email === 'qodbtjq@naver.com' || role === 'master' || level === 'master';
   const isLeader = !isMaster && (role === 'leader' || level === 'director' || level === 'leader');
   const isManager = !isMaster && !isLeader && (role === 'manager' || level === 'manager');
-  const isAgent = email === 'jinwoo8506@gmail.com' || (!isMaster && !isLeader && !isManager);
-
-  // 상담 도구 접근 권한 (is_approved 값 타입 체크 강화)
   const isApproved = isMaster || isLeader || isManager || role === 'agent' || String(user.is_approved) === "true";
 
   if (viewMode === 'select') {
@@ -123,6 +128,7 @@ export default function DashboardPage() {
       />
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
+          {/* 사이드바와 대시보드 버튼 모두가 공유하는 화면 렌더링 로직 */}
           {activeTab === 'finance' ? (
             <><HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} /><FinancialCalc /></>
           ) : activeTab === 'gongsi' ? (
@@ -136,7 +142,11 @@ export default function DashboardPage() {
               isManager ? <ManagerView user={user} selectedDate={selectedDate} /> :
               <AgentView user={user} selectedDate={selectedDate} />
             ) : (
-              <ConsultingView menuStatus={menuStatus} isApproved={isApproved} onTabChange={setActiveTab} />
+              <ConsultingView 
+                menuStatus={menuStatus} 
+                isApproved={isApproved} 
+                onTabChange={setActiveTab} // 대시보드 버튼 클릭 시 상위 activeTab 상태를 변경하도록 함
+              />
             )
           )}
         </div>
