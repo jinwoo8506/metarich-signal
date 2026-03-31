@@ -1,13 +1,14 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Dashboard Page (Main Entry) - Optimized & Consistent UI
+// Dashboard Page (Main Entry) - MasterView Integration
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
-import AdminView from "./AdminView"
+// ⚠️ AdminView에서 MasterView로 명칭 및 경로 업데이트 완료
+import MasterView from "./MasterView" 
 import AgentView from "./AgentView"
 
 export default function DashboardPage() {
@@ -32,7 +33,6 @@ export default function DashboardPage() {
 
       if (error || !userData) {
         console.error("User data fetch error:", error)
-        // 세션은 있으나 DB에 유저 정보가 없는 경우 예외 처리
         router.push("/login")
         return
       }
@@ -63,13 +63,13 @@ export default function DashboardPage() {
     )
   }
 
-  // 관리자 권한 체크 로직 (기존 유지)
+  // 관리자 권한 체크 로직 (마스터, 본부장, 지점장, 매니저 포함)
   const isAdminRole = ['master', 'director', 'leader', 'manager'].includes(user?.role_level || user?.role)
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-black text-black">
       
-      {/* 🟢 상단 헤더 섹션: 고정형(Sticky) 레이아웃 */}
+      {/* 🟢 상단 헤더 섹션 */}
       <header className="bg-white border-b-2 border-black p-4 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
           
@@ -86,7 +86,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 날짜 컨트롤러: 중앙 정렬 및 모바일 최적화 */}
+          {/* 날짜 컨트롤러 */}
           <div className="flex items-center bg-black text-white rounded-full px-2 py-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(212,175,55,1)]">
             <button 
               onClick={() => changeMonth(-1)} 
@@ -115,11 +115,11 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* 🔵 메인 컨텐츠 영역: 관리자/에이전트 뷰 분기 */}
+      {/* 🔵 메인 컨텐츠 영역: MasterView/AgentView 분기 */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-2 md:px-4 py-4 md:py-6">
         <div className="bg-white/50 rounded-[2rem] md:rounded-[3rem] p-1 md:p-2 border-2 border-dashed border-black/5">
           {isAdminRole ? (
-            <AdminView user={user} selectedDate={selectedDate} />
+            <MasterView user={user} selectedDate={selectedDate} />
           ) : (
             <AgentView user={user} selectedDate={selectedDate} />
           )}
