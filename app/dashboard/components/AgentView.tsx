@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
 import CustomerManagerModal from "./CustomerManagerModal"
-// import CalcModal from "./CalcModal" // <-- 파일 삭제로 인한 에러 방지를 위해 주석 처리
+// import CalcModal from "./CalcModal" // 파일 존재 여부에 따라 주석 해제 가능
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [mainTab, setMainTab] = useState<'input' | 'edu'>('input');
@@ -16,9 +16,9 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   });
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
-  const [isToolOpen, setIsToolOpen] = useState(false);
+  const [isToolOpen, setIsToolOpen] = useState(false); // 계산기(영업도구) 상태
   const [isCustOpen, setIsCustOpen] = useState(false); 
-  const [avgTab, setAvgTab] = useState('perf'); 
+  const [avgTab, setAvgTab] = useState<'perf' | 'act'>('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
   const [viewDetail, setViewDetail] = useState<any>(null);
 
@@ -29,7 +29,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const LINKS = { 
     metaon: "https://meta-on.kr/#/login", 
     insu: "https://xn--on3bi2e18htop.com/", 
-    claim: "#", 
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
   };
 
@@ -148,28 +147,29 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
-      {/* 상단 공지 */}
-      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black">
+      {/* 🔴 상단 공지 애니메이션 */}
+      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black shadow-lg">
         <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[12px] italic shrink-0 font-black">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
           <div className="absolute whitespace-nowrap animate-marquee text-[14px] text-black italic font-black">{globalNotice}</div>
         </div>
       </div>
 
-      {/* 헤더/퀵링크 */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black">
+      {/* 🟠 퀵링크 섹션 (관리자와 동일하게 5개 구성 유지) */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black shadow-sm">
         <div className="flex items-center gap-3 shrink-0">
           <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
         </div>
-        <div className="flex flex-nowrap overflow-x-auto gap-2 no-scrollbar font-black w-full md:w-auto justify-center">
-          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" className="hidden md:block" />
-          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" className="hidden md:block" />
+        <div className="flex flex-wrap md:flex-nowrap gap-2 font-black w-full md:w-auto justify-center">
+          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" />
+          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
+          <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
           <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none" />
         </div>
       </div>
 
-      {/* 메인 탭 */}
+      {/* 🟡 메인 탭 전환 */}
       <div className="flex gap-2 font-black">
         <button onClick={() => setMainTab('input')} className={`flex-1 py-4 rounded-2xl border-2 border-black italic transition-all ${mainTab === 'input' ? 'bg-black text-[#d4af37]' : 'bg-white text-black opacity-40'}`}>PERFORMANCE</button>
         <button onClick={() => setMainTab('edu')} className={`flex-1 py-4 rounded-2xl border-2 border-black italic transition-all ${mainTab === 'edu' ? 'bg-black text-[#d4af37]' : 'bg-white text-black opacity-40'}`}>EDUCATION</button>
@@ -177,29 +177,30 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {mainTab === 'input' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black">
-            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black text-black">
+          {/* 실적 입력 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black text-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
               <div className="flex justify-between items-end px-2">
-                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 목표 및 실적액(만)</p>
+                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 실적액(만)</p>
                 <p className={`text-3xl italic ${getRateStyles(calculateRate(perfInput.contract_amt, perfInput.target_amt)).text}`}>
                   {calculateRate(perfInput.contract_amt, perfInput.target_amt)}%
                 </p>
               </div>
-              <div className="flex gap-2 font-black">
+              <div className="flex gap-2">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
                 <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100 outline-none" />
               </div>
               <ProgressBar rate={calculateRate(perfInput.contract_amt, perfInput.target_amt)} />
             </div>
 
-            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4 font-black text-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
               <div className="flex justify-between items-end px-2">
-                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 목표 및 실적건</p>
+                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 실적건</p>
                 <p className={`text-3xl italic ${getRateStyles(calculateRate(perfInput.contract_cnt, perfInput.target_cnt)).text}`}>
                   {calculateRate(perfInput.contract_cnt, perfInput.target_cnt)}%
                 </p>
               </div>
-              <div className="flex gap-2 font-black">
+              <div className="flex gap-2">
                 <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
                 <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center text-[18px] font-black border border-emerald-100 outline-none" />
               </div>
@@ -207,7 +208,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 text-black">
+          {/* 지표 상세 입력 */}
+          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 text-black shadow-sm">
             <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
             <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
             <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
@@ -216,20 +218,21 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
+          {/* 3개월 통계 및 기네스 기록 */}
           <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl space-y-8">
             <div>
-              <div className="flex gap-4 mb-6 border-b border-white/10 pb-4 font-black">
+              <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
                 <button onClick={()=>setAvgTab('perf')} className={`text-[14px] italic font-black transition-all ${avgTab==='perf' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 실적</button>
                 <button onClick={()=>setAvgTab('act')} className={`text-[14px] italic font-black transition-all ${avgTab==='act' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 활동</button>
               </div>
               {avgTab === 'perf' ? (
-                <div className="grid grid-cols-3 gap-3 md:gap-4 font-black text-center">
+                <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
                   <AvgBox label="평균 매출" val={`${avgData.amt.toLocaleString()}만`} />
                   <AvgBox label="평균 건수" val={`${avgData.cnt}건`} />
                   <AvgBox label="건당 매출" val={`${avgData.perAmt.toLocaleString()}만`} />
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 font-black text-center">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
                   <AvgBox label="전화" val={`${avgData.call}회`} />
                   <AvgBox label="만남" val={`${avgData.meet}회`} />
                   <AvgBox label="제안" val={`${avgData.pt}회`} />
@@ -238,6 +241,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               )}
             </div>
 
+            {/* 기네스 / 로우 기록 */}
             <div className="pt-4 border-t border-white/10 font-black">
               <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest font-black">Personal Records (All Time)</p>
               <div className="grid grid-cols-2 gap-4">
@@ -254,7 +258,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               </div>
 
               {viewDetail && (
-                <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300 font-black">
+                <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300">
                   <div className="flex justify-between items-center mb-6">
                     <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">{new Date(viewDetail.date).getFullYear()}년 {new Date(viewDetail.date).getMonth() + 1}월 정밀 레포트</p>
                     <button onClick={() => setViewDetail(null)} className="text-[10px] opacity-40 uppercase bg-black px-3 py-1 rounded-full border border-white/20">Close</button>
@@ -282,7 +286,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <div className="flex justify-between items-center border-b-8 border-black pb-4">
             <h2 className="text-2xl md:text-3xl italic uppercase font-black">Weekly Training</h2>
           </div>
-          <div className="bg-slate-50 p-4 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 font-black space-y-4">
+          <div className="bg-slate-50 p-4 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 space-y-4">
             {[1, 2, 3, 4, 5].map((w) => {
               const fieldName = `edu_${w}` as keyof typeof perfInput;
               const isChecked = perfInput[fieldName];
@@ -302,7 +306,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
-      {/* {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />}  // <-- 파일 삭제로 주석 처리 */}
+      {/* 🟢 모달 영역 */}
+      {/* {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />} */}
       {isCustOpen && (
         <CustomerManagerModal onClose={() => setIsCustOpen(false)} onSaveToGoogle={handleGoogleSync} />
       )}
@@ -329,8 +334,8 @@ function ProgressBar({ rate }: { rate: number }) {
 
 function DetailBox({ label, val, color = "text-white" }: any) {
   return (
-    <div className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center">
-      <p className="text-[9px] text-white/30 uppercase mb-1 font-black">{label}</p>
+    <div className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-black">
+      <p className="text-[9px] text-white/30 uppercase mb-1">{label}</p>
       <p className={`text-[15px] font-black italic ${color}`}>{val}</p>
     </div>
   )
@@ -338,8 +343,8 @@ function DetailBox({ label, val, color = "text-white" }: any) {
 
 function AvgBox({ label, val }: any) { 
   return (
-    <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 font-black flex flex-col justify-center items-center min-h-[80px]">
-      <p className="text-[10px] text-white/40 uppercase mb-1 font-black">{label}</p>
+    <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col justify-center items-center min-h-[80px] font-black">
+      <p className="text-[10px] text-white/40 uppercase mb-1">{label}</p>
       <p className="text-[16px] text-[#d4af37] font-black italic leading-tight">{val}</p>
     </div>
   ) 
@@ -357,7 +362,7 @@ function QuickBtn({ label, url, onClick, color, className }: any) {
 function MetricInput({ label, val, onChange, color }: any) { 
   return (
     <div className="space-y-1 text-center font-black">
-      <label className="text-[11px] text-slate-400 font-black">{label}</label>
+      <label className="text-[11px] text-slate-400">{label}</label>
       <input type="number" inputMode="numeric" value={val === 0 ? '' : val} placeholder="0" onChange={e=>onChange(Number(e.target.value))} className={`w-full p-3 md:p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl text-center text-[16px] md:text-[18px] font-black outline-none transition-all ${color}`} />
     </div>
   ) 
