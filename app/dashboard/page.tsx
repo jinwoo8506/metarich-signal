@@ -1,199 +1,125 @@
 "use client"
 
-import React, { useEffect, useState, useCallback } from "react"
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Dashboard Page (Main Entry)
+// 역할(Role)에 따른 뷰 전환 및 공통 레이아웃 유지
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
-// 실제 파일명인 masterView(소문자 m)와 경로가 일치해야 합니다.
-import Sidebar from "./components/Sidebar"
-import AgentView from "./components/AgentView"
-import AdminView from "./components/MasterView"
-import LeaderView from "./components/LeaderView"
-import ManagerView from "./components/ManagerView"
-import FinancialCalc from "./components/FinancialCalc"
-
-// [상담 도구 뷰 컴포넌트]
-function ConsultingView({ menuStatus, isApproved, onOpenCalc }: any) {
-  const allMenus = [
-    { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
-    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
-    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
-    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "INTERNAL_CALC", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
-    { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
-    { id: "show_disease", title: "질병코드 조회", desc: "한국표준질병사인분류(KCD) 검색", icon: "🧬", url: "http://www.koicd.kr/kcd/kcd.do", color: "border-indigo-400 text-indigo-500", staffOnly: true },
-    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "https://www.khidi.or.kr", color: "border-rose-400 text-rose-500", staffOnly: true }
-  ];
-
-  const activeMenus = allMenus.filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]));
-
-  return (
-    <div className="max-w-6xl mx-auto py-10 font-black">
-      <div className="mb-12 border-l-8 border-blue-600 pl-6">
-        <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
-        <p className="text-slate-400 font-bold uppercase">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {activeMenus.map((m) => (
-          <button 
-            key={m.id} 
-            onClick={() => {
-              if(m.url === "INTERNAL_CALC") onOpenCalc();
-              else window.open(m.url, "_blank", "noopener,noreferrer");
-            }} 
-            className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
-          >
-            <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
-            <div className="text-center px-4">
-              <h3 className="text-2xl font-black mb-1">{m.title}</h3>
-              <p className="text-[11px] opacity-60 font-bold uppercase">{m.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
+import AdminView from "./AdminView"
+import AgentView from "./AgentView"
+import { ChevronLeft, ChevronRight, LogOut, User } from "lucide-react"
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [menuStatus, setMenuStatus] = useState<any>({});
-
-  const init = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return router.replace("/login");
-
-    const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
-    if (!userInfo) return router.replace("/login");
-
-    const { data: settings } = await supabase.from("team_settings").select("key, value");
-    const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), {}) || {};
-
-    setMenuStatus(statusMap);
-    setUser(userInfo);
-
-    // 🛡️ [게스트 로직] role이 guest이면 선택창 없이 바로 상담화면으로 진입
-    const role = (userInfo.role || "agent").toLowerCase().trim();
-    if (role === 'guest') {
-      setViewMode('consulting');
-    }
-
-    setLoading(false);
-  }, [router]);
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   useEffect(() => {
-    init();
-  }, [init]);
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push("/login")
+        return
+      }
 
-  if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
+      // 유저 상세 정보 및 권한(Role) 로드
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", session.user.id)
+        .single()
 
-  const userRole = (user.role || "agent").toLowerCase().trim();
-  const isMaster = userRole === 'master';
-  const isLeader = userRole === 'leader';
-  const isManager = userRole === 'manager';
-  const isGuest = userRole === 'guest';
-  
-  // 승인 여부 판별: 게스트가 아니면서 (마스터/리더/매니저/승인된 설계사)인 경우
-  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true));
+      if (error || !userData) {
+        console.error("User data fetch error:", error)
+        return
+      }
 
-  const renderOfficeView = () => {
-    // 게스트는 사무실 뷰 접근 불가
-    if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
+      setUser(userData)
+      setLoading(false)
+    }
 
-    const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
-    if (isMaster) return <AdminView {...props} />;
-    if (isLeader) return <LeaderView {...props} />;
-    if (isManager) return <ManagerView {...props} />;
-    return <AgentView {...props} />;
-  };
+    checkUser()
+  }, [router])
 
-  // 1. 초기 모드 선택 화면 (게스트는 skip)
-  if (viewMode === 'select' && !isGuest) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
-        <h1 className="text-5xl mb-16 italic tracking-tighter">
-          <span className="text-blue-600">{user.name}</span>
-          <span className="ml-2 text-2xl text-slate-400 uppercase">[{userRole}]</span>
-        </h1>
-        <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
-          <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
-            <span className="text-8xl group-hover:scale-110 transition-transform">🏢</span>
-            <h2 className="text-4xl font-black uppercase">사무실 업무</h2>
-          </button>
-          <button onClick={() => setViewMode('consulting')} className="flex-1 h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
-            <span className="text-8xl group-hover:scale-110 transition-transform">🤝</span>
-            <h2 className="text-4xl font-black uppercase">고객 상담</h2>
-          </button>
-        </div>
-      </div>
-    );
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
   }
 
-  // 2. 메인 대시보드 화면 구성
-  return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
-      <Sidebar 
-        user={user} 
-        selectedDate={selectedDate} 
-        onDateChange={setSelectedDate} 
-        mode={viewMode} 
-        // 게스트는 선택 화면으로 돌아가는 버튼을 비활성화
-        onBack={isGuest ? undefined : () => { setViewMode('select'); setActiveTab(null); }} 
-        externalMenuStatus={menuStatus} 
-        onMenuStatusChange={setMenuStatus}
-        isOpen={isSidebarOpen} 
-        setIsOpen={setIsSidebarOpen}
-        onTabChange={(tab: string) => {
-          const externalLinks: Record<string, string> = {
-            'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
-            'surgery': 'https://www.khidi.or.kr'
-          };
-          if (externalLinks[tab]) window.open(externalLinks[tab], "_blank");
-          else setActiveTab(tab);
-        }} 
-        activeTab={activeTab} 
-        isAdmin={isMaster}
-      />
+  const changeMonth = (offset: number) => {
+    const next = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + offset, 1)
+    setSelectedDate(next)
+  }
 
-      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
-        <div className="max-w-[1600px] mx-auto">
-          {activeTab === 'finance' ? (
-            <>
-              <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
-              <FinancialCalc />
-            </>
-          ) : (
-            viewMode === 'office' ? renderOfficeView() : (
-              <ConsultingView 
-                menuStatus={menuStatus} 
-                isApproved={isApproved} 
-                onOpenCalc={() => setActiveTab('finance')} 
-              />
-            )
-          )}
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function HeaderBar({ title, icon, onBack }: any) {
-  return (
-    <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-      <div className="flex items-center gap-4 ml-4">
-        <span className="text-3xl">{icon}</span>
-        <div>
-          <h2 className="text-xl font-black italic uppercase leading-none">{title}</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Professional Support Tool</p>
-        </div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-black"></div>
       </div>
-      <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
+    )
+  }
+
+  // 관리자 권한 여부 판단 (master, director, leader, manager)
+  const isAdminRole = ['master', 'director', 'leader', 'manager'].includes(user?.role_level || user?.role)
+
+  return (
+    <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-black">
+      
+      {/* 🟢 상단 헤더 섹션 (공통) */}
+      <header className="bg-white border-b-2 border-black p-4 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          
+          {/* 로고 & 유저 정보 */}
+          <div className="flex items-center gap-3">
+            <div className="bg-black p-2 rounded-xl">
+              <User size={20} className="text-[#d4af37]" />
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase leading-none">Welcome Back</p>
+              <h1 className="text-sm md:text-base font-black italic uppercase">
+                {user?.name} <span className="text-slate-400 font-normal">/ {user?.role_level || user?.role || 'Agent'}</span>
+              </h1>
+            </div>
+          </div>
+
+          {/* 월 선택 컨트롤러 */}
+          <div className="flex items-center bg-slate-100 rounded-full px-4 py-1 border border-black/5">
+            <button onClick={() => changeMonth(-1)} className="p-1 hover:text-blue-600 transition-colors">
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-sm md:text-base px-4 min-w-[100px] text-center italic">
+              {selectedDate.getFullYear()}. {String(selectedDate.getMonth() + 1).padStart(2, '0')}
+            </span>
+            <button onClick={() => changeMonth(1)} className="p-1 hover:text-blue-600 transition-colors">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          {/* 로그아웃 */}
+          <button onClick={handleLogout} className="group flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full hover:bg-red-600 transition-all text-xs">
+            <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
+            <span className="hidden md:inline italic">LOGOUT</span>
+          </button>
+        </div>
+      </header>
+
+      {/* 🔵 메인 컨텐츠 영역 (역할에 따른 분기) */}
+      <main className="flex-1 max-w-7xl mx-auto w-full">
+        {isAdminRole ? (
+          <AdminView user={user} selectedDate={selectedDate} />
+        ) : (
+          <AgentView user={user} selectedDate={selectedDate} />
+        )}
+      </main>
+
+      {/* 🟡 푸터 섹션 */}
+      <footer className="p-8 text-center text-[10px] text-slate-300 uppercase tracking-widest italic font-normal">
+        © 2026 MetaRich Signal Group. All Rights Reserved.
+      </footer>
     </div>
-  );
+  )
 }

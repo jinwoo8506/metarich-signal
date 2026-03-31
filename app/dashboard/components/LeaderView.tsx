@@ -43,14 +43,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       actualIntro: Number(settings?.find(s => s.key === 'actual_intro_cnt')?.value)  || 0,
     });
 
-    // 2. 유저 쿼리: 실적 대상인 모든 유저를 가져오되 권한별 필터링 (department, team 기준)
+    // 2. 유저 쿼리: 실적 대상인 모든 유저를 가져오되 권한별 필터링
     let userQuery = supabase.from("users").select("*");
     
     if (!isMaster) {
       if (user?.role_level === 'director' || user?.role === 'leader') {
-        userQuery = userQuery.eq('department', user.department); // 사업부장: 본인 사업부 전체
+        userQuery = userQuery.eq('department', user.department);
       } else if (user?.role_level === 'manager' || user?.role === 'manager') {
-        userQuery = userQuery.eq('team', user.team); // 지점장: 본인 지점 전체
+        userQuery = userQuery.eq('team', user.team);
       }
     }
 
@@ -77,7 +77,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       });
       setAgents(mappedAgents);
 
-      // 3. 활동 합산 (승인된 유저들의 데이터만 집계)
+      // 3. 활동 합산
       const totals = mappedAgents.filter(a => a.is_approved).reduce((acc, curr) => ({
         call:  acc.call  + Number(curr.performance.call  || 0),
         meet:  acc.meet  + Number(curr.performance.meet  || 0),
@@ -97,7 +97,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         head: [['성명', '소속', '직책', '실적(만)', '건수', '전화', '만남', '제안']],
         body: agents.map(a => [
           a.name,
-          `${a.department || ''} ${a.team || ''}`, // 소속 필드 반영
+          `${a.department || ''} ${a.team || ''}`,
           a.role_level || a.role || '설계사',
           Number(a.performance.contract_amt || 0),
           Number(a.performance.contract_cnt || 0),
@@ -111,6 +111,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     setShowExportOpt(false);
   };
 
+  // 영업도구(계산기) 실행 시 렌더링
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -126,14 +127,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
-      {/* 상단 공지사항 애니메이션 유지 */}
+      {/* 상단 공지사항 */}
       <div onClick={() => setIsNoticeExpanded(!isNoticeExpanded)} className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}>
         <div className={`font-black italic uppercase text-black w-full text-sm md:text-base ${isNoticeExpanded ? 'whitespace-normal leading-relaxed' : 'whitespace-nowrap animate-marquee'}`}>
           {globalNotice}
         </div>
       </div>
 
-      {/* 퀵링크 섹션 (5개 유지 및 영업도구 연결) */}
+      {/* 퀵링크 섹션 (영업도구 포함 5개 유지) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
@@ -153,7 +154,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 합산 데이터 섹션 */}
+      {/* 활동 합산 데이터 */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
@@ -179,7 +180,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 팀 모니터링 섹션 (Agent + Manager 리스트) */}
+      {/* 팀 모니터링 섹션 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
           {isMaster ? 'All Centers' : (user.department || 'My Unit')} Monitoring
@@ -220,7 +221,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }}
         />
       )}
-      {isCalcOpen && <CalcModal onClose={() => setIsCalcOpen(false)} />}
     </div>
   )
 }

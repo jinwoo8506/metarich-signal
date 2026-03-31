@@ -43,13 +43,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     // 2. 권한별 유저 필터링 로직 (마스터/사업부장/지점장)
     let userQuery = supabase.from("users").select("*");
     
-    // 마스터가 아니면 소속 기반 필터링 적용 (DB 필드명: department, team 기준)
-    if (user.role_level === 'director' || user.role === 'leader') {
-      userQuery = userQuery.eq('department', user.department); // 사업부장: 본인 사업부만
-    } else if (user.role_level === 'manager' || user.role === 'manager') {
-      userQuery = userQuery.eq('team', user.team); // 지점장: 본인 지점만
+    // 마스터(master)가 아니면 소속 기반 필터링 적용
+    if (user?.role_level !== 'master' && user?.role !== 'master') {
+      if (user?.role_level === 'director' || user?.role === 'leader') {
+        userQuery = userQuery.eq('department', user.department); 
+      } else if (user?.role_level === 'manager' || user?.role === 'manager') {
+        userQuery = userQuery.eq('team', user.team);
+      }
     }
-    // master는 필터 없이 전체 조회
 
     const { data: users } = await userQuery;
     const { data: allPerfs } = await supabase.from("daily_perf").select("*");
@@ -57,7 +58,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     if (users) {
       const mappedAgents = users.map(u => {
         const userHistory = allPerfs?.filter(p => p.user_id === u.id) || [];
-        // 해당 월의 데이터 찾기
         const currentPerf = userHistory.find(p => p.date === monthKey) || {
           call: 0, meet: 0, pt: 0, intro: 0, db_assigned: 0, db_returned: 0,
           contract_amt: 0, contract_cnt: 0, target_amt: 300, target_cnt: 10,
@@ -76,7 +76,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       });
       setAgents(mappedAgents);
 
-      const totals = mappedAgents.reduce((acc, curr) => ({
+      const totals = mappedAgents.filter(a => a.is_approved).reduce((acc, curr) => ({
         call:  acc.call  + Number(curr.performance.call  || 0),
         meet:  acc.meet  + Number(curr.performance.meet  || 0),
         pt:    acc.pt    + Number(curr.performance.pt    || 0),
@@ -95,8 +95,8 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         head: [['성명', '소속', '직책', '실적(만)', '건수', '전화', '만남', '제안']],
         body: agents.map(a => [
           a.name,
-          `${a.department || ''} ${a.team || ''}`, // PDF 출력 시 소속 필드 반영
-          a.role_level,
+          `${a.department || ''} ${a.team || ''}`,
+          a.role_level || a.role || '설계사',
           Number(a.performance.contract_amt || 0),
           Number(a.performance.contract_cnt || 0),
           Number(a.performance.call || 0),
@@ -110,10 +110,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
     const d = new Date(dateStr);
     return `${String(d.getFullYear()).slice(-2)}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   };
 
+  // 영업도구(계산기) 화면
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -129,18 +131,14 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
-
       {/* 상단 공지사항 */}
-      <div
-        onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
-        className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}
-      >
+      <div onClick={() => setIsNoticeExpanded(!isNoticeExpanded)} className={`bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] cursor-pointer transition-all duration-300 ${isNoticeExpanded ? 'min-h-[3.5rem] h-auto' : 'h-14 overflow-hidden'}`}>
         <div className={`font-black italic uppercase text-black w-full text-sm md:text-base ${isNoticeExpanded ? 'whitespace-normal leading-relaxed' : 'whitespace-nowrap animate-marquee'}`}>
           {globalNotice}
         </div>
       </div>
 
-      {/* 퀵링크 섹션 */}
+      {/* 퀵링크 섹션 (5개 구성) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-black">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
@@ -148,8 +146,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           영업도구
         </button>
         <div className="relative col-span-2">
-          <button onClick={() => setShowExportOpt(!showExportOpt)}
-            className="w-full h-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">
+          <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full h-full bg-black text-[#d4af37] p-4 rounded-2xl text-[11px] md:text-xs italic shadow-lg font-black uppercase">
             실적 리포트 출력
           </button>
           {showExportOpt && (
@@ -161,19 +158,17 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 활동 관리 탭 합산 데이터 */}
+      {/* 활동 데이터 합산 섹션 */}
       {activeTab === 'act' && !selectedAgent && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
           <TotalBox label="전체 전화" val={totalActivity.call} />
-          <TotalBox label="전체 만남" val={totalActivity.meet}
-            sub={`전환율 ${totalActivity.call > 0 ? ((totalActivity.meet/totalActivity.call)*100).toFixed(1) : 0}%`} />
-          <TotalBox label="전체 제안" val={totalActivity.pt}
-            sub={`전환율 ${totalActivity.meet > 0 ? ((totalActivity.pt/totalActivity.meet)*100).toFixed(1) : 0}%`} />
+          <TotalBox label="전체 만남" val={totalActivity.meet} sub={`전환율 ${totalActivity.call > 0 ? ((totalActivity.meet/totalActivity.call)*100).toFixed(1) : 0}%`} />
+          <TotalBox label="전체 제안" val={totalActivity.pt} sub={`전환율 ${totalActivity.meet > 0 ? ((totalActivity.pt/totalActivity.meet)*100).toFixed(1) : 0}%`} />
           <TotalBox label="전체 소개" val={totalActivity.intro} />
         </div>
       )}
 
-      {/* 메인 탭 메뉴 */}
+      {/* 탭 메뉴 */}
       <div className="grid grid-cols-5 gap-2 font-black">
         {['perf', 'act', 'edu', 'sys', 'users'].map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -183,10 +178,10 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         ))}
       </div>
 
-      {/* 팀 모니터링 섹션 */}
+      {/* 모니터링 리스트 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
-          {user.role_level === 'master' ? 'All Centers' : user.department || 'My Unit'} Monitoring
+          {user?.role_level === 'master' ? 'All Centers' : (user?.department || 'My Unit')} Monitoring
         </h2>
         <div className="space-y-4 md:space-y-6">
           {agents.filter(a => a.is_approved).map(a => {
@@ -194,15 +189,12 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
             const cntRate = Math.round(((Number(a.performance.contract_cnt) || 0) / (Number(a.performance.target_cnt) || 1)) * 100);
 
             return (
-              <div
-                key={a.id}
-                onClick={() => { setSelectedAgent(a); setActiveTab('act'); }}
-                className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-6"
-              >
+              <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }}
+                className="p-5 md:p-8 bg-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] border-2 border-transparent hover:border-black cursor-pointer transition-all font-black shadow-sm space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{a.role_level || 'planner'}</span>
+                      <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{a.role_level || a.role || 'planner'}</span>
                       <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.team || '미소속'})</span></p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -211,7 +203,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                     </div>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <MonitorBar label="매출 달성률" rate={amtRate} current={a.performance.contract_amt} target={a.performance.target_amt} unit="만" />
                   <MonitorBar label="건수 달성률" rate={cntRate} current={a.performance.contract_cnt} target={a.performance.target_cnt} unit="건" />
@@ -232,21 +223,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }}
         />
       )}
-      {isCalcOpen && <CalcModal onClose={() => setIsCalcOpen(false)} />}
     </div>
   )
 }
 
 /** 헬퍼 컴포넌트 **/
-function getStatusStyles(rate: number) {
-  if (rate >= 80) return { bar: "bg-blue-500", text: "text-blue-600" };
-  if (rate >= 65) return { bar: "bg-orange-500", text: "text-orange-600" };
-  if (rate >= 30) return { bar: "bg-yellow-400", text: "text-yellow-500" };
-  return { bar: "bg-red-500", text: "text-red-600" };
-}
-
 function MonitorBar({ label, rate, current, target, unit }: any) {
-  const styles = getStatusStyles(rate);
+  const styles = rate >= 80 ? { bar: "bg-blue-500", text: "text-blue-600" } : rate >= 65 ? { bar: "bg-orange-500", text: "text-orange-600" } : rate >= 30 ? { bar: "bg-yellow-400", text: "text-yellow-500" } : { bar: "bg-red-500", text: "text-red-600" };
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-end">
@@ -275,8 +258,7 @@ function RecordBadge({ type, amt, date }: any) {
 
 function QuickLink({ href, label }: any) {
   return (
-    <a href={href} target="_blank" rel="noreferrer"
-      className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
+    <a href={href} target="_blank" rel="noreferrer" className="bg-white border-2 border-black p-4 rounded-2xl text-[11px] md:text-xs text-center italic hover:bg-black hover:text-[#d4af37] transition-all shadow-sm font-black uppercase">
       {label}
     </a>
   );
