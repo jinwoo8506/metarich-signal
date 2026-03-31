@@ -85,7 +85,10 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  const userRank = user.rank || "agent"; 
+  // 🛡️ [수정] 대소문자 무시 및 공백 제거 처리로 판별 정확도 향상
+  const rawRank = (user.rank || "agent").toLowerCase().trim();
+  const userRank = rawRank; 
+  
   const isMaster = userRank === 'master';
   const isLeader = userRank === 'leader';
   const isManager = userRank === 'manager';
@@ -93,6 +96,8 @@ export default function DashboardPage() {
 
   const renderOfficeView = () => {
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRank: userRank };
+    
+    // 이 조건문 순서가 중요합니다.
     if (isMaster) return <AdminView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
@@ -132,7 +137,6 @@ export default function DashboardPage() {
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
-        // ⚠️ 이 부분이 에러 포인트였습니다. tab에 string 타입을 명시했습니다.
         onTabChange={(tab: string) => {
           const externalLinks: Record<string, string> = {
             'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
