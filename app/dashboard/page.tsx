@@ -1,15 +1,17 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Dashboard Page (Main Entry) - MasterView Integration
+// Dashboard Page (Main Entry) - Path Fixed Version
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
-// ⚠️ AdminView에서 MasterView로 명칭 및 경로 업데이트 완료
-import MasterView from "./MasterView" 
-import AgentView from "./AgentView"
+
+// ⚠️ 사진 확인 결과: 현재 dashboard/components 폴더 안에 파일들이 있습니다.
+// 경로를 ./MasterView 에서 ./components/MasterView 로 수정했습니다.
+import MasterView from "./components/MasterView"
+import AgentView from "./components/AgentView"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -63,7 +65,7 @@ export default function DashboardPage() {
     )
   }
 
-  // 관리자 권한 체크 로직 (마스터, 본부장, 지점장, 매니저 포함)
+  // 관리자 권한 체크 로직
   const isAdminRole = ['master', 'director', 'leader', 'manager'].includes(user?.role_level || user?.role)
 
   return (
@@ -115,7 +117,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* 🔵 메인 컨텐츠 영역: MasterView/AgentView 분기 */}
+      {/* 🔵 메인 컨텐츠 영역 */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-2 md:px-4 py-4 md:py-6">
         <div className="bg-white/50 rounded-[2rem] md:rounded-[3rem] p-1 md:p-2 border-2 border-dashed border-black/5">
           {isAdminRole ? (
@@ -131,9 +133,6 @@ export default function DashboardPage() {
         <div className="max-w-xs mx-auto border-t border-black/10 pt-4">
           <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] italic font-normal">
             © 2026 MetaRich Signal Group
-          </p>
-          <p className="text-[8px] text-slate-300 mt-1 uppercase font-light">
-            Optimized Performance Management System
           </p>
         </div>
       </footer>
