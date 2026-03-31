@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
-import CalcModal from "./CalcModal"
 import CustomerManagerModal from "./CustomerManagerModal"
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {

@@ -7,7 +7,6 @@
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
-import CalcModal from "./CalcModal"
 import FinancialCalc from "./FinancialCalc"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"

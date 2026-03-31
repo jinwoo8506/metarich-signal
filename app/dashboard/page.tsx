@@ -6,7 +6,7 @@ import { supabase } from "../../lib/supabase"
 // 실제 파일명인 masterView(소문자 m)와 경로가 일치해야 합니다.
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
-import AdminView from "./components/masterView"
+import AdminView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
