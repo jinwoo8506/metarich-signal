@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
+// 이미지의 파일 경로 구조(app/dashboard/components/...)를 반영하여 경로 수정
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/masterView"
@@ -85,19 +86,19 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 🛡️ [수정] 대소문자 무시 및 공백 제거 처리로 판별 정확도 향상
-  const rawRank = (user.rank || "agent").toLowerCase().trim();
-  const userRank = rawRank; 
+  // 🛡️ [핵심 수정] 이미지 확인 결과: 직급 컬럼명이 'role' 입니다.
+  const userRole = (user.role || "agent").toLowerCase().trim();
   
-  const isMaster = userRank === 'master';
-  const isLeader = userRank === 'leader';
-  const isManager = userRank === 'manager';
-  const isApproved = isMaster || isLeader || isManager || String(user.is_approved) === "true";
+  const isMaster = userRole === 'master';
+  const isLeader = userRole === 'leader';
+  const isManager = userRole === 'manager';
+  // 이미지 확인 결과 게스트는 FALSE이므로 is_approved를 정확히 체크함
+  const isApproved = isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true);
 
   const renderOfficeView = () => {
-    const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRank: userRank };
+    const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
     
-    // 이 조건문 순서가 중요합니다.
+    // 조건문 순서대로 마스터 -> 리더 -> 매니저 순으로 분기
     if (isMaster) return <AdminView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
@@ -109,7 +110,7 @@ export default function DashboardPage() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
         <h1 className="text-5xl mb-16 italic tracking-tighter">
           <span className="text-blue-600">{user.name}</span>
-          <span className="ml-2 text-2xl text-slate-400 uppercase">[{userRank}]</span>
+          <span className="ml-2 text-2xl text-slate-400 uppercase">[{userRole}]</span>
         </h1>
         <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
           <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
