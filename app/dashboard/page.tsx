@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
-// 이미지의 파일 경로 구조(app/dashboard/components/...)를 반영하여 경로 수정
+// 실제 파일명인 masterView(소문자 m)와 경로가 일치해야 합니다.
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import AdminView from "./components/masterView"
@@ -77,6 +77,13 @@ export default function DashboardPage() {
 
     setMenuStatus(statusMap);
     setUser(userInfo);
+
+    // 🛡️ [게스트 로직 추가] role이 guest이면 바로 상담화면으로 설정
+    const role = (userInfo.role || "agent").toLowerCase().trim();
+    if (role === 'guest') {
+      setViewMode('consulting');
+    }
+
     setLoading(false);
   }, [router]);
 
@@ -86,26 +93,27 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  // 🛡️ [핵심 수정] 이미지 확인 결과: 직급 컬럼명이 'role' 입니다.
   const userRole = (user.role || "agent").toLowerCase().trim();
-  
   const isMaster = userRole === 'master';
   const isLeader = userRole === 'leader';
   const isManager = userRole === 'manager';
-  // 이미지 확인 결과 게스트는 FALSE이므로 is_approved를 정확히 체크함
-  const isApproved = isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true);
+  const isGuest = userRole === 'guest';
+  // 승인된 설계사만 스태프 전용 메뉴 사용 가능
+  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true));
 
   const renderOfficeView = () => {
+    // 게스트는 사무실 뷰 접근 시 널 처리 (보안상 한 번 더 방어)
+    if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
+
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
-    
-    // 조건문 순서대로 마스터 -> 리더 -> 매니저 순으로 분기
     if (isMaster) return <AdminView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
     return <AgentView {...props} />;
   };
 
-  if (viewMode === 'select') {
+  // 1. 초기 모드 선택 화면 (게스트는 이 화면을 건너뜁니다)
+  if (viewMode === 'select' && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
         <h1 className="text-5xl mb-16 italic tracking-tighter">
@@ -126,6 +134,7 @@ export default function DashboardPage() {
     );
   }
 
+  // 2. 메인 대시보드 화면
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
       <Sidebar 
@@ -133,7 +142,8 @@ export default function DashboardPage() {
         selectedDate={selectedDate} 
         onDateChange={setSelectedDate} 
         mode={viewMode} 
-        onBack={() => { setViewMode('select'); setActiveTab(null); }} 
+        // 게스트는 뒤로가기(선택 화면) 버튼 무력화
+        onBack={isGuest ? undefined : () => { setViewMode('select'); setActiveTab(null); }} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
