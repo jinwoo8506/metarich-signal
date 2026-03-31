@@ -1,122 +1,202 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Dashboard Page (Main Entry) - Original Path & MasterView Update
+// Dashboard Page (Main Entry) - Full Update with MasterView
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 
-// ⚠️ 폴더 변경이 없었다면 기존처럼 같은 위치(./)에서 불러옵니다.
-// 단, 파일명이 정확히 MasterView.tsx 인지 다시 한번 확인해주세요.
-import MasterView from "./MasterView"
-import AgentView from "./AgentView"
+// ⚠️ 명칭 변경 반영: AdminView -> MasterView (파일명 대소문자 주의)
+import Sidebar from "./components/Sidebar"
+import AgentView from "./components/AgentView"
+import MasterView from "./components/MasterView" 
+import LeaderView from "./components/LeaderView"
+import ManagerView from "./components/ManagerView"
+import FinancialCalc from "./components/FinancialCalc"
 
-export default function DashboardPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [selectedDate, setSelectedDate] = useState(new Date())
+// [상담 도구 뷰 컴포넌트]
+function ConsultingView({ menuStatus, isApproved, onOpenCalc }: any) {
+  const allMenus = [
+    { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
+    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
+    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
+    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "INTERNAL_CALC", color: "border-blue-500 text-blue-600", staffOnly: true },
+    { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
+    { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
+    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
+    { id: "show_disease", title: "질병코드 조회", desc: "한국표준질병사인분류(KCD) 검색", icon: "🧬", url: "http://www.koicd.kr/kcd/kcd.do", color: "border-indigo-400 text-indigo-500", staffOnly: true },
+    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "https://www.khidi.or.kr", color: "border-rose-400 text-rose-500", staffOnly: true }
+  ];
 
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          router.push("/login")
-          return
-        }
-
-        const { data: userData, error } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", session.user.id)
-          .single()
-
-        if (error || !userData) {
-          router.push("/login")
-          return
-        }
-
-        setUser(userData)
-      } catch (err) {
-        console.error("Auth Check Error:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    checkUser()
-  }, [router])
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
-
-  const changeMonth = (offset: number) => {
-    const next = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + offset, 1)
-    setSelectedDate(next)
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white font-black italic">
-        <div className="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-black mb-4"></div>
-        <p className="text-xs uppercase tracking-widest animate-pulse">Loading System...</p>
-      </div>
-    )
-  }
-
-  const isAdminRole = ['master', 'director', 'leader', 'manager'].includes(user?.role_level || user?.role)
+  const activeMenus = allMenus.filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]));
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] flex flex-col font-black text-black">
-      
-      {/* 🟢 상단 헤더 섹션 */}
-      <header className="bg-white border-b-2 border-black p-4 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center gap-2">
-          
-          <div className="flex items-center gap-2 md:gap-4">
-            <div className="bg-black w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-2xl text-[#d4af37] text-[10px] md:text-xs font-black border-2 border-[#d4af37] shadow-sm">
-              METARICH
+    <div className="max-w-6xl mx-auto py-10 font-black">
+      <div className="mb-12 border-l-8 border-blue-600 pl-6">
+        <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
+        <p className="text-slate-400 font-bold uppercase">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {activeMenus.map((m) => (
+          <button 
+            key={m.id} 
+            onClick={() => {
+              if(m.url === "INTERNAL_CALC") onOpenCalc();
+              else window.open(m.url, "_blank", "noopener,noreferrer");
+            }} 
+            className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
+          >
+            <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
+            <div className="text-center px-4">
+              <h3 className="text-2xl font-black mb-1">{m.title}</h3>
+              <p className="text-[11px] opacity-60 font-bold uppercase">{m.desc}</p>
             </div>
-            <div className="hidden sm:block">
-              <p className="text-[9px] text-slate-400 uppercase leading-none tracking-tighter">System Access</p>
-              <h1 className="text-sm md:text-base font-black italic uppercase">
-                {user?.name} <span className="text-[#d4af37] drop-shadow-sm font-black">/ {user?.role_level || user?.role || 'Agent'}</span>
-              </h1>
-            </div>
-          </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          <div className="flex items-center bg-black text-white rounded-full px-2 py-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(212,175,55,1)]">
-            <button onClick={() => changeMonth(-1)} className="w-8 h-8 flex items-center justify-center hover:text-[#d4af37]">◀</button>
-            <div className="text-xs md:text-sm px-2 md:px-4 min-w-[90px] md:min-w-[110px] text-center italic font-black text-[#d4af37]">
-              {selectedDate.getFullYear()}. {String(selectedDate.getMonth() + 1).padStart(2, '0')}
-            </div>
-            <button onClick={() => changeMonth(1)} className="w-8 h-8 flex items-center justify-center hover:text-[#d4af37]">▶</button>
-          </div>
+export default function DashboardPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'select' | 'office' | 'consulting'>('select');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [menuStatus, setMenuStatus] = useState<any>({});
 
-          <button onClick={handleLogout} className="bg-white text-black border-2 border-black px-3 md:px-5 py-2 rounded-full hover:bg-red-600 hover:text-white hover:border-red-600 transition-all text-[10px] md:text-xs italic font-black">
-            LOGOUT ➔
+  const init = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return router.replace("/login");
+
+    const { data: userInfo } = await supabase.from("users").select("*").eq("id", session.user.id).maybeSingle();
+    if (!userInfo) return router.replace("/login");
+
+    const { data: settings } = await supabase.from("team_settings").select("key, value");
+    const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), {}) || {};
+
+    setMenuStatus(statusMap);
+    setUser(userInfo);
+
+    // 🛡️ [게스트 로직] role이 guest이면 선택창 없이 바로 상담화면으로 진입
+    const role = (userInfo.role || "agent").toLowerCase().trim();
+    if (role === 'guest') {
+      setViewMode('consulting');
+    }
+
+    setLoading(false);
+  }, [router]);
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
+
+  const userRole = (user.role || "agent").toLowerCase().trim();
+  const isMaster = userRole === 'master';
+  const isLeader = userRole === 'leader';
+  const isManager = userRole === 'manager';
+  const isGuest = userRole === 'guest';
+  
+  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true));
+
+  const renderOfficeView = () => {
+    if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
+
+    const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
+    // ⚠️ AdminView 대신 MasterView 컴포넌트 사용
+    if (isMaster) return <MasterView {...props} />;
+    if (isLeader) return <LeaderView {...props} />;
+    if (isManager) return <ManagerView {...props} />;
+    return <AgentView {...props} />;
+  };
+
+  // 1. 초기 모드 선택 화면 (게스트는 skip)
+  if (viewMode === 'select' && !isGuest) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
+        <h1 className="text-5xl mb-16 italic tracking-tighter">
+          <span className="text-blue-600">{user.name}</span>
+          <span className="ml-2 text-2xl text-slate-400 uppercase">[{userRole}]</span>
+        </h1>
+        <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
+          <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
+            <span className="text-8xl group-hover:scale-110 transition-transform">🏢</span>
+            <h2 className="text-4xl font-black uppercase">사무실 업무</h2>
+          </button>
+          <button onClick={() => setViewMode('consulting')} className="flex-1 h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
+            <span className="text-8xl group-hover:scale-110 transition-transform">🤝</span>
+            <h2 className="text-4xl font-black uppercase">고객 상담</h2>
           </button>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      {/* 🔵 메인 컨텐츠 영역 */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-2 md:px-4 py-4 md:py-6">
-        <div className="bg-white/50 rounded-[2rem] md:rounded-[3rem] p-1 md:p-2 border-2 border-dashed border-black/5">
-          {isAdminRole ? (
-            <MasterView user={user} selectedDate={selectedDate} />
+  // 2. 메인 대시보드 화면 구성
+  return (
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
+      <Sidebar 
+        user={user} 
+        selectedDate={selectedDate} 
+        onDateChange={setSelectedDate} 
+        mode={viewMode} 
+        onBack={isGuest ? undefined : () => { setViewMode('select'); setActiveTab(null); }} 
+        externalMenuStatus={menuStatus} 
+        onMenuStatusChange={setMenuStatus}
+        isOpen={isSidebarOpen} 
+        setIsOpen={setIsSidebarOpen}
+        onTabChange={(tab: string) => {
+          const externalLinks: Record<string, string> = {
+            'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
+            'surgery': 'https://www.khidi.or.kr'
+          };
+          if (externalLinks[tab]) window.open(externalLinks[tab], "_blank");
+          else setActiveTab(tab);
+        }} 
+        activeTab={activeTab} 
+        isAdmin={isMaster}
+      />
+
+      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
+        <div className="max-w-[1600px] mx-auto">
+          {activeTab === 'finance' ? (
+            <>
+              <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
+              <FinancialCalc />
+            </>
           ) : (
-            <AgentView user={user} selectedDate={selectedDate} />
+            viewMode === 'office' ? renderOfficeView() : (
+              <ConsultingView 
+                menuStatus={menuStatus} 
+                isApproved={isApproved} 
+                onOpenCalc={() => setActiveTab('finance')} 
+              />
+            )
           )}
         </div>
       </main>
-
-      <footer className="p-8 text-center text-[10px] text-slate-300 uppercase italic">
-        © 2026 MetaRich Signal Group. All Rights Reserved.
-      </footer>
     </div>
-  )
+  );
+}
+
+function HeaderBar({ title, icon, onBack }: any) {
+  return (
+    <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex items-center gap-4 ml-4">
+        <span className="text-3xl">{icon}</span>
+        <div>
+          <h2 className="text-xl font-black italic uppercase leading-none">{title}</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Professional Support Tool</p>
+        </div>
+      </div>
+      <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
+    </div>
+  );
 }
