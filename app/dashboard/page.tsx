@@ -78,7 +78,7 @@ export default function DashboardPage() {
     setMenuStatus(statusMap);
     setUser(userInfo);
 
-    // 🛡️ [게스트 로직 추가] role이 guest이면 바로 상담화면으로 설정
+    // 🛡️ [게스트 로직] role이 guest이면 선택창 없이 바로 상담화면으로 진입
     const role = (userInfo.role || "agent").toLowerCase().trim();
     if (role === 'guest') {
       setViewMode('consulting');
@@ -98,11 +98,12 @@ export default function DashboardPage() {
   const isLeader = userRole === 'leader';
   const isManager = userRole === 'manager';
   const isGuest = userRole === 'guest';
-  // 승인된 설계사만 스태프 전용 메뉴 사용 가능
+  
+  // 승인 여부 판별: 게스트가 아니면서 (마스터/리더/매니저/승인된 설계사)인 경우
   const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true));
 
   const renderOfficeView = () => {
-    // 게스트는 사무실 뷰 접근 시 널 처리 (보안상 한 번 더 방어)
+    // 게스트는 사무실 뷰 접근 불가
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
 
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
@@ -112,7 +113,7 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
-  // 1. 초기 모드 선택 화면 (게스트는 이 화면을 건너뜁니다)
+  // 1. 초기 모드 선택 화면 (게스트는 skip)
   if (viewMode === 'select' && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
@@ -134,7 +135,7 @@ export default function DashboardPage() {
     );
   }
 
-  // 2. 메인 대시보드 화면
+  // 2. 메인 대시보드 화면 구성
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
       <Sidebar 
@@ -142,7 +143,7 @@ export default function DashboardPage() {
         selectedDate={selectedDate} 
         onDateChange={setSelectedDate} 
         mode={viewMode} 
-        // 게스트는 뒤로가기(선택 화면) 버튼 무력화
+        // 게스트는 선택 화면으로 돌아가는 버튼을 비활성화
         onBack={isGuest ? undefined : () => { setViewMode('select'); setActiveTab(null); }} 
         externalMenuStatus={menuStatus} 
         onMenuStatusChange={setMenuStatus}

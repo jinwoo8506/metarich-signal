@@ -13,7 +13,6 @@ export default function Sidebar({
   const router = useRouter();
   
   const [dailyAdminNotice, setDailyAdminNotice] = useState("");
-  const [privateMemo, setPrivateMemo] = useState("");
   const [threeMonthAvg, setThreeMonthAvg] = useState({ amt: 0, cnt: 0 });
   const [isConsultModalOpen, setIsConsultModalOpen] = useState(false); 
   const dateStr = selectedDate.toLocaleDateString('en-CA');
@@ -26,7 +25,6 @@ export default function Sidebar({
   const isManager = user?.role === 'manager';
   const isAgent = user?.role === 'agent' || isManager || isLeader || isMaster;
   
-  // ✅ 관리자 기능 권한: 오직 마스터만 가능
   const isAdmin = isMaster; 
   const isStaff = isAgent;
   const isApproved = isMaster || isLeader || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
@@ -49,7 +47,7 @@ export default function Sidebar({
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
     show_calc: true 
   });
-  const [isEditMode, setIsEditMode] = useState(false); // ✅ 메뉴 편집 모드 상태
+  const [isEditMode, setIsEditMode] = useState(false); 
   const [staffList, setStaffList] = useState<any[]>([]);
   const [showStaffManager, setShowStaffManager] = useState(false);
 
@@ -59,10 +57,6 @@ export default function Sidebar({
       fetch3MonthAvg();
     }
     fetchMenuSettings();
-    
-    const savedPrivate = localStorage.getItem(`memo_${user?.id}`);
-    setPrivateMemo(savedPrivate || "");
-    
     if (isMaster) fetchStaffList();
   }, [dateStr, user?.id, isApproved]);
 
@@ -118,7 +112,6 @@ export default function Sidebar({
     const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
     
     let query = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
-    
     if (!isMaster && !isLeader) {
         query = query.eq("user_id", user?.id);
     }
@@ -140,33 +133,25 @@ export default function Sidebar({
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
-    { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000&WT.gnb=내+진료정보+열람', color: 'border-orange-500' },
+    { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
   ];
 
   const consultTools = [
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
     { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
-    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
+    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: 'https://www.klia.or.kr/ins_info/ins_info_0101.do', color: 'border-slate-400' },
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'http://www.koicd.kr/kcd/kcd.do', color: 'border-indigo-400' },
-    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: 'tab:surgery', color: 'border-rose-400' }, // ✅ '#'에서 'tab:surgery'로 업데이트
+    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: 'tab:surgery', color: 'border-rose-400' }, 
   ];
 
   const handleLinkClick = (item: any) => {
-    if (isEditMode) return; // 편집 모드일 때는 클릭 방지
+    if (isEditMode) return; 
     
-    // ✅ 탭 전환 로직 통합 (금융계산기 및 수술비 검색 등)
+    // ✅ 탭 전환 로직 (금융계산기 및 수술비 검색 대응)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
-      setIsOpen(false);
-      setIsConsultModalOpen(false);
-      return;
-    }
-
-    // 기존 특정 ID 기반 로직 유지 (금융계산기 대응)
-    if (item.id === 'show_calc') {
-      if (onTabChange) onTabChange('finance');
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
@@ -188,15 +173,16 @@ export default function Sidebar({
         <div className={`flex flex-col h-full transition-opacity duration-200 ${!isOpen && 'hidden'}`}>
           
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-6">
-            <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
-              ← BACK TO SELECTOR
-            </button>
+            {onBack && (
+              <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
+                ← BACK TO SELECTOR
+              </button>
+            )}
 
-            <div className="flex justify-between items-center border-b-4 border-black pb-1">
+            <div className="flex justify-between items-center border-b-4 border-black pb-1 mt-14">
               <h2 className="text-2xl italic uppercase tracking-tighter font-black text-black">
                 {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
               </h2>
-              {/* ✅ 마스터 전용 직원관리 버튼 */}
               {isMaster && (
                 <button onClick={() => setShowStaffManager(!showStaffManager)} 
                   className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -217,7 +203,6 @@ export default function Sidebar({
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
-            {/* ✅ 마스터 전용 직원관리 리스트 */}
             {isMaster && showStaffManager && (
               <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200 animate-in slide-in-from-top-4 duration-300">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
@@ -262,13 +247,6 @@ export default function Sidebar({
                   </div>
                 </div>
               </>
-            )}
-
-            {!isApproved && mode === 'office' && (
-              <div className="bg-rose-50 p-6 rounded-[2rem] border border-rose-100 text-center space-y-2">
-                <span className="text-2xl">🔒</span>
-                <p className="text-[11px] font-black text-rose-600 leading-tight">관리자 승인 후<br/>사무실 업무 이용이 가능합니다.</p>
-              </div>
             )}
 
             <div className="space-y-3">
@@ -323,7 +301,6 @@ export default function Sidebar({
                 <p className="text-white/50 text-[9px] font-black uppercase">전문 상담 지원 시스템</p>
               </div>
               <div className="flex items-center gap-3">
-                {/* ✅ 마스터 전용 퀵메뉴 편집 스위치 추가 */}
                 {isMaster && (
                   <button 
                     onClick={() => setIsEditMode(!isEditMode)} 
@@ -351,7 +328,6 @@ export default function Sidebar({
                       </div>
                       {!isEditMode && <span className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity font-black italic">SELECT →</span>}
                     </button>
-                    {/* ✅ 편집 모드일 때만 체크박스 노출 */}
                     {isMaster && isEditMode && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
                         <input 
@@ -373,7 +349,6 @@ export default function Sidebar({
         </div>
       )}
 
-      {/* 모바일 대응 오버레이 */}
       {isOpen && <div onClick={() => setIsOpen(false)} className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
       
       <style jsx global>{`
