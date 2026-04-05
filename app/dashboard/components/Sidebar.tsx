@@ -45,7 +45,7 @@ export default function Sidebar({
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
-    show_calc: true 
+    show_calc: true, show_disability: true, show_car_accident: true
   });
   const [isEditMode, setIsEditMode] = useState(false); 
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -136,19 +136,22 @@ export default function Sidebar({
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
   ];
 
+  // 🟠 [업데이트 완료] 내부 라우팅 경로 반영
   const consultTools = [
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
+    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
+    { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: '/insurance-tools/diagnosis', color: 'border-indigo-400' }, 
+    { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' },
+    { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
-    { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' },
+    { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: 'https://www.klia.or.kr/ins_info/ins_info_0101.do', color: 'border-slate-400' },
-    { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'http://www.koicd.kr/kcd/kcd.do', color: 'border-indigo-400' },
-    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: 'tab:surgery', color: 'border-rose-400' }, 
   ];
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
     
-    // ✅ 탭 전환 로직 (금융계산기 및 수술비 검색 대응)
+    // ✅ 탭 전환 로직 (금융계산기 등 대응)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -157,6 +160,15 @@ export default function Sidebar({
       return;
     }
 
+    // ✅ 내부 경로 라우팅 (Next.js router.push 사용)
+    if (item.url && item.url.startsWith('/')) {
+      router.push(item.url);
+      setIsOpen(false);
+      setIsConsultModalOpen(false);
+      return;
+    }
+
+    // ✅ 외부 링크 연결
     if (item.url && item.url !== '#') {
       window.open(item.url, "_blank");
       setIsConsultModalOpen(false); 

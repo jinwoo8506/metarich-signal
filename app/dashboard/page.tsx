@@ -1,14 +1,14 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Dashboard Page (Main Entry) - Full Update with MasterView
+// Dashboard Page (Main Entry) - Full Update
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 
-// ⚠️ 명칭 변경 반영: AdminView -> MasterView (파일명 대소문자 주의)
+// ⚠️ [경로 주의] 파일들은 dashboard/components/ 내부에 위치해야 합니다.
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import MasterView from "./components/MasterView" 
@@ -110,7 +110,8 @@ export default function DashboardPage() {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
 
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
-    // ⚠️ AdminView 대신 MasterView 컴포넌트 사용
+    
+    // 권한별 뷰 렌더링
     if (isMaster) return <MasterView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
