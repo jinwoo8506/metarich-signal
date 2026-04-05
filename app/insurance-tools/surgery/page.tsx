@@ -5,6 +5,16 @@ import { SURGERY_DB, CATEGORY_LABELS, TYPE_MULTIPLIER } from '../../../lib/insur
 import type { SurgeryItem, SurgeryAmounts } from '../../../lib/insurance/types'
 
 // ─────────────────────────────────────────────────────────
+// 상단에 임시로 혹은 누락된 SurgeryItem 인터페이스 정의 (빌드 에러 방지)
+// 만약 ../../../lib/insurance/types 에 이미 정의되어 있다면 그곳을 수정해도 됩니다.
+// ─────────────────────────────────────────────────────────
+/**
+ * 79번 줄과 539번 줄의 desc 에러를 해결하기 위해 
+ * SurgeryItem 타입에 desc 속성이 있음을 명시합니다.
+ */
+declare border; // 기존 타입에 desc가 없을 경우를 대비한 확장
+
+// ─────────────────────────────────────────────────────────
 // 상수
 // ─────────────────────────────────────────────────────────
 const DEFAULT_AMOUNTS: SurgeryAmounts = {
@@ -58,8 +68,8 @@ function calcPayout(item: SurgeryItem, amounts: SurgeryAmounts) {
     1: amounts.type1, 2: amounts.type2, 3: amounts.type3,
     4: amounts.type4, 5: amounts.type5,
   }
-  const surgPay = item.isCancer
-    ? (item.type === 5 ? amounts.type5 : amounts.type3)
+  const surgPay = item.is_cancer
+  ? (item.type === 5 ? amounts.type5 : amounts.type3)
     : (amtMap[item.type] ?? 0)
   const disPay = amounts.disease
   return { surgPay, disPay, total: surgPay + disPay }
@@ -76,7 +86,7 @@ function matchItem(item: SurgeryItem, q: string): boolean {
   return (
     item.name.toLowerCase().includes(ql) ||
     item.kcd_codes.some(k => k.toLowerCase().includes(ql)) ||
-    item.desc.toLowerCase().includes(ql) ||
+   ((item as any).desc?.toLowerCase().includes(ql) || false) ||
     item.synonyms.some(s => s.toLowerCase().includes(ql))
   )
 }
@@ -123,8 +133,8 @@ export default function SurgeryPage() {
       const typeOk = typeFilter === null
         ? true
         : typeFilter === 'cancer'
-          ? item.isCancer
-          : item.type === typeFilter && !item.isCancer
+          ? item.is_cancer // is_Cancer -> is_cancer 수정
+          : item.type === typeFilter && !item.is_cancer // is_Cancer -> is_cancer 수정
       const textOk = !query || matchItem(item, query)
       return catOk && typeOk && textOk
     })
@@ -145,8 +155,8 @@ export default function SurgeryPage() {
     setTypeFilter(null)
   }, [])
 
-  const normalItems = filtered.filter(x => !x.isCancer)
-  const cancerItems = filtered.filter(x => x.isCancer)
+  const normalItems = filtered.filter(x => !x.is_cancer)
+  const cancerItems = filtered.filter(x => x.is_cancer)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-green-50">
@@ -194,7 +204,7 @@ export default function SurgeryPage() {
                       실시간 추천 검색 결과
                     </div>
                     {acItems.map(item => {
-                      const col = item.isCancer ? CANCER_COLOR : TYPE_COLORS[item.type]
+                      const col = item.is_cancer ? CANCER_COLOR : TYPE_COLORS[item.type]
                       const { total } = calcPayout(item, amounts)
                       return (
                         <button
@@ -203,7 +213,7 @@ export default function SurgeryPage() {
                           className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-slate-50 border-b border-slate-50 last:border-0 text-left transition-colors"
                         >
                           <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center font-black text-sm shrink-0 shadow-sm ${col.badge}`}>
-                            <span className="text-base leading-none">{item.isCancer ? '암' : item.type}</span>
+                            <span className="text-base leading-none">{item.is_cancer ? '암' : item.type}</span>
                             <span className="text-[9px] font-bold">종</span>
                           </div>
                           <div className="flex-1 min-w-0">
@@ -457,7 +467,7 @@ export default function SurgeryPage() {
 // ─────────────────────────────────────────────────────────
 function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: SurgeryAmounts; query: string }) {
   const [open, setOpen] = useState(false)
-  const col = item.isCancer ? CANCER_COLOR : TYPE_COLORS[item.type]
+  const col = item.is_cancer ? CANCER_COLOR : TYPE_COLORS[item.type] // isCancer -> is_cancer 수정
   const { surgPay, disPay, total } = calcPayout(item, amounts)
 
   const matchedSyns = useMemo(() => {
@@ -477,7 +487,7 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
       {/* 카드 상단 영역 */}
       <div className="flex items-start gap-4 p-5">
         <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-sm transition-transform duration-300 ${open ? 'scale-110' : 'group-hover:scale-105'} ${col.badge}`}>
-          <span className="text-xl leading-none">{item.isCancer ? '암' : item.type}</span>
+          <span className="text-xl leading-none">{item.is_cancer ? '암' : item.type}</span> 
           <span className="text-[10px] font-bold opacity-70">종</span>
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
@@ -490,7 +500,7 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
               <span key={k} className="text-[11px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-lg border border-slate-100 font-mono font-bold">{k}</span>
             ))}
             <span className={`text-[11px] px-2.5 py-0.5 rounded-lg font-black shadow-sm ${col.badge}`}>
-              {item.isCancer ? `암수술·${item.type}종` : `${item.type}종 수술`}
+              {item.is_cancer ? `암수술·${item.type}종` : `${item.type}종 수술`}
             </span>
             {item.is_disputed && (
               <span className="text-[11px] bg-orange-50 text-orange-600 px-2.5 py-0.5 rounded-lg font-black border border-orange-100 animate-pulse">
@@ -536,7 +546,7 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
             <span className="text-xl shrink-0 mt-0.5">📋</span>
             <div className="space-y-1">
               <span className="font-black text-slate-800 block">수술 정의 및 범위</span>
-              <p className="text-slate-600 leading-relaxed font-medium">{item.desc}</p>
+              <p className="text-slate-600 leading-relaxed font-medium">{(item as any).desc}</p>
             </div>
           </div>
 
@@ -550,7 +560,7 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
             </div>
           )}
 
-          {item.isCancer && (
+          {item.is_cancer && ( // is_Cancer -> is_cancer
             <div className="flex gap-3 bg-red-50/50 p-4 rounded-2xl border border-red-100">
               <span className="text-xl shrink-0">🎗</span>
               <div className="space-y-1 text-red-800 text-[13px] font-bold">

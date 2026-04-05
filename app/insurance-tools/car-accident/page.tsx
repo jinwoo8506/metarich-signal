@@ -48,7 +48,7 @@ export default function CarAccidentPage() {
       const ql = query.toLowerCase()
       return CAR_ACCIDENT_DB.filter(d =>
         d.description.toLowerCase().includes(ql) ||
-        d.examples.some(e => e.toLowerCase().includes(ql)) ||
+        d.examples.some((e: string) => e.toLowerCase().includes(ql)) ||
         String(d.grade).includes(ql) ||
         (d.notes?.toLowerCase().includes(ql) ?? false)
       )
@@ -242,7 +242,7 @@ function CarGradeCard({
   const matchedExamples = useMemo(() => {
     if (!query) return item.examples
     const ql = query.toLowerCase()
-    return item.examples.filter(e => e.toLowerCase().includes(ql))
+    return item.examples.filter((e: string) => e.toLowerCase().includes(ql))
   }, [item.examples, query])
 
   // 검색 시에는 전체 결과를 보여주고, 평소에는 요약/전체 토글
@@ -287,7 +287,7 @@ function CarGradeCard({
             {query && <span className="text-amber-600">Match: {matchedExamples.length}</span>}
           </p>
           <ul className="space-y-2.5">
-            {displayExamples.map((ex, i) => (
+            {displayExamples.map((ex: string, i: number) => (
               <li key={i} className="flex gap-3 text-xs text-slate-700 leading-snug items-start">
                 <span className={`shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black text-white mt-0.5 shadow-sm ${col.bar}`}>
                   {i + 1}
