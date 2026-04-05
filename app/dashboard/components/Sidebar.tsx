@@ -126,30 +126,31 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  // ✅ [퀵링크: 5개 유지 및 공시실 퍼블릭 파일 연결]
+  // ✅ [퀵링크: 5개 유지 및 사진 기반 공시실 파일명 수정]
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
     { id: 'show_calc', label: '영업도구 (계산기)', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
-    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/insu_gongsi.html', color: 'border-slate-400' }, // Public 폴더 파일
+    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' }, // 사진 확인 결과: gongsi.html
   ];
 
-  // ✅ [상담 도구: 질병코드 전용링크 및 신규 수술비 툴 반영]
+  // ✅ [상담 도구: 사진의 폴더 구조와 완벽히 매칭된 경로]
   const consultTools = [
     { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
-    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
+    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, // app/insurance-tools/surgery/page.tsx 매칭
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'https://kcdcode.kr/browse/main', color: 'border-indigo-400' }, 
-    { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' },
-    { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' },
-    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
-    { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
-    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/insu_gongsi.html', color: 'border-slate-400' },
+    { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' }, // app/insurance-tools/disability/page.tsx 매칭
+    { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' }, // app/insurance-tools/car-accident/page.tsx 매칭
+    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' }, // public/financial_planner.html 매칭
+    { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, // public/insu.html 매칭
+    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
   ];
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
 
+    // 1. 탭 전환 (계산기 등)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -158,6 +159,7 @@ export default function Sidebar({
       return;
     }
 
+    // 2. 외부 링크 (새 탭 열기)
     if (item.url && (item.url.startsWith('http') || item.url.startsWith('kcdcode.kr'))) {
       const finalUrl = item.url.startsWith('http') ? item.url : `https://${item.url}`;
       window.open(finalUrl, "_blank", "noopener,noreferrer");
@@ -166,6 +168,7 @@ export default function Sidebar({
       return;
     }
 
+    // 3. 퍼블릭 정적 HTML 파일 (.html)
     if (item.url && item.url.endsWith('.html')) {
       window.open(item.url, "_blank");
       setIsOpen(false);
@@ -173,8 +176,9 @@ export default function Sidebar({
       return;
     }
 
+    // 4. 프로젝트 내부 하위 폴더 라우팅 (Next.js router 사용)
     if (item.url && item.url.startsWith('/')) {
-      router.push(item.url);
+      router.push(item.url); // 예: /insurance-tools/surgery
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
@@ -183,13 +187,16 @@ export default function Sidebar({
 
   return (
     <>
+      {/* 메뉴 버튼 */}
       <button onClick={() => setIsOpen(!isOpen)} className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90">
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
+      {/* 사이드바 본체 */}
       <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden'}`}>
           
+          {/* 상단 프로필 영역 */}
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-6 mt-14">
             <div className="flex justify-between items-center border-b-4 border-black pb-1">
               <h2 className="text-2xl italic font-black uppercase tracking-tighter">
@@ -211,8 +218,9 @@ export default function Sidebar({
             </div>
           </div>
 
+          {/* 메인 콘텐츠 영역 (스크롤 가능) */}
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
-            {/* 직원 관리 패널 유지 */}
+            {/* [직원 관리 패널] */}
             {isMaster && showStaffManager && (
               <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
@@ -238,6 +246,7 @@ export default function Sidebar({
               </div>
             )}
 
+            {/* [달력 및 실적 요약] */}
             {isApproved && mode === 'office' && (
               <>
                 <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
@@ -259,6 +268,7 @@ export default function Sidebar({
               </>
             )}
 
+            {/* [퀵 도구 버튼 영역] */}
             <div className="space-y-3">
               <p className="text-[9px] text-slate-400 uppercase italic font-black">Quick Tools</p>
               <div className="grid grid-cols-1 gap-2">
@@ -276,6 +286,7 @@ export default function Sidebar({
               </button>
             </div>
 
+            {/* [전달사항 메모장] */}
             {isApproved && mode === 'office' && (
               <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 min-h-[120px] flex flex-col">
                 <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2">Instruction</p>
@@ -289,6 +300,7 @@ export default function Sidebar({
             )}
           </div>
 
+          {/* 하단 로그아웃 */}
           <div className="p-6 pt-2 flex-shrink-0">
             <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic">
               Logout System
@@ -297,7 +309,7 @@ export default function Sidebar({
         </div>
       </aside>
 
-      {/* 상담 도구 팝업 */}
+      {/* 상담 도구 팝업 (모달) */}
       {isConsultModalOpen && isApproved && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
@@ -334,6 +346,7 @@ export default function Sidebar({
         </div>
       )}
 
+      {/* 모바일용 배경 딤 처리 */}
       {isOpen && <div onClick={() => setIsOpen(false)} className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
     </>
   );
