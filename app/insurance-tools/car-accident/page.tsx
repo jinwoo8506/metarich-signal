@@ -36,51 +36,60 @@ function fmoney(v: number): string {
 export default function CarAccidentPage() {
   const [query, setQuery]       = useState('')
   const [selectedGrade, setGrade] = useState<number | null>(null)
-  const [amount, setAmount]     = useState<number>(3000) // 자동차부상 보험금
+  const [amount, setAmount]     = useState<number>(3000) // 자동차부상 보험금 기준금액
 
   const filtered = useMemo(() => {
+    // 1순위: 특정 급수 선택 시
     if (selectedGrade !== null) {
       return CAR_ACCIDENT_DB.filter(d => d.grade === selectedGrade)
     }
-    if (!query) return CAR_ACCIDENT_DB
-    const ql = query.toLowerCase()
-    return CAR_ACCIDENT_DB.filter(d =>
-      d.description.toLowerCase().includes(ql) ||
-      d.examples.some(e => e.toLowerCase().includes(ql)) ||
-      String(d.grade).includes(ql) ||
-      (d.notes?.toLowerCase().includes(ql) ?? false)
-    )
+    // 2순위: 검색어 입력 시
+    if (query) {
+      const ql = query.toLowerCase()
+      return CAR_ACCIDENT_DB.filter(d =>
+        d.description.toLowerCase().includes(ql) ||
+        d.examples.some(e => e.toLowerCase().includes(ql)) ||
+        String(d.grade).includes(ql) ||
+        (d.notes?.toLowerCase().includes(ql) ?? false)
+      )
+    }
+    // 3순위: 전체 목록
+    return CAR_ACCIDENT_DB
   }, [query, selectedGrade])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-slate-50 to-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-slate-50 to-orange-50 pb-20">
       {/* 헤더 */}
-      <div className="bg-gradient-to-r from-amber-700 to-orange-700 text-white px-6 py-5">
+      <div className="bg-gradient-to-r from-amber-800 to-orange-700 text-white px-6 py-6 shadow-md">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-xl font-bold">🚗 자동차사고 부상등급</h1>
-          <p className="text-sm text-amber-200 mt-0.5">KB 금쪽같은 별표9 · 자동차손해배상보장법 시행령 기준 · 1~14급 전체</p>
+          <h1 className="text-xl font-black flex items-center gap-2">
+            <span>🚗</span> 자동차사고 부상등급 검색기
+          </h1>
+          <p className="text-xs text-amber-200 mt-1 font-medium">자배법 시행령 기준 · 1~14급 상해내용 및 예상 지급금액 확인</p>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
 
-        {/* ① 검색 + 급수 선택 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-3">🔍 상해내용 검색 또는 등급 선택</p>
+        {/* ① 검색 + 급수 선택 섹션 */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 border border-amber-100">
+          <p className="text-xs font-black text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+            <span className="w-1 h-3 bg-amber-600 rounded-full"></span>
+            SEARCH & FILTER
+          </p>
           <input
             value={query}
             onChange={e => { setQuery(e.target.value); setGrade(null) }}
             placeholder="예) 골절 / 뇌손상 / 척추 / 절단 / 인대 파열..."
-            className="w-full border-2 border-slate-200 focus:border-amber-400 rounded-xl px-4 py-3 text-base outline-none bg-slate-50 focus:bg-white mb-3 transition"
+            className="w-full border-2 border-slate-100 focus:border-amber-400 rounded-2xl px-5 py-4 text-base outline-none bg-slate-50 focus:bg-white mb-4 transition-all font-bold"
           />
-          {/* 등급 빠른 선택 */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => { setGrade(null); setQuery('') }}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition
-                ${selectedGrade === null && !query ? 'bg-amber-600 text-white border-amber-600' : 'border-slate-200 text-slate-600 hover:border-amber-400'}`}
+              className={`px-4 py-2 rounded-xl text-xs font-black border-2 transition-all
+                ${selectedGrade === null && !query ? 'bg-amber-600 text-white border-amber-600 shadow-md' : 'border-slate-100 text-slate-500 hover:border-amber-200'}`}
             >
-              전체
+              전체보기
             </button>
             {Array.from({ length: 14 }, (_, i) => i + 1).map(g => {
               const col = GRADE_COLORS[g]
@@ -88,10 +97,10 @@ export default function CarAccidentPage() {
                 <button
                   key={g}
                   onClick={() => { setGrade(g); setQuery('') }}
-                  className={`w-10 h-8 rounded-full text-xs font-black border-2 transition
+                  className={`w-11 h-9 rounded-xl text-xs font-black border-2 transition-all
                     ${selectedGrade === g
-                      ? col.badge + ' border-transparent'
-                      : 'border-slate-200 text-slate-600 hover:border-amber-400'}`}
+                      ? col.badge + ' border-transparent shadow-md scale-110'
+                      : 'border-slate-100 text-slate-500 hover:border-amber-200'}`}
                 >
                   {g}급
                 </button>
@@ -100,64 +109,74 @@ export default function CarAccidentPage() {
           </div>
         </div>
 
-        {/* ② 보험금 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-3">💰 자동차부상 보험금 가입금액</p>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center border-2 border-slate-200 focus-within:border-amber-400 rounded-xl overflow-hidden bg-slate-50 focus-within:bg-white w-48 transition">
-              <input
-                type="number"
-                min={0}
-                value={amount}
-                onChange={e => setAmount(Number(e.target.value) || 0)}
-                className="flex-1 text-right px-3 py-3 text-base font-bold bg-transparent outline-none"
-              />
-              <span className="pr-3 text-sm text-slate-400 shrink-0">만원</span>
+        {/* ② 보험금 설정 섹션 */}
+        <div className="bg-white rounded-3xl shadow-sm p-6 border border-amber-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <p className="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="w-1 h-3 bg-amber-600 rounded-full"></span>
+              CALCULATE BENEFITS
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="relative flex items-center border-2 border-slate-100 focus-within:border-amber-400 rounded-2xl overflow-hidden bg-slate-50 focus-within:bg-white w-full sm:w-48 transition-all">
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={amount}
+                  onChange={e => setAmount(Number(e.target.value) || 0)}
+                  className="w-full text-right pr-10 pl-4 py-3 text-base font-black bg-transparent outline-none"
+                />
+                <span className="absolute right-3 text-xs font-bold text-slate-400">만원</span>
+              </div>
             </div>
-            <p className="text-xs text-slate-500">급수별 지급금액 = 가입금액 ÷ 급수<br/>(예: 3,000만원 ÷ 3급 = 1,000만원)</p>
           </div>
-          {/* 등급별 빠른 계산 */}
-          {amount > 0 && (
-            <div className="mt-3 grid grid-cols-7 gap-1.5">
-              {Array.from({ length: 14 }, (_, i) => i + 1).map(g => {
-                const col = GRADE_COLORS[g]
-                const pay = Math.round(amount / g)
-                return (
-                  <div
-                    key={g}
-                    onClick={() => { setGrade(g); setQuery('') }}
-                    className="text-center cursor-pointer rounded-xl p-2 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 transition"
-                  >
-                    <div className={`text-xs font-black ${col.text}`}>{g}급</div>
-                    <div className="text-[10px] text-slate-600 font-bold">{pay >= 1000 ? `${(pay/1000).toFixed(1)}천` : `${pay}`}만</div>
+          
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+            {Array.from({ length: 14 }, (_, i) => i + 1).map(g => {
+              const col = GRADE_COLORS[g]
+              const pay = Math.round(amount / g)
+              return (
+                <div
+                  key={g}
+                  onClick={() => { setGrade(g); setQuery('') }}
+                  className={`text-center cursor-pointer rounded-2xl p-2.5 border-2 transition-all group
+                    ${selectedGrade === g ? 'bg-amber-50 border-amber-400' : 'bg-slate-50 border-slate-50 hover:border-amber-200'}`}
+                >
+                  <div className={`text-[10px] font-black mb-0.5 group-hover:scale-110 transition-transform ${col.text}`}>{g}급</div>
+                  <div className="text-[11px] text-slate-700 font-black tracking-tighter">
+                    {pay >= 1000 ? `${(pay/1000).toFixed(1)}천` : `${pay}`}만
                   </div>
-                )
-              })}
-            </div>
-          )}
+                </div>
+              )
+            })}
+          </div>
+          <p className="text-[10px] text-slate-400 mt-4 text-center">
+            ※ 급수별 지급금액 공식: 가입금액(1급 기준) ÷ 해당 급수 (원단위 절사)
+          </p>
         </div>
 
-        {/* ③ 결과 */}
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p className="text-sm font-bold text-slate-600">
-              {selectedGrade !== null
-                ? <span><span className="text-amber-600 font-black">{selectedGrade}급</span> 상해 내용</span>
-                : query
-                  ? `"${query}" 검색 결과`
-                  : '전체 1~14급 목록'
-              }
-              <span className="ml-2 text-amber-500">{filtered.length}건</span>
+        {/* ③ 결과 섹션 */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <p className="text-sm font-black text-slate-700 flex items-center gap-2">
+              {selectedGrade !== null ? (
+                <span><span className="text-amber-600">{selectedGrade}급</span> 상세 상해내용</span>
+              ) : query ? (
+                <span><span className="text-amber-600">"{query}"</span> 검색 결과</span>
+              ) : (
+                <span>전체 상해 등급 목록</span>
+              )}
+              <span className="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-lg font-bold">{filtered.length}건</span>
             </p>
           </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3">🔍</div>
-              <p className="text-sm">검색 결과가 없습니다.</p>
+            <div className="bg-white rounded-3xl py-20 text-center border-2 border-dashed border-slate-200">
+              <div className="text-5xl mb-4 opacity-20">🔍</div>
+              <p className="text-slate-400 font-bold">매칭되는 상해 내용이 없습니다.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-4">
               {filtered.map(item => {
                 const col = GRADE_COLORS[item.grade]
                 const pay = amount > 0 ? Math.round(amount / item.grade) : 0
@@ -168,18 +187,31 @@ export default function CarAccidentPage() {
             </div>
           )}
 
-          {/* 참고사항 */}
-          <div className="mt-4 bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-1">
-            <p className="font-bold">📌 부상등급 적용 참고사항</p>
-            <p>• 2급~11급 중 2가지 이상 중복 시: 가장 높은 등급에서 하위 3등급 이내 중복이면 <strong>1등급 상향 병급</strong></p>
-            <p>• 일반 외상 + 치과보철 중복 시: 각각 배상, 합산액은 1급 금액 초과 불가</p>
-            <p>• 개방성 골절(거스틸로 2형 이상): <strong>1등급 상향</strong></p>
-            <p>• 소아(만 13세 미만): 동일 부위 골절 <strong>1급 하향</strong> (성장판 손상 제외)</p>
-            <p>• 보존적 치료 골절: 수술 등급에서 <strong>2급 하향</strong></p>
-          </div>
+          {/* 하단 정보 섹션 */}
+          <div className="mt-8 space-y-3">
+            <div className="bg-amber-50 border-2 border-amber-100 rounded-2xl p-5 text-xs text-amber-900 leading-relaxed shadow-sm">
+              <p className="font-black mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                <span className="text-base">📌</span> 부상등급 병급 및 적용 규칙
+              </p>
+              <ul className="space-y-1.5 ml-1">
+                <li className="flex gap-2">
+                  <span className="shrink-0">•</span>
+                  <span><strong>등급 상향(병급):</strong> 2급~11급 중 2가지 이상 중복 시, 가장 높은 등급이 하위 3개 등급 이내 중복이면 1등급 상향.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="shrink-0">•</span>
+                  <span><strong>골절 규칙:</strong> 개방성 골절(거스틸로 2형 이상)은 1등급 상향, 보존적 치료 시 수술 등급에서 2등급 하향 적용.</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="shrink-0">•</span>
+                  <span><strong>소아 특례:</strong> 만 13세 미만 어린이가 동일 부위 골절 시 1급 하향 적용 (성장판 손상은 예외).</span>
+                </li>
+              </ul>
+            </div>
 
-          <div className="mt-3 bg-slate-50 border-2 border-slate-200 rounded-xl p-4 text-xs text-slate-700">
-            ⚠️ 이 내용은 KB 금쪽같은 별표9 기준이며 자동차손해배상보장법 시행령 개정 시 변경됩니다. 해당 <strong>약관을 다시 참조</strong>하시길 바랍니다.
+            <div className="bg-slate-100 border-2 border-slate-200 rounded-2xl p-5 text-[10px] text-slate-500 font-medium italic">
+              ⚠️ 본 도구는 KB 금쪽같은 별표9 및 자동차손해배상보장법 시행령을 근거로 제작되었습니다. 사고 시 실제 보상 등급은 약관 및 손해사정 결과에 따라 달라질 수 있으므로 반드시 약관을 다시 참조하시기 바랍니다.
+            </div>
           </div>
         </div>
       </div>
@@ -188,7 +220,7 @@ export default function CarAccidentPage() {
 }
 
 // ─────────────────────────────────────────────────────────
-// 등급 카드
+// 등급 상세 카드 컴포넌트
 // ─────────────────────────────────────────────────────────
 function CarGradeCard({
   item, col, pay, query, amount
@@ -201,65 +233,88 @@ function CarGradeCard({
 }) {
   const [open, setOpen] = useState(false)
 
+  const highlight = (text: string, q: string) => {
+    if (!q) return text
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark class="bg-yellow-200 rounded px-0.5 font-bold">$1</mark>')
+  }
+
   const matchedExamples = useMemo(() => {
     if (!query) return item.examples
     const ql = query.toLowerCase()
     return item.examples.filter(e => e.toLowerCase().includes(ql))
   }, [item.examples, query])
 
+  // 검색 시에는 전체 결과를 보여주고, 평소에는 요약/전체 토글
   const displayExamples = query ? matchedExamples : (open ? item.examples : item.examples.slice(0, 3))
 
   return (
     <div
       onClick={() => setOpen(o => !o)}
-      className={`bg-white rounded-2xl shadow-sm border-2 cursor-pointer transition hover:shadow-md
-        ${open ? 'border-amber-300' : 'border-slate-100 hover:border-amber-300'}`}
+      className={`bg-white rounded-3xl shadow-sm border-2 cursor-pointer transition-all duration-300
+        ${open ? 'border-amber-400 shadow-md scale-[1.01]' : 'border-slate-50 hover:border-amber-200'}`}
     >
-      {/* 헤더 */}
-      <div className="flex items-center gap-4 p-4 border-b border-slate-100">
-        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-black shrink-0 ${col.badge}`}>
-          <span className="text-2xl leading-none">{item.grade}</span>
-          <span className="text-xs opacity-80">급</span>
+      {/* 카드 상단 헤더 */}
+      <div className="flex items-center gap-5 p-5">
+        <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-inner ${col.badge}`}>
+          <span className="text-3xl leading-none tracking-tighter">{item.grade}</span>
+          <span className="text-[10px] opacity-80 mt-0.5">GRADE</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-bold text-slate-800 text-sm">{item.description}</div>
-          <div className="text-xs text-slate-400 mt-0.5 truncate">{GRADE_SUMMARY[item.grade]}</div>
+          <div className="font-black text-slate-800 text-base leading-tight mb-1 truncate">
+            {item.description}
+          </div>
+          <div className="text-[11px] text-slate-400 font-bold truncate">
+            {GRADE_SUMMARY[item.grade]}
+          </div>
           {amount > 0 && (
-            <div className={`text-sm font-black mt-1 ${col.text}`}>
-              예상 지급: {fmoney(pay)}
-              <span className="text-xs font-normal text-slate-400 ml-1">({amount.toLocaleString()}만원 ÷ {item.grade}급)</span>
+            <div className={`text-sm font-black mt-1.5 flex items-center gap-1.5 ${col.text}`}>
+              <span className="text-[10px] bg-white px-1.5 py-0.5 rounded border border-current opacity-80 font-bold">지급액</span>
+              {fmoney(pay)}
             </div>
           )}
         </div>
-        <div className="text-slate-300 text-sm shrink-0">{open ? '▲' : '▼'}</div>
+        <div className={`text-slate-300 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+        </div>
       </div>
 
-      {/* 상해 내용 목록 */}
-      <div className="p-4 pt-3">
-        <p className="text-xs font-bold text-slate-500 mb-2">
-          상해 내용 {query && matchedExamples.length > 0 ? `(검색 매칭 ${matchedExamples.length}건)` : `(${item.examples.length}건)`}
-        </p>
-        <ul className="space-y-1.5">
-          {displayExamples.map((ex, i) => (
-            <li key={i} className="flex gap-2 text-xs text-slate-700 leading-relaxed">
-              <span className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white mt-0.5 ${col.bar}`}>
-                {i + 1}
+      {/* 상해 내용 리스트 영역 */}
+      <div className={`p-5 pt-0 transition-all ${open ? 'opacity-100' : 'opacity-90'}`}>
+        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p className="text-[10px] font-black text-slate-400 mb-3 uppercase tracking-wider flex justify-between items-center">
+            <span>Injury Details ({item.examples.length})</span>
+            {query && <span className="text-amber-600">Match: {matchedExamples.length}</span>}
+          </p>
+          <ul className="space-y-2.5">
+            {displayExamples.map((ex, i) => (
+              <li key={i} className="flex gap-3 text-xs text-slate-700 leading-snug items-start">
+                <span className={`shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black text-white mt-0.5 shadow-sm ${col.bar}`}>
+                  {i + 1}
+                </span>
+                <span 
+                  className="font-medium pt-0.5"
+                  dangerouslySetInnerHTML={{ __html: highlight(ex, query) }} 
+                />
+              </li>
+            ))}
+          </ul>
+          
+          {!open && !query && item.examples.length > 3 && (
+            <div className="mt-4 pt-3 border-t border-slate-200 text-center">
+              <span className="text-[11px] text-amber-600 font-black flex items-center justify-center gap-1">
+                + {item.examples.length - 3}개 내용 더 보기 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
               </span>
-              <span dangerouslySetInnerHTML={{ __html: query
-                ? ex.replace(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark class="bg-yellow-200 rounded px-0.5">$1</mark>')
-                : ex
-              }} />
-            </li>
-          ))}
-        </ul>
-        {!open && !query && item.examples.length > 3 && (
-          <button className="mt-2 text-xs text-amber-600 font-bold hover:underline">
-            + {item.examples.length - 3}개 더 보기 ▼
-          </button>
-        )}
+            </div>
+          )}
+        </div>
+
         {item.notes && open && (
-          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800">
-            💡 {item.notes}
+          <div className="mt-4 bg-amber-50 border-2 border-amber-100 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex gap-2">
+              <span className="text-base shrink-0">💡</span>
+              <p className="text-[11px] text-amber-900 font-bold leading-relaxed">{item.notes}</p>
+            </div>
           </div>
         )}
       </div>

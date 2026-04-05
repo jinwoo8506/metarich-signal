@@ -44,7 +44,7 @@ const CATEGORIES = [
 ]
 
 // ─────────────────────────────────────────────────────────
-// 유틸
+// 유틸리티 함수
 // ─────────────────────────────────────────────────────────
 function fmoney(v: number): string {
   if (v === 0) return '미가입'
@@ -85,22 +85,22 @@ function matchItem(item: SurgeryItem, q: string): boolean {
 // 치조골 이식 팝업 데이터
 // ─────────────────────────────────────────────────────────
 const CHIOGOL_DATA = [
-  { company: 'IGN생명',     until: '~2008년 03월 31일' },
-  { company: '한화생명',    until: '~2006년 02월 28일' },
-  { company: '교보생명',    until: '~2006년 02월 20일' },
-  { company: '삼성생명',    until: '~2005년 03월 31일' },
-  { company: '신한라이프',  until: '~2006년 03월 12일' },
-  { company: '동부생명',    until: '~2007년 03월 31일' },
-  { company: '알리안츠',    until: '~2006년 03월 31일' },
-  { company: '메트라이프',  until: '~2008년 03월 31일' },
-  { company: '푸르덴셜',    until: '~2008년 03월 31일' },
-  { company: '동양생명',    until: '~2006년 03월 31일' },
-  { company: '미래에셋',    until: '~2006년 03월 31일' },
-  { company: '하나생명',    until: '~2006년 03월 31일' },
+  { company: 'ING생명',     until: '~2008년 03월 31일' },
+  { company: '한화생명',     until: '~2006년 02월 28일' },
+  { company: '교보생명',     until: '~2006년 02월 20일' },
+  { company: '삼성생명',     until: '~2005년 03월 31일' },
+  { company: '신한라이프',   until: '~2006년 03월 12일' },
+  { company: '동부생명',     until: '~2007년 03월 31일' },
+  { company: '알리안츠',     until: '~2006년 03월 31일' },
+  { company: '메트라이프',   until: '~2008년 03월 31일' },
+  { company: '푸르덴셜',     until: '~2008년 03월 31일' },
+  { company: '동양생명',     until: '~2006년 03월 31일' },
+  { company: '미래에셋',     until: '~2006년 03월 31일' },
+  { company: '하나생명',     until: '~2006년 03월 31일' },
 ]
 
 // ─────────────────────────────────────────────────────────
-// 컴포넌트
+// 메인 페이지 컴포넌트
 // ─────────────────────────────────────────────────────────
 export default function SurgeryPage() {
   const [query, setQuery]         = useState('')
@@ -151,74 +151,78 @@ export default function SurgeryPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-green-50">
       {/* 헤더 */}
-      <div className="bg-gradient-to-r from-slate-800 to-blue-900 text-white px-6 py-5">
+      <div className="bg-gradient-to-r from-slate-800 to-blue-900 text-white px-6 py-5 shadow-lg">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold">🏥 수술비 계산기</h1>
-              <p className="text-sm text-blue-200 mt-0.5">1~5종 수술 전체 · KB·흥국생명·DB손해보험 기준</p>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <span className="bg-white/20 p-1.5 rounded-lg">🏥</span>
+                수술비 통합 계산기
+              </h1>
+              <p className="text-sm text-blue-200 mt-1 opacity-90">1~5종 수술 데이터베이스 · KB/흥국/DB 기준</p>
             </div>
             <button
               onClick={() => setShowChiogol(true)}
-              className="text-xs bg-white/20 hover:bg-white/30 border border-white/30 text-white px-3 py-1.5 rounded-lg transition"
+              className="text-xs font-semibold bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-xl transition-all active:scale-95"
             >
-              🦷 1~3종 치조골이식 보험사 현황
+              🦷 1~3종 치조골이식 지급시기 확인
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-        {/* ① 검색 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">🔍 통합 검색</p>
+        {/* ① 검색 섹션 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">🔍 통합 수술 명칭 검색</p>
           <div className="relative">
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
                   value={query}
                   onChange={e => { setQuery(e.target.value); setAcOpen(true) }}
                   onKeyDown={e => { if (e.key === 'Escape') setAcOpen(false) }}
                   onFocus={() => setAcOpen(true)}
-                  placeholder="예) 백내장, H25, 담낭, 티눈, 디스크, 위절제..."
-                  className="w-full border-2 border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 text-base outline-none bg-slate-50 focus:bg-white transition"
+                  placeholder="질병코드(H25), 수술명, 연관어 검색..."
+                  className="w-full border-2 border-slate-100 focus:border-blue-500 rounded-2xl px-5 py-4 text-base outline-none bg-slate-50/50 focus:bg-white transition-all shadow-inner"
                 />
-                {/* 자동완성 */}
+                {/* 자동완성 목록 */}
                 {acOpen && acItems.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border-2 border-blue-400 rounded-xl shadow-lg z-50 overflow-hidden max-h-80 overflow-y-auto">
-                    <div className="px-4 py-2 bg-blue-50 text-xs font-bold text-blue-600 uppercase tracking-wide">
-                      검색결과 — 클릭하면 바로 확인
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-blue-400 rounded-2xl shadow-xl z-50 overflow-hidden max-h-96 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                    <div className="px-4 py-2.5 bg-blue-50 text-[10px] font-black text-blue-600 uppercase tracking-wider border-b border-blue-100">
+                      실시간 추천 검색 결과
                     </div>
                     {acItems.map(item => {
                       const col = item.isCancer ? CANCER_COLOR : TYPE_COLORS[item.type]
-                      const { surgPay, disPay, total } = calcPayout(item, amounts)
+                      const { total } = calcPayout(item, amounts)
                       return (
                         <button
                           key={item.id}
                           onClick={() => { setQuery(item.name); setAcOpen(false); setTypeFilter(null) }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 border-b border-slate-100 last:border-0 text-left transition"
+                          className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-slate-50 border-b border-slate-50 last:border-0 text-left transition-colors"
                         >
-                          <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center font-black text-sm shrink-0 ${col.badge}`}>
+                          <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center font-black text-sm shrink-0 shadow-sm ${col.badge}`}>
                             <span className="text-base leading-none">{item.isCancer ? '암' : item.type}</span>
-                            <span className="text-[10px] opacity-80">종</span>
+                            <span className="text-[9px] font-bold">종</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div
-                              className="font-semibold text-slate-800 text-sm truncate"
+                              className="font-bold text-slate-800 text-[15px] truncate"
                               dangerouslySetInnerHTML={{ __html: highlight(item.name, query) }}
                             />
-                            <div className="flex gap-2 mt-0.5 flex-wrap">
-                              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                                {item.kcd_codes[0] || '-'}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[11px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono font-medium tracking-tighter">
+                                {item.kcd_codes[0] || 'N/A'}
                               </span>
-                              <span className="text-xs text-slate-500">{item.type}종 수술</span>
                               {total > 0 && (
-                                <span className="text-xs font-bold text-blue-700">예상 {fmoney(total)}</span>
+                                <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                  예상 {fmoney(total)}
+                                </span>
                               )}
                             </div>
                           </div>
-                          <span className="text-slate-300 text-sm">→</span>
+                          <span className="text-slate-300 transform group-hover:translate-x-1 transition-transform">→</span>
                         </button>
                       )
                     })}
@@ -228,27 +232,27 @@ export default function SurgeryPage() {
               {query && (
                 <button
                   onClick={() => { setQuery(''); setAcOpen(false) }}
-                  className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium transition"
+                  className="px-6 py-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold transition-all active:scale-95"
                 >
                   초기화
                 </button>
               )}
             </div>
 
-            {/* 부위별 탭 */}
-            <div className="flex flex-wrap gap-1.5">
+            {/* 부위별 카테고리 탭 */}
+            <div className="flex flex-wrap gap-2 mt-5">
               {CATEGORIES.map(c => (
                 <button
                   key={c.key}
                   onClick={() => handleCategoryClick(c.key)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition
+                  className={`px-3.5 py-2 rounded-xl text-[13px] font-bold border-2 transition-all active:scale-95
                     ${category === c.key
                       ? c.key === 'cancer'
-                        ? 'bg-red-600 text-white border-red-600'
-                        : 'bg-blue-600 text-white border-blue-600'
+                        ? 'bg-red-600 text-white border-red-600 shadow-md'
+                        : 'bg-blue-600 text-white border-blue-600 shadow-md'
                       : c.key === 'cancer'
-                        ? 'border-red-300 text-red-600 hover:bg-red-50'
-                        : 'border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50'
+                        ? 'border-red-100 text-red-500 hover:bg-red-50'
+                        : 'border-slate-100 text-slate-600 hover:border-blue-200 hover:bg-blue-50'
                     }`}
                 >
                   {c.label}
@@ -258,49 +262,49 @@ export default function SurgeryPage() {
           </div>
         </div>
 
-        {/* ② 가입금액 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">💰 가입금액 입력 — 1~5종 개별 설정</p>
-          <div className="grid grid-cols-5 gap-2 mb-3">
+        {/* ② 가입금액 설정 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">💰 나의 가입 특약 설정</p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
             {([1,2,3,4,5] as const).map(t => {
               const col = TYPE_COLORS[t]
               const key = `type${t}` as keyof SurgeryAmounts
               return (
-                <div key={t}>
-                  <label className={`block text-xs font-bold mb-1 ${col.text}`}>{t}종 수술비</label>
-                  <div className={`flex items-center border-2 rounded-xl overflow-hidden bg-slate-50 focus-within:bg-white transition focus-within:${col.border}`}>
+                <div key={t} className="group">
+                  <label className={`block text-[11px] font-black mb-1.5 ml-1 ${col.text}`}>{t}종 수술비</label>
+                  <div className={`flex items-center border-2 rounded-2xl overflow-hidden bg-slate-50/50 focus-within:bg-white transition-all group-hover:border-slate-200 focus-within:${col.border}`}>
                     <input
                       type="number"
                       min={0}
                       value={amounts[key]}
                       onChange={e => handleAmountChange(key, e.target.value)}
-                      className="flex-1 text-right px-2 py-2.5 text-sm font-bold bg-transparent outline-none min-w-0"
+                      className="flex-1 text-right px-1 py-3 text-sm font-black bg-transparent outline-none min-w-0"
                     />
-                    <span className="pr-2 text-xs text-slate-400 font-medium shrink-0">만원</span>
+                    <span className="pr-3 text-[10px] text-slate-400 font-bold shrink-0">만원</span>
                   </div>
                 </div>
               )
             })}
           </div>
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-bold text-slate-600 whitespace-nowrap">질병수술비 <span className="text-xs text-slate-400">(1회 지급)</span></label>
-            <div className="flex items-center border-2 border-slate-200 rounded-xl overflow-hidden bg-slate-50 focus-within:bg-white w-40">
+          <div className="flex items-center gap-4 pt-2 border-t border-slate-50">
+            <label className="text-sm font-black text-slate-700 whitespace-nowrap">질병수술비 (기본)</label>
+            <div className="flex items-center border-2 border-slate-100 rounded-2xl overflow-hidden bg-slate-50/50 focus-within:bg-white focus-within:border-slate-300 w-full max-w-[200px]">
               <input
                 type="number"
                 min={0}
                 value={amounts.disease}
                 onChange={e => handleAmountChange('disease', e.target.value)}
-                className="flex-1 text-right px-3 py-2.5 text-sm font-bold bg-transparent outline-none"
+                className="flex-1 text-right px-4 py-3 text-sm font-black bg-transparent outline-none"
               />
-              <span className="pr-3 text-xs text-slate-400">만원</span>
+              <span className="pr-4 text-[10px] text-slate-400 font-bold">만원</span>
             </div>
           </div>
         </div>
 
-        {/* ③ 종별 브라우즈 */}
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-3">📂 종별 목록 보기 <span className="font-normal text-slate-400 text-xs normal-case tracking-normal">— 클릭하면 해당 종 전체 표시 / 다시 클릭하면 해제</span></p>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {/* ③ 종별 빠른 필터 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+          <p className="text-xs font-bold text-blue-600 uppercase tracking-widest mb-4">📂 종별 전체 리스트</p>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
             {TYPE_BROWSE.map(({ type, label, example, mul }) => {
               const col = TYPE_COLORS[type]
               const isOn = typeFilter === type
@@ -309,111 +313,137 @@ export default function SurgeryPage() {
                 <button
                   key={type}
                   onClick={() => handleTypeClick(type)}
-                  className={`rounded-xl p-3 text-left border-2 transition hover:-translate-y-0.5 hover:shadow-md
-                    ${isOn ? `${col.bg} ${col.border} shadow-md` : 'bg-slate-50 border-slate-200 hover:border-blue-300'}`}
+                  className={`rounded-2xl p-4 text-left border-2 transition-all group hover:-translate-y-1
+                    ${isOn ? `${col.bg} ${col.border} shadow-lg ring-2 ring-offset-2 ${col.border.replace('border-', 'ring-')}` : 'bg-slate-50/50 border-slate-50 hover:border-blue-200 hover:bg-white'}`}
                 >
-                  <div className={`text-2xl font-black leading-none ${isOn ? col.text : 'text-slate-400'}`}>{type}</div>
-                  <div className={`text-xs font-bold mb-1 ${isOn ? col.text : 'text-slate-500'}`}>종 수술</div>
-                  <div className="text-[10px] text-slate-400 leading-tight">{example}</div>
-                  <div className={`text-xs font-bold mt-1 ${isOn ? col.text : 'text-slate-400'}`}>
-                    {amt > 0 ? `${fmoney(amt)} 지급` : '미가입'}
+                  <div className={`text-3xl font-black leading-none ${isOn ? col.text : 'text-slate-300 group-hover:text-slate-400'}`}>{type}</div>
+                  <div className={`text-[11px] font-black mb-2 ${isOn ? col.text : 'text-slate-500'}`}>종 수술</div>
+                  <div className="text-[10px] text-slate-400 leading-tight mb-2 h-6 overflow-hidden line-clamp-2">{example}</div>
+                  <div className={`text-[11px] font-black pt-2 border-t border-dotted ${isOn ? col.border : 'border-slate-200'} ${isOn ? col.text : 'text-slate-400'}`}>
+                    {amt > 0 ? fmoney(amt) : '미가입'}
                   </div>
                 </button>
               )
             })}
-            {/* 암 */}
+            {/* 암 버튼 */}
             <button
               onClick={() => handleTypeClick('cancer')}
-              className={`rounded-xl p-3 text-left border-2 transition hover:-translate-y-0.5 hover:shadow-md
-                ${typeFilter === 'cancer' ? 'bg-red-50 border-red-400 shadow-md' : 'bg-slate-50 border-slate-200 hover:border-red-300'}`}
+              className={`rounded-2xl p-4 text-left border-2 transition-all group hover:-translate-y-1
+                ${typeFilter === 'cancer' ? 'bg-red-50 border-red-400 shadow-lg ring-2 ring-offset-2 ring-red-200' : 'bg-slate-50/50 border-slate-50 hover:border-red-200 hover:bg-white'}`}
             >
-              <div className={`text-2xl font-black leading-none ${typeFilter === 'cancer' ? 'text-red-600' : 'text-slate-400'}`}>암</div>
-              <div className={`text-xs font-bold mb-1 ${typeFilter === 'cancer' ? 'text-red-600' : 'text-slate-500'}`}>수술</div>
-              <div className="text-[10px] text-slate-400 leading-tight">근치·내시경·방사선</div>
-              <div className={`text-xs font-bold mt-1 ${typeFilter === 'cancer' ? 'text-red-600' : 'text-slate-400'}`}>5종 기준</div>
+              <div className={`text-3xl font-black leading-none ${typeFilter === 'cancer' ? 'text-red-600' : 'text-slate-300'}`}>암</div>
+              <div className={`text-[11px] font-black mb-2 ${typeFilter === 'cancer' ? 'text-red-600' : 'text-slate-500'}`}>집중 수술</div>
+              <div className="text-[10px] text-slate-400 leading-tight mb-2 h-6">악성 신생물 기준</div>
+              <div className={`text-[11px] font-black pt-2 border-t border-dotted ${typeFilter === 'cancer' ? 'border-red-200 text-red-600' : 'border-slate-200 text-slate-400'}`}>
+                3·5종 기준
+              </div>
             </button>
           </div>
         </div>
 
-        {/* ④ 결과 */}
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p className="text-sm font-bold text-slate-600">
+        {/* ④ 검색 및 필터 결과 리스트 */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-base font-black text-slate-800">
               {typeFilter !== null
-                ? <span><span className="text-blue-600">{typeFilter === 'cancer' ? '암수술' : `${typeFilter}종`}</span> 수술 목록</span>
+                ? <span><span className="text-blue-600">{typeFilter === 'cancer' ? '암수술' : `${typeFilter}종`}</span> 검색 결과</span>
                 : query
-                  ? <span>&ldquo;{query}&rdquo; 검색 결과</span>
-                  : '전체 수술 목록'
+                  ? <span>&ldquo;<span className="text-blue-600">{query}</span>&rdquo; 관련 수술</span>
+                  : '전체 수술 리스트'
               }
-              <span className="ml-2 text-blue-500">{filtered.length}건</span>
-            </p>
+              <span className="ml-2 font-medium text-slate-400 text-sm">{filtered.length}건</span>
+            </h3>
           </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3">🔍</div>
-              <p className="text-sm">검색 결과가 없습니다.<br />다른 검색어나 부위를 선택해 보세요.</p>
+            <div className="bg-white rounded-2xl py-20 text-center border-2 border-dashed border-slate-200">
+              <div className="text-5xl mb-4 opacity-20">🔎</div>
+              <p className="text-slate-500 font-bold">검색 결과가 없습니다.</p>
+              <p className="text-slate-400 text-xs mt-1">질병명 또는 부위 카테고리를 다시 확인해 보세요.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {/* 일반 수술 */}
+            <div className="grid grid-cols-1 gap-4">
+              {/* 일반 수술 항목 */}
               {normalItems.map(item => (
                 <SurgeryCard key={item.id} item={item} amounts={amounts} query={query} />
               ))}
-              {/* 암 수술 구분선 */}
-              {cancerItems.length > 0 && normalItems.length > 0 && (
-                <div className="flex items-center gap-3 my-4">
-                  <div className="flex-1 h-px bg-red-200" />
-                  <span className="text-xs font-bold text-red-600 bg-red-50 border border-red-200 px-3 py-1 rounded-full">
-                    🎗 암 수술 — 별도 암 특약 확인 필수
-                  </span>
-                  <div className="flex-1 h-px bg-red-200" />
+
+              {/* 암 수술 항목이 있을 경우 구분선 표시 */}
+              {cancerItems.length > 0 && (
+                <div className="relative py-8">
+                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div className="w-full border-t-2 border-red-100"></div>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-4 bg-slate-50 text-[11px] font-black text-red-600 flex items-center gap-2 border border-red-200 rounded-full py-1.5 shadow-sm">
+                      🎗 암 수술 정보 (암 특약 별도 확인 권장)
+                    </span>
+                  </div>
                 </div>
               )}
+
               {cancerItems.map(item => (
                 <SurgeryCard key={item.id} item={item} amounts={amounts} query={query} />
               ))}
             </div>
           )}
 
-          {/* 면책 안내 */}
-          <div className="mt-6 bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-xs text-amber-800 leading-relaxed">
-            ⚠️ 이 내용은 예시이며 해당 상품의 <strong>증권과 약관을 다시 참조</strong>하시길 바랍니다. 가입 특약에 따라 지급 기준이 다를 수 있습니다.
+          {/* 면책 안내 고지 */}
+          <div className="bg-amber-50/50 border-l-4 border-amber-400 p-5 rounded-r-2xl">
+            <div className="flex gap-3">
+              <span className="text-amber-500 text-lg">⚠️</span>
+              <p className="text-xs text-amber-900 leading-relaxed font-medium">
+                본 정보는 보험 약관의 일반적인 해석을 돕기 위한 참고 자료이며, 보험금 지급 여부는 가입하신 상품의 <strong>증권 및 특별약관</strong>에 따라 결정됩니다. 수술 시기, 보험사별 상이한 기준(1~3종 vs 1~5종)에 따라 차이가 발생할 수 있으니 반드시 담당 설계사나 고객센터를 통해 확정 받으시기 바랍니다.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 치조골 이식 팝업 */}
+      {/* 치조골 이식 팝업 레이어 */}
       {showChiogol && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white px-5 py-4 flex items-center justify-between">
-              <div>
-                <h2 className="font-bold text-base">🦷 생명보험사 1~3종 치조골이식</h2>
-                <p className="text-xs text-blue-200 mt-0.5">수술 가능한 보험시기 기준</p>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white px-6 py-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-black">🦷 치조골이식 보험금</h2>
+                  <p className="text-blue-200 text-xs mt-1 font-medium">생명보험 1~3종 수술비 지급 가능 시기</p>
+                </div>
+                <button onClick={() => setShowChiogol(false)} className="bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">✕</button>
               </div>
-              <button onClick={() => setShowChiogol(false)} className="text-white/70 hover:text-white text-xl leading-none">✕</button>
             </div>
-            <div className="p-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-slate-200">
-                    <th className="text-left py-2 px-2 text-slate-600 font-bold">생명 보험사</th>
-                    <th className="text-right py-2 px-2 text-slate-600 font-bold">보험시기 (~까지)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CHIOGOL_DATA.map((row, i) => (
-                    <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}`}>
-                      <td className="py-2.5 px-2 font-medium text-slate-800">{row.company}</td>
-                      <td className="py-2.5 px-2 text-right text-blue-700 font-semibold">{row.until}</td>
+            <div className="p-6">
+              <div className="rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left py-3 px-4 text-slate-500 font-bold">생명보험사</th>
+                      <th className="text-right py-3 px-4 text-slate-500 font-bold">보험시기 (~까지)</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-xs text-slate-400 mt-3 text-center">
-                해당 보험시기 이전 가입 계약에 한해 치조골이식 수술비 지급 가능
-              </p>
+                  </thead>
+                  <tbody>
+                    {CHIOGOL_DATA.map((row, i) => (
+                      <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3.5 px-4 font-black text-slate-700">{row.company}</td>
+                        <td className="py-3.5 px-4 text-right text-blue-600 font-mono font-bold">{row.until}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-5 p-4 bg-slate-50 rounded-2xl">
+                <p className="text-[11px] text-slate-500 text-center leading-relaxed font-medium">
+                  위 날짜 <strong>이전 가입자</strong>만 수술비(2종 등) 청구가 가능하며,<br />
+                  이후 가입자는 질병수술비나 별도 약관 확인이 필요합니다.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowChiogol(false)}
+                className="w-full mt-4 py-4 bg-slate-800 text-white font-black rounded-2xl hover:bg-slate-900 transition-colors shadow-lg active:scale-[0.98]"
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
@@ -423,7 +453,7 @@ export default function SurgeryPage() {
 }
 
 // ─────────────────────────────────────────────────────────
-// 수술 카드 컴포넌트
+// 개별 수술 정보 카드 컴포넌트
 // ─────────────────────────────────────────────────────────
 function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: SurgeryAmounts; query: string }) {
   const [open, setOpen] = useState(false)
@@ -441,98 +471,131 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
   return (
     <div
       onClick={() => setOpen(o => !o)}
-      className={`bg-white rounded-2xl shadow-sm border-2 cursor-pointer transition hover:shadow-md
-        ${open ? col.border : 'border-slate-100 hover:border-blue-300'}`}
+      className={`group bg-white rounded-2xl shadow-sm border-2 cursor-pointer transition-all duration-300
+        ${open ? `${col.border} shadow-lg ring-1 ${col.border.replace('border-', 'ring-')}` : 'border-slate-50 hover:border-blue-100 hover:shadow-md'}`}
     >
-      {/* 카드 헤더 */}
-      <div className="flex items-start gap-3 p-4 border-b border-slate-100">
-        <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black shrink-0 ${col.badge}`}>
-          <span className="text-lg leading-none">{item.isCancer ? '암' : item.type}</span>
-          <span className="text-[10px] opacity-80">종</span>
+      {/* 카드 상단 영역 */}
+      <div className="flex items-start gap-4 p-5">
+        <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-sm transition-transform duration-300 ${open ? 'scale-110' : 'group-hover:scale-105'} ${col.badge}`}>
+          <span className="text-xl leading-none">{item.isCancer ? '암' : item.type}</span>
+          <span className="text-[10px] font-bold opacity-70">종</span>
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 pt-0.5">
           <div
-            className="font-bold text-slate-800 text-base leading-snug"
+            className="font-black text-slate-800 text-[17px] leading-tight group-hover:text-blue-700 transition-colors"
             dangerouslySetInnerHTML={{ __html: highlight(item.name, query) }}
           />
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {item.kcd_codes.slice(0, 2).map(k => (
-              <span key={k} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">{k}</span>
+          <div className="flex flex-wrap gap-2 mt-2.5">
+            {item.kcd_codes.slice(0, 3).map(k => (
+              <span key={k} className="text-[11px] bg-slate-50 text-slate-500 px-2 py-0.5 rounded-lg border border-slate-100 font-mono font-bold">{k}</span>
             ))}
-            <span className={`text-xs px-2 py-0.5 rounded font-bold ${col.badge}`}>
+            <span className={`text-[11px] px-2.5 py-0.5 rounded-lg font-black shadow-sm ${col.badge}`}>
               {item.isCancer ? `암수술·${item.type}종` : `${item.type}종 수술`}
             </span>
             {item.is_disputed && (
-              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded font-bold">⚠️ 분쟁주의</span>
+              <span className="text-[11px] bg-orange-50 text-orange-600 px-2.5 py-0.5 rounded-lg font-black border border-orange-100 animate-pulse">
+                ⚠️ 분쟁주의
+              </span>
             )}
           </div>
           {matchedSyns.length > 0 && (
-            <div className="mt-1">
-              <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">
-                🔗 &ldquo;{matchedSyns[0]}&rdquo; 연관 검색
+            <div className="mt-2 flex items-center gap-1.5">
+              <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md border border-green-100 flex items-center gap-1">
+                <span className="text-xs">🔗</span> 연관: {matchedSyns[0]}
               </span>
             </div>
           )}
         </div>
-        <div className="text-slate-300 text-lg">{open ? '▲' : '▼'}</div>
-      </div>
-
-      {/* 지급액 패널 */}
-      <div className={`px-4 py-3 ${open ? 'bg-gradient-to-r from-slate-800 to-blue-900' : col.bg} transition-colors`}>
-        <div className={`text-xs mb-0.5 ${open ? 'text-blue-200' : col.text + ' opacity-70'}`}>예상 총 지급액</div>
-        <div className={`text-2xl font-black tracking-tight ${open ? 'text-yellow-400' : col.text}`}>
-          {fmoney(total)}
-        </div>
-        <div className={`text-xs mt-0.5 ${open ? 'text-blue-300' : col.text + ' opacity-70'}`}>
-          {item.type}종 수술비 {fmoney(surgPay)}
-          {disPay > 0 ? ` + 질병수술비 ${fmoney(disPay)}` : ''}
+        <div className={`mt-2 text-slate-300 transition-transform duration-300 ${open ? 'rotate-180 text-blue-500' : ''}`}>
+          <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
         </div>
       </div>
 
-      {/* 상세 (펼쳐졌을 때) */}
-      {open && (
-        <div className="p-4 space-y-2.5 text-sm">
-          <div className="flex gap-2">
-            <span className="text-base shrink-0 mt-0.5">📋</span>
-            <span className="text-slate-700"><strong>수술 정의:</strong> {item.desc}</span>
+      {/* 요약 지급액 정보 바 */}
+      <div className={`px-5 py-4 transition-all duration-300 ${open ? 'bg-slate-800 text-white' : `${col.bg} border-t border-slate-50`}`}>
+        <div className="flex items-end justify-between">
+          <div>
+            <div className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${open ? 'text-blue-300' : 'text-slate-400'}`}>
+              예상 총 지급 보험금
+            </div>
+            <div className={`text-3xl font-black tracking-tight ${open ? 'text-yellow-400' : col.text}`}>
+              {fmoney(total)}
+            </div>
           </div>
+          <div className={`text-right text-[11px] font-bold pb-1 ${open ? 'text-slate-400' : 'text-slate-500'}`}>
+            {item.type}종 {fmoney(surgPay)}
+            {disPay > 0 && <span className={open ? 'text-blue-300' : 'text-blue-600'}> + 질병 {fmoney(disPay)}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* 확장 상세 정보 패널 */}
+      {open && (
+        <div className="p-6 bg-white space-y-4 text-[14px] animate-in slide-in-from-top-2 duration-300">
+          <div className="flex gap-3">
+            <span className="text-xl shrink-0 mt-0.5">📋</span>
+            <div className="space-y-1">
+              <span className="font-black text-slate-800 block">수술 정의 및 범위</span>
+              <p className="text-slate-600 leading-relaxed font-medium">{item.desc}</p>
+            </div>
+          </div>
+
           {item.notes && (
-            <div className="flex gap-2">
-              <span className="text-base shrink-0 mt-0.5">💡</span>
-              <span className="text-slate-600">{item.notes}</span>
+            <div className="flex gap-3 bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+              <span className="text-xl shrink-0">💡</span>
+              <div className="space-y-1">
+                <span className="font-black text-blue-800 block text-xs">참고 및 안내</span>
+                <p className="text-blue-700 text-[13px] leading-relaxed font-medium">{item.notes}</p>
+              </div>
             </div>
           )}
+
           {item.isCancer && (
-            <div className="flex gap-2">
-              <span className="text-base shrink-0 mt-0.5">🎗</span>
-              <span className="text-slate-700"><strong>암 특약(암수술비)</strong> 별도 지급 가능 — 증권 확인 필요</span>
+            <div className="flex gap-3 bg-red-50/50 p-4 rounded-2xl border border-red-100">
+              <span className="text-xl shrink-0">🎗</span>
+              <div className="space-y-1 text-red-800 text-[13px] font-bold">
+                본 수술은 암 전용 수술비 특약에서 별도로 지급될 수 있습니다.
+                <p className="text-[11px] mt-1 font-medium opacity-80">악성 신생물 및 상피내암 분류에 따라 가입금액의 10~100%가 차등 지급됩니다.</p>
+              </div>
             </div>
           )}
+
           {item.type_by_company && (
-            <div className="flex gap-2">
-              <span className="text-base shrink-0 mt-0.5">🏢</span>
-              <span className="text-slate-600">
-                보험사별 종수 차이:&nbsp;
-                {Object.entries(item.type_by_company).map(([co, t]) => `${co} ${t}종`).join(' / ')}
-              </span>
+            <div className="flex gap-3 pt-2">
+              <span className="text-xl shrink-0">🏢</span>
+              <div className="space-y-1">
+                <span className="font-black text-slate-800 block">보험사별 종 구분</span>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(item.type_by_company).map(([co, t]) => (
+                    <span key={co} className="text-[11px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold">
+                      {co}: <span className="text-blue-600">{t}종</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
-          {item.no_pay.length > 0 && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 mt-1">
-              <div className="text-red-700 font-bold text-sm mb-2">🚫 부지급 주의사항</div>
-              <ul className="space-y-1">
+
+          {item.no_pay && item.no_pay.length > 0 && (
+            <div className="bg-red-50 border-2 border-red-100 rounded-[1.5rem] p-5 mt-2">
+              <div className="text-red-700 font-black text-sm mb-3 flex items-center gap-2">
+                <span className="bg-red-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]">!</span>
+                지급 제외 및 부지급 유의사항
+              </div>
+              <ul className="space-y-2">
                 {item.no_pay.map((np, i) => (
-                  <li key={i} className="flex gap-2 text-xs text-red-800">
-                    <span className="shrink-0">⛔</span>
+                  <li key={i} className="flex gap-2.5 text-xs text-red-800 font-bold leading-relaxed">
+                    <span className="shrink-0 text-red-400">•</span>
                     <span>{np}</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          <div className="flex flex-wrap gap-1 pt-1">
+
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-50">
             {item.sources.map(s => (
-              <span key={s} className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded">출처: {s}</span>
+              <span key={s} className="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-md border border-slate-100">데이터 출처: {s}</span>
             ))}
           </div>
         </div>
