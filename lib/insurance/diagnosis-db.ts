@@ -1,7 +1,7 @@
 // lib/insurance/data/diagnosis-db.ts
 // 출처: KB 금쪽같은(별표17·22·23·24·48·49) — KCD 9차 개정 기준 (2026.1.1. 시행)
 
-import type { DiagnosisItem } from '../types'
+import type { DiagnosisItem } from './types'
 
 // ─────────────────────────────────────────────────────────
 // KCD 코드 범위 → 개별 코드 매핑 헬퍼
