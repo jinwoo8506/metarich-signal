@@ -1,4 +1,9 @@
 "use client"
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Sidebar Component - Full Update with Sync & Staff Management
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 import { useState, useEffect } from "react"
 import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
@@ -19,7 +24,7 @@ export default function Sidebar({
 
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // ✅ [권한 체계]
+  // ✅ [권한 체계 유지]
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
   const isLeader = user?.role === 'leader' || user?.role_level === 'director';
   const isManager = user?.role === 'manager';
@@ -130,13 +135,14 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
+  // 퀵링크 (메인 사이드바 노출)
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
   ];
 
-  // 🟠 [경로 업데이트] 방금 생성/수정된 insurance-tools 경로 반영
+  // 상담 도구 (팝업 모달 노출)
   const consultTools = [
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
@@ -160,9 +166,8 @@ export default function Sidebar({
       return;
     }
 
-    // 2. 내부 경로 라우팅 (수술비, 질병코드 등)
+    // 2. 내부 경로 라우팅 (Next.js router 사용)
     if (item.url && item.url.startsWith('/')) {
-      // ⚠️ .html로 끝나는 파일(금융/보장분석)은 외부 창으로 여는 것이 안전할 수 있음
       if (item.url.endsWith('.html')) {
         window.open(item.url, "_blank");
       } else {
@@ -175,7 +180,7 @@ export default function Sidebar({
 
     // 3. 외부 링크
     if (item.url && item.url !== '#') {
-      window.open(item.url, "_blank");
+      window.open(item.url, "_blank", "noopener,noreferrer");
       setIsConsultModalOpen(false); 
     }
   };
@@ -192,7 +197,7 @@ export default function Sidebar({
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-6">
             {onBack && (
               <button onClick={onBack} className="text-left text-[10px] text-slate-400 hover:text-black mb-[-15px] font-black italic tracking-tighter transition-all mt-14">
-                ← BACK TO SELECTOR
+                {mode === 'consulting' ? '← BACK TO SELECTOR' : '← BACK TO SELECTOR'}
               </button>
             )}
 

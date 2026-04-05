@@ -1,7 +1,7 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Dashboard Page (Main Entry) - Full Update
+// Dashboard Page (Main Entry) - Box UI & Complete Sync Update
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState, useCallback } from "react"
@@ -16,50 +16,27 @@ import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
 
-// [상담 도구 뷰 컴포넌트]
-function ConsultingView({ menuStatus, isApproved, onOpenCalc }: any) {
-  const allMenus = [
-    { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
-    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
-    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
-    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "INTERNAL_CALC", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
-    { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
-    { id: "show_disease", title: "질병코드 조회", desc: "한국표준질병사인분류(KCD) 검색", icon: "🧬", url: "http://www.koicd.kr/kcd/kcd.do", color: "border-indigo-400 text-indigo-500", staffOnly: true },
-    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "https://www.khidi.or.kr", color: "border-rose-400 text-rose-500", staffOnly: true }
-  ];
-
-  const activeMenus = allMenus.filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]));
-
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 1. [Box Component] Consulting 도구 카드 컴포넌트
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function ConsultingBox({ menu, onClick }: { menu: any, onClick: (url: string) => void }) {
   return (
-    <div className="max-w-6xl mx-auto py-10 font-black">
-      <div className="mb-12 border-l-8 border-blue-600 pl-6">
-        <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
-        <p className="text-slate-400 font-bold uppercase">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
+    <button 
+      onClick={() => onClick(menu.url)} 
+      className={`h-64 border-4 ${menu.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
+    >
+      <span className="text-6xl group-hover:rotate-12 transition-transform">{menu.icon}</span>
+      <div className="text-center px-4">
+        <h3 className="text-2xl font-black mb-1">{menu.title}</h3>
+        <p className="text-[11px] opacity-60 font-bold uppercase">{menu.desc}</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {activeMenus.map((m) => (
-          <button 
-            key={m.id} 
-            onClick={() => {
-              if(m.url === "INTERNAL_CALC") onOpenCalc();
-              else window.open(m.url, "_blank", "noopener,noreferrer");
-            }} 
-            className={`h-64 border-4 ${m.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
-          >
-            <span className="text-6xl group-hover:rotate-12 transition-transform">{m.icon}</span>
-            <div className="text-center px-4">
-              <h3 className="text-2xl font-black mb-1">{m.title}</h3>
-              <p className="text-[11px] opacity-60 font-bold uppercase">{m.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
+    </button>
   );
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 2. Main Dashboard Page Component
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -69,6 +46,21 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
+
+  // [메뉴 데이터 통합 정의] - 사이드바와 본문 카드에서 공통 사용
+  const allConsultingMenus = [
+    { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
+    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
+    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
+    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "INTERNAL_CALC", color: "border-blue-500 text-blue-600", staffOnly: true },
+    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "/insurance-tools/surgery", color: "border-rose-400 text-rose-500", staffOnly: true },
+    { id: "show_disease", title: "질병코드 조회", desc: "한국표준질병사인분류(KCD) 검색", icon: "🧬", url: "/insurance-tools/diagnosis", color: "border-indigo-400 text-indigo-500", staffOnly: true },
+    { id: "show_disability", title: "장해분류표", desc: "상해/질병 장해분류표 가이드", icon: "♿", url: "/insurance-tools/disability", color: "border-amber-500 text-amber-600", staffOnly: true },
+    { id: "show_car_accident", title: "자동차사고 가이드", icon: "🚗", desc: "사고 대처 및 과실 비율 가이드", url: "/insurance-tools/car-accident", color: "border-emerald-400 text-emerald-600", staffOnly: true },
+    { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
+    { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
+    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
+  ];
 
   const init = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -83,7 +75,6 @@ export default function DashboardPage() {
     setMenuStatus(statusMap);
     setUser(userInfo);
 
-    // 🛡️ [게스트 로직] role이 guest이면 선택창 없이 바로 상담화면으로 진입
     const role = (userInfo.role || "agent").toLowerCase().trim();
     if (role === 'guest') {
       setViewMode('consulting');
@@ -96,6 +87,28 @@ export default function DashboardPage() {
     init();
   }, [init]);
 
+  // [네비게이션 통합 핸들러] - 사이드바와 본문 박스 클릭 시 공통 로직
+  const handleNavigation = (val: string) => {
+    if (val === "INTERNAL_CALC" || val === "finance" || val === "tab:finance") {
+      // 탭 이름이 포함된 경우 처리
+      const targetTab = val.includes(':') ? val.split(':')[1] : val === "INTERNAL_CALC" ? "finance" : val;
+      setActiveTab(targetTab);
+    } else if (val.startsWith('http')) {
+      // 보험사 공시실 등 외부 링크
+      window.open(val, "_blank", "noopener,noreferrer");
+    } else if (val.startsWith('/')) {
+      // 수술비 검색 등 내부 페이지 이동
+      if (val.endsWith('.html')) {
+        window.open(val, "_blank");
+      } else {
+        router.push(val);
+      }
+    } else {
+      // 기타 일반 탭 전환
+      setActiveTab(val);
+    }
+  };
+
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
   const userRole = (user.role || "agent").toLowerCase().trim();
@@ -104,14 +117,12 @@ export default function DashboardPage() {
   const isManager = userRole === 'manager';
   const isGuest = userRole === 'guest';
   
-  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && user.is_approved === true));
+  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && (user.is_approved === true || user.is_approved === "true")));
 
   const renderOfficeView = () => {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
-
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
     
-    // 권한별 뷰 렌더링
     if (isMaster) return <MasterView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
@@ -153,14 +164,7 @@ export default function DashboardPage() {
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
-        onTabChange={(tab: string) => {
-          const externalLinks: Record<string, string> = {
-            'gongsi': 'https://www.klia.or.kr/ins_info/ins_info_0101.do',
-            'surgery': 'https://www.khidi.or.kr'
-          };
-          if (externalLinks[tab]) window.open(externalLinks[tab], "_blank");
-          else setActiveTab(tab);
-        }} 
+        onTabChange={handleNavigation} 
         activeTab={activeTab} 
         isAdmin={isMaster}
       />
@@ -174,11 +178,25 @@ export default function DashboardPage() {
             </>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
-              <ConsultingView 
-                menuStatus={menuStatus} 
-                isApproved={isApproved} 
-                onOpenCalc={() => setActiveTab('finance')} 
-              />
+              // Consulting View 모드 (박스 형식 렌더링)
+              <div className="max-w-6xl mx-auto py-10 font-black">
+                <div className="mb-12 border-l-8 border-blue-600 pl-6">
+                  <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
+                  <p className="text-slate-400 font-bold uppercase">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {allConsultingMenus
+                    .filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]))
+                    .map((menu) => (
+                      <ConsultingBox 
+                        key={menu.id} 
+                        menu={menu} 
+                        onClick={handleNavigation} 
+                      />
+                    ))
+                  }
+                </div>
+              </div>
             )
           )}
         </div>
