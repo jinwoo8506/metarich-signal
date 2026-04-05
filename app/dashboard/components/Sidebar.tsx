@@ -1,7 +1,7 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Sidebar Component - Full Update with Sync & Staff Management
+// Sidebar Component - Full Update with Insurance Tools Sync
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { useState, useEffect } from "react"
@@ -135,29 +135,31 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  // 퀵링크 (메인 사이드바 노출)
+  // ✅ [퀵링크: 기존 5개 유지 지침 반영]
   const fixedLinks = [
-    { id: 'show_cafe', label: '보험의 기준', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
+    { id: 'show_cafe', label: '보험의 기준 (카페)', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
+    { id: 'show_calc_main', label: '영업도구 (계산기)', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' }, // 지침: 영업도구 누르면 계산기
+    { id: 'show_gongsi_main', label: '보험사 공시실', icon: '📑', url: 'https://www.klia.or.kr/ins_info/ins_info_0101.do', color: 'border-slate-400' },
   ];
 
-  // 상담 도구 (팝업 모달 노출)
+  // ✅ [상담 도구: 파일 구조 image_6eb747.png 기반 연결]
   const consultTools = [
-    { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
+    { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: '/insurance-tools/diagnosis', color: 'border-indigo-400' }, 
     { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' },
     { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' },
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' },
-    { id: 'show_insu', label: '보장분석 PRO (유료)', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
+    { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: 'https://www.klia.or.kr/ins_info/ins_info_0101.do', color: 'border-slate-400' },
   ];
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
     
-    // 1. 탭 전환 (금융계산기 등)
+    // 1. 탭 전환 (Dashboard 내 금융계산기 등)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -166,12 +168,12 @@ export default function Sidebar({
       return;
     }
 
-    // 2. 내부 경로 라우팅 (Next.js router 사용)
+    // 2. 내부 경로 라우팅 (Next.js Page 연결)
     if (item.url && item.url.startsWith('/')) {
       if (item.url.endsWith('.html')) {
         window.open(item.url, "_blank");
       } else {
-        router.push(item.url);
+        router.push(item.url); // /insurance-tools/... 경로로 이동
       }
       setIsOpen(false);
       setIsConsultModalOpen(false);
@@ -272,7 +274,7 @@ export default function Sidebar({
             )}
 
             <div className="space-y-3">
-              <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools</p>
+              <p className="text-[9px] text-slate-400 uppercase italic mb-1 tracking-widest font-black">Quick Tools (5)</p>
               <div className="grid grid-cols-1 gap-2">
                 {fixedLinks.map(item => (
                   <button key={item.id} onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 transition-all active:scale-95`}>
