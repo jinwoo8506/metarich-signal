@@ -136,7 +136,7 @@ export default function Sidebar({
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
   ];
 
-  // 🟠 [업데이트 완료] 내부 라우팅 경로 반영
+  // 🟠 [경로 업데이트] 방금 생성/수정된 insurance-tools 경로 반영
   const consultTools = [
     { id: 'show_calc', label: '영업용 금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
@@ -151,7 +151,7 @@ export default function Sidebar({
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
     
-    // ✅ 탭 전환 로직 (금융계산기 등 대응)
+    // 1. 탭 전환 (금융계산기 등)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -160,15 +160,20 @@ export default function Sidebar({
       return;
     }
 
-    // ✅ 내부 경로 라우팅 (Next.js router.push 사용)
+    // 2. 내부 경로 라우팅 (수술비, 질병코드 등)
     if (item.url && item.url.startsWith('/')) {
-      router.push(item.url);
+      // ⚠️ .html로 끝나는 파일(금융/보장분석)은 외부 창으로 여는 것이 안전할 수 있음
+      if (item.url.endsWith('.html')) {
+        window.open(item.url, "_blank");
+      } else {
+        router.push(item.url);
+      }
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
     }
 
-    // ✅ 외부 링크 연결
+    // 3. 외부 링크
     if (item.url && item.url !== '#') {
       window.open(item.url, "_blank");
       setIsConsultModalOpen(false); 
