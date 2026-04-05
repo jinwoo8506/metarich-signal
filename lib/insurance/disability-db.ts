@@ -2,7 +2,7 @@
 // 출처: KB 금쪽같은(별표1) — 장해분류표
 // 13개 신체부위 전체
 
-import type { DisabilityItem } from '../types'
+import type { DisabilityItem } from './types'
 
 export const DISABILITY_DB: DisabilityItem[] = [
 

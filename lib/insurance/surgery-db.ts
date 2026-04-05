@@ -2,7 +2,7 @@
 // 출처: KB 금쪽같은(별표11), 흥국생명 오튼튼(별표3), DB손해보험 약관
 // 1~5종 수술 전체 항목 (88항 + 암수술 3항 + 방사선 2항)
 
-import type { SurgeryItem } from '../types'
+import type { SurgeryItem } from './types'
 
 export const SURGERY_DB: SurgeryItem[] = [
 

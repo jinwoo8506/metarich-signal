@@ -2,7 +2,7 @@
 // 출처: KB 금쪽같은(별표9) — 자동차사고 부상등급표
 // 자동차손해배상보장법 시행령 제3조 제1항 2호 관련
 
-import type { CarAccidentItem } from '../types'
+import type { CarAccidentItem } from './types'
 
 export const CAR_ACCIDENT_DB: CarAccidentItem[] = [
   {
