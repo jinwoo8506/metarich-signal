@@ -6,13 +6,13 @@ import type { SurgeryItem, SurgeryAmounts } from '../../../lib/insurance/types'
 
 // ─────────────────────────────────────────────────────────
 // 상단에 임시로 혹은 누락된 SurgeryItem 인터페이스 정의 (빌드 에러 방지)
-// 만약 ../../../lib/insurance/types 에 이미 정의되어 있다면 그곳을 수정해도 됩니다.
 // ─────────────────────────────────────────────────────────
 /**
- * 79번 줄과 539번 줄의 desc 에러를 해결하기 위해 
  * SurgeryItem 타입에 desc 속성이 있음을 명시합니다.
  */
-declare border; // 기존 타입에 desc가 없을 경우를 대비한 확장
+interface ExtendedSurgeryItem extends SurgeryItem {
+  desc?: string;
+}
 
 // ─────────────────────────────────────────────────────────
 // 상수
@@ -39,7 +39,7 @@ const TYPE_BROWSE = [
 ]
 
 const CATEGORIES = [
-  { key: 'all',            label: '전체' },
+  { key: 'all',           label: '전체' },
   { key: 'eye',           label: '👁 눈·안과' },
   { key: 'digestive',     label: '🫁 소화기' },
   { key: 'cardiovascular',label: '❤️ 심장·혈관' },
@@ -86,7 +86,7 @@ function matchItem(item: SurgeryItem, q: string): boolean {
   return (
     item.name.toLowerCase().includes(ql) ||
     item.kcd_codes.some(k => k.toLowerCase().includes(ql)) ||
-   ((item as any).desc?.toLowerCase().includes(ql) || false) ||
+    ((item as any).desc?.toLowerCase().includes(ql) || false) ||
     item.synonyms.some(s => s.toLowerCase().includes(ql))
   )
 }
@@ -133,8 +133,8 @@ export default function SurgeryPage() {
       const typeOk = typeFilter === null
         ? true
         : typeFilter === 'cancer'
-          ? item.is_cancer // is_Cancer -> is_cancer 수정
-          : item.type === typeFilter && !item.is_cancer // is_Cancer -> is_cancer 수정
+          ? item.is_cancer 
+          : item.type === typeFilter && !item.is_cancer 
       const textOk = !query || matchItem(item, query)
       return catOk && typeOk && textOk
     })
@@ -467,7 +467,7 @@ export default function SurgeryPage() {
 // ─────────────────────────────────────────────────────────
 function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: SurgeryAmounts; query: string }) {
   const [open, setOpen] = useState(false)
-  const col = item.is_cancer ? CANCER_COLOR : TYPE_COLORS[item.type] // isCancer -> is_cancer 수정
+  const col = item.is_cancer ? CANCER_COLOR : TYPE_COLORS[item.type]
   const { surgPay, disPay, total } = calcPayout(item, amounts)
 
   const matchedSyns = useMemo(() => {
@@ -560,7 +560,7 @@ function SurgeryCard({ item, amounts, query }: { item: SurgeryItem; amounts: Sur
             </div>
           )}
 
-          {item.is_cancer && ( // is_Cancer -> is_cancer
+          {item.is_cancer && (
             <div className="flex gap-3 bg-red-50/50 p-4 rounded-2xl border border-red-100">
               <span className="text-xl shrink-0">🎗</span>
               <div className="space-y-1 text-red-800 text-[13px] font-bold">
