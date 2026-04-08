@@ -143,10 +143,11 @@ export default function Sidebar({
     { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
   ];
 
-  // ✅ [수정 완료] 사용자님이 분석하신 라우팅 지연 로직 적용
+  // ✅ [수정 완료] 모든 보험 툴 클릭 시 새 창으로 열기
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
 
+    // 탭 전환 (내부 대시보드 내 탭 변경인 경우)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -155,21 +156,17 @@ export default function Sidebar({
       return;
     }
 
-    // ✅ 내부 라우팅 - 모달/사이드바 닫기를 push 이후 또는 지연 실행
-    if (item.url && item.url.startsWith('/') && !item.url.includes('.kr') && !item.url.endsWith('.html')) {
-      setIsConsultModalOpen(false);
-      setIsOpen(false);
-      // 닫힘 애니메이션과 상태 정리를 위해 미세한 딜레이 후 이동
-      setTimeout(() => {
-        router.push(item.url);
-      }, 16);
-      return;
-    }
+    // ✅ 내부/외부 링크 모두 새 창(_blank)으로 열기
+    if (item.url) {
+      // 1. URL 구성: 내부 경로(/)로 시작하면 현재 도메인을 붙여서 절대 경로 생성
+      const finalUrl = item.url.startsWith('/') 
+        ? `${window.location.origin}${item.url}` 
+        : (item.url.startsWith('http') ? item.url : `https://${item.url}`);
 
-    // 외부 링크 및 별도 HTML 파일
-    if (item.url && (item.url.startsWith('http') || item.url.includes('.kr') || item.url.endsWith('.html'))) {
-      const finalUrl = item.url.startsWith('http') ? item.url : `https://${item.url}`;
+      // 2. 새 창 열기
       window.open(finalUrl, "_blank", "noopener,noreferrer");
+
+      // 3. UI 정리 (사이드바 및 모달 닫기)
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
@@ -248,7 +245,7 @@ export default function Sidebar({
                   <Calendar 
                     onChange={(d: any) => onDateChange(d)} 
                     value={selectedDate} 
-                    calendarType="gregory" // ✅ 일요일부터 시작하도록 고정
+                    calendarType="gregory"
                     formatDay={(_, date) => date.getDate().toString()} 
                     className="border-0 w-full font-black text-xs" 
                   />
