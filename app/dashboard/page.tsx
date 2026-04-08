@@ -1,14 +1,13 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Dashboard Page (Main Entry) - Box UI & Complete Sync Update
+// Dashboard Page (Main Entry) - Sidebar Sync & Route Fix
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 
-// ⚠️ [경로 주의] 파일들은 dashboard/components/ 내부에 위치해야 합니다.
 import Sidebar from "./components/Sidebar"
 import AgentView from "./components/AgentView"
 import MasterView from "./components/MasterView" 
@@ -19,10 +18,10 @@ import FinancialCalc from "./components/FinancialCalc"
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1. [Box Component] Consulting 도구 카드 컴포넌트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function ConsultingBox({ menu, onClick }: { menu: any, onClick: (url: string) => void }) {
+function ConsultingBox({ menu, onClick }: { menu: any, onClick: (item: any) => void }) {
   return (
     <button 
-      onClick={() => onClick(menu.url)} 
+      onClick={() => onClick(menu)} 
       className={`h-64 border-4 ${menu.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
     >
       <span className="text-6xl group-hover:rotate-12 transition-transform">{menu.icon}</span>
@@ -47,19 +46,19 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
 
-  // [메뉴 데이터 통합 정의] - 사이드바와 본문 카드에서 공통 사용
+  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치시킴
   const allConsultingMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
-    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 및 휴면보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
-    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 보험료 납부 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
-    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율 계산기", icon: "🧮", url: "INTERNAL_CALC", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관상 수술 분류 조회", icon: "✂️", url: "/insurance-tools/surgery", color: "border-rose-400 text-rose-500", staffOnly: true },
-    { id: "show_disease", title: "질병코드 조회", desc: "한국표준질병사인분류(KCD) 검색", icon: "🧬", url: "/insurance-tools/diagnosis", color: "border-indigo-400 text-indigo-500", staffOnly: true },
-    { id: "show_disability", title: "장해분류표", desc: "상해/질병 장해분류표 가이드", icon: "♿", url: "/insurance-tools/disability", color: "border-amber-500 text-amber-600", staffOnly: true },
-    { id: "show_car_accident", title: "자동차사고 가이드", icon: "🚗", desc: "사고 대처 및 과실 비율 가이드", url: "/insurance-tools/car-accident", color: "border-emerald-400 text-emerald-600", staffOnly: true },
-    { id: "show_finance", title: "재무 / 보장분석", desc: "종합 금융 플래닝 및 분석 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
-    { id: "show_insu", title: "보장분석 PRO (유료)", desc: "AI 기반 정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-500 text-blue-600", staffOnly: true },
-    { id: "show_gongsi", title: "보험사 공시실(약관)", desc: "각 보험사별 상품 공시실 바로가기", icon: "📑", url: "https://www.klia.or.kr/ins_info/ins_info_0101.do", color: "border-slate-400 text-slate-500", staffOnly: true },
+    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
+    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
+    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율", icon: "🧮", url: "tab:finance", color: "border-blue-500 text-blue-600", staffOnly: true },
+    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관 조회", icon: "✂️", url: "/insurance-tools/surgery", color: "border-rose-400 text-rose-500", staffOnly: true },
+    { id: "show_disease", title: "질병코드 조회", desc: "KCD 질병사인분류 검색", icon: "🧬", url: "https://kcdcode.kr/browse/main", color: "border-indigo-400 text-indigo-500", staffOnly: true },
+    { id: "show_disability", title: "장해분류표", desc: "상해/질병 장해분류 가이드", icon: "♿", url: "/insurance-tools/disability", color: "border-amber-500 text-amber-600", staffOnly: true },
+    { id: "show_car_accident", title: "자동차사고 가이드", desc: "과실 비율 및 대처 가이드", icon: "🚗", url: "/insurance-tools/car-accident", color: "border-emerald-400 text-emerald-600", staffOnly: true },
+    { id: "show_finance", title: "재무 분석 도구", desc: "종합 금융 플래닝 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
+    { id: "show_insu", title: "보장분석 PRO", desc: "정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-600 text-blue-600", staffOnly: true },
+    { id: "show_gongsi", title: "보험사 공시실", desc: "각 보험사별 상품 약관 공시", icon: "📑", url: "/gongsi.html", color: "border-slate-400 text-slate-500", staffOnly: true },
   ];
 
   const init = useCallback(async () => {
@@ -87,25 +86,35 @@ export default function DashboardPage() {
     init();
   }, [init]);
 
-  // [네비게이션 통합 핸들러] - 사이드바와 본문 박스 클릭 시 공통 로직
-  const handleNavigation = (val: string) => {
-    if (val === "INTERNAL_CALC" || val === "finance" || val === "tab:finance") {
-      // 탭 이름이 포함된 경우 처리
-      const targetTab = val.includes(':') ? val.split(':')[1] : val === "INTERNAL_CALC" ? "finance" : val;
+  // ✅ [네비게이션 통합 핸들러] 사이드바의 handleLinkClick과 로직을 일치시킴
+  const handleNavigation = (item: any) => {
+    const { url } = item;
+    if (!url) return;
+
+    // 1. 탭 전환 (계산기 등)
+    if (url.startsWith('tab:')) {
+      const targetTab = url.split(':')[1];
       setActiveTab(targetTab);
-    } else if (val.startsWith('http')) {
-      // 보험사 공시실 등 외부 링크
-      window.open(val, "_blank", "noopener,noreferrer");
-    } else if (val.startsWith('/')) {
-      // 수술비 검색 등 내부 페이지 이동
-      if (val.endsWith('.html')) {
-        window.open(val, "_blank");
-      } else {
-        router.push(val);
-      }
-    } else {
-      // 기타 일반 탭 전환
-      setActiveTab(val);
+      return;
+    }
+
+    // 2. 외부 링크
+    if (url.startsWith('http') || url.startsWith('kcdcode.kr')) {
+      const finalUrl = url.startsWith('http') ? url : `https://${url}`;
+      window.open(finalUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // 3. 퍼블릭 HTML (.html)
+    if (url.endsWith('.html')) {
+      window.open(url, "_blank");
+      return;
+    }
+
+    // 4. 내부 페이지 이동 (Next.js router)
+    if (url.startsWith('/')) {
+      router.push(url);
+      return;
     }
   };
 
@@ -129,7 +138,6 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
-  // 1. 초기 모드 선택 화면 (게스트는 skip)
   if (viewMode === 'select' && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
@@ -151,7 +159,6 @@ export default function DashboardPage() {
     );
   }
 
-  // 2. 메인 대시보드 화면 구성
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
       <Sidebar 
@@ -164,9 +171,8 @@ export default function DashboardPage() {
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
-        onTabChange={handleNavigation} 
+        onTabChange={(val: string) => handleNavigation({ url: val.startsWith('tab:') ? val : `tab:${val}` })} 
         activeTab={activeTab} 
-        isAdmin={isMaster}
       />
 
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
@@ -178,7 +184,6 @@ export default function DashboardPage() {
             </>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
-              // Consulting View 모드 (박스 형식 렌더링)
               <div className="max-w-6xl mx-auto py-10 font-black">
                 <div className="mb-12 border-l-8 border-blue-600 pl-6">
                   <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
