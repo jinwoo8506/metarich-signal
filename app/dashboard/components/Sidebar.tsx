@@ -20,7 +20,6 @@ export default function Sidebar({
 
   const userEmail = user?.email?.toLowerCase()?.trim();
   
-  // ✅ [권한 체계 유지]
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
   const isLeader = user?.role === 'leader' || user?.role_level === 'director';
   const isManager = user?.role === 'manager';
@@ -107,21 +106,13 @@ export default function Sidebar({
     setDailyAdminNotice(data ? data.value : "해당 날짜의 전달사항이 없습니다.");
   }
 
-  // ✅ [수정 완료: await 키워드 추가]
   async function fetch3MonthAvg() {
     const d = new Date(selectedDate);
     const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
     const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
-    
     let queryBuilder = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
-    
-    if (!isMaster && !isLeader) {
-      queryBuilder = queryBuilder.eq("user_id", user?.id);
-    }
-    
-    // 🚀 핵심: await를 사용하여 실제 데이터를 가져옵니다.
+    if (!isMaster && !isLeader) queryBuilder = queryBuilder.eq("user_id", user?.id);
     const { data } = await queryBuilder; 
-    
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
       const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
@@ -152,6 +143,7 @@ export default function Sidebar({
     { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
   ];
 
+  // ✅ [수정 완료] 사용자님이 분석하신 라우팅 지연 로직 적용
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
 
@@ -163,23 +155,21 @@ export default function Sidebar({
       return;
     }
 
-    if (item.url && (item.url.startsWith('http') || item.url.includes('.kr'))) {
+    // ✅ 내부 라우팅 - 모달/사이드바 닫기를 push 이후 또는 지연 실행
+    if (item.url && item.url.startsWith('/') && !item.url.includes('.kr') && !item.url.endsWith('.html')) {
+      setIsConsultModalOpen(false);
+      setIsOpen(false);
+      // 닫힘 애니메이션과 상태 정리를 위해 미세한 딜레이 후 이동
+      setTimeout(() => {
+        router.push(item.url);
+      }, 16);
+      return;
+    }
+
+    // 외부 링크 및 별도 HTML 파일
+    if (item.url && (item.url.startsWith('http') || item.url.includes('.kr') || item.url.endsWith('.html'))) {
       const finalUrl = item.url.startsWith('http') ? item.url : `https://${item.url}`;
       window.open(finalUrl, "_blank", "noopener,noreferrer");
-      setIsOpen(false);
-      setIsConsultModalOpen(false);
-      return;
-    }
-
-    if (item.url && item.url.endsWith('.html')) {
-      window.open(item.url, "_blank");
-      setIsOpen(false);
-      setIsConsultModalOpen(false);
-      return;
-    }
-
-    if (item.url && item.url.startsWith('/')) {
-      router.push(item.url); 
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
@@ -258,6 +248,7 @@ export default function Sidebar({
                   <Calendar 
                     onChange={(d: any) => onDateChange(d)} 
                     value={selectedDate} 
+                    calendarType="gregory" // ✅ 일요일부터 시작하도록 고정
                     formatDay={(_, date) => date.getDate().toString()} 
                     className="border-0 w-full font-black text-xs" 
                   />

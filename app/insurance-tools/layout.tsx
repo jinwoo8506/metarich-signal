@@ -13,7 +13,7 @@ export default async function InsuranceToolsLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Next.js 최신 버전에서는 cookies()가 비동기로 작동할 수 있으므로 await 대응이 필요할 수 있습니다.
+  // Next.js 최신 버전의 비동기 cookies 대응
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -24,12 +24,12 @@ export default async function InsuranceToolsLayout({
         get(name: string) {
           return cookieStore.get(name)?.value
         },
-        // SSR 환경에서 쿠키 설정을 위한 추가 옵션 (안정성 강화)
+        // SSR 환경에서 쿠키 설정을 위한 추가 옵션
         set(name: string, value: string, options: any) {
           try {
             cookieStore.set({ name, value, ...options })
           } catch (error) {
-            // 서버 컴포넌트에서 쿠키 세팅은 가끔 제한될 수 있으므로 예외처리
+            // 서버 컴포넌트 내 세팅 제한 예외처리
           }
         },
         remove(name: string, options: any) {
@@ -44,29 +44,21 @@ export default async function InsuranceToolsLayout({
   )
 
   /**
-   * getSession() 대신 getUser()를 사용하는 것이 보안상 더 안전합니다.
-   * getSession은 로컬 저장된 데이터를 신뢰하지만, getUser는 실제 Supabase 서버에서 검증합니다.
+   * 🎯 [핵심 수정] 튕김 현상 방지를 위해 getSession() 사용
+   * getUser()는 매번 서버 검증을 수행하여 라우팅 타이밍 이슈 발생 시 세션 유실로 판단할 수 있습니다.
+   * getSession()은 쿠키에 저장된 세션 데이터를 우선적으로 읽어오므로 
+   * 모달 닫힘과 페이지 이동이 겹치는 시점에서도 더 안정적으로 인증을 유지합니다.
    */
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
-  // 세션이 없거나 에러가 발생하면 로그인 페이지로 리다이렉트
-  if (error || !user) {
+  // 세션이 없으면 로그인 페이지로 리다이렉트
+  if (!session) {
     redirect('/login')
   }
 
-  /**
-   * [선택 사항] 사용자 역할(Role)에 따른 추가 보안 로직
-   * 예: 관리자 전용 페이지 접근 제어 등을 여기서 수행할 수 있습니다.
-   */
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans antialiased text-slate-900">
-      {/* 전역 폰트 설정을 'font-black'으로 하셨는데, 
-        텍스트 가독성을 위해 기본은 font-sans로 하고 
-        강조가 필요한 제목 등에 개별적으로 font-black을 쓰는 것을 추천합니다.
-      */}
       <main className="relative flex flex-col min-h-screen">
-        {/* 필요한 경우 여기에 공통 네비게이션 바(GNB)를 추가할 수 있습니다. */}
         <div className="flex-1">
           {children}
         </div>
