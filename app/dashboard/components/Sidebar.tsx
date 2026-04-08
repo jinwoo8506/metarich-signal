@@ -65,7 +65,6 @@ export default function Sidebar({
     if (externalMenuStatus) setMenuStatus(externalMenuStatus);
   }, [externalMenuStatus]);
 
-  // ✅ [직원 관리 로직 유지]
   async function fetchStaffList() {
     const { data } = await supabase.from("users").select("*").order("name", { ascending: true });
     if (data) setStaffList(data);
@@ -90,6 +89,7 @@ export default function Sidebar({
         return acc;
       }, {});
       setMenuStatus((prev: any) => ({ ...prev, ...settings }));
+      if (onMenuStatusChange) onMenuStatusChange(settings);
     }
   }
 
@@ -98,6 +98,7 @@ export default function Sidebar({
     const newValue = !((menuStatus as any)[key]);
     const updatedStatus = { ...menuStatus, [key]: newValue };
     setMenuStatus(updatedStatus);
+    if (onMenuStatusChange) onMenuStatusChange(updatedStatus);
     await supabase.from("team_settings").upsert({ key: key, value: String(newValue) }, { onConflict: 'key' });
   };
 
@@ -106,13 +107,21 @@ export default function Sidebar({
     setDailyAdminNotice(data ? data.value : "해당 날짜의 전달사항이 없습니다.");
   }
 
+  // ✅ [수정 완료: await 키워드 추가]
   async function fetch3MonthAvg() {
     const d = new Date(selectedDate);
     const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
     const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
-    let query = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
-    if (!isMaster && !isLeader) query = query.eq("user_id", user?.id);
-    const { data } = await query;
+    
+    let queryBuilder = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
+    
+    if (!isMaster && !isLeader) {
+      queryBuilder = queryBuilder.eq("user_id", user?.id);
+    }
+    
+    // 🚀 핵심: await를 사용하여 실제 데이터를 가져옵니다.
+    const { data } = await queryBuilder; 
+    
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
       const totalCnt = data.reduce((acc, curr) => acc + (Number(curr.contract_cnt) || 0), 0);
@@ -126,7 +135,6 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  // ✅ [1. 퀵링크 정리: 외부 링크 위주로 구성 (중복 제거)]
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준 (카페)', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
@@ -134,7 +142,6 @@ export default function Sidebar({
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
   ];
 
-  // ✅ [2. 상담 도구 정리: 내부 도구 및 전용 기능 (중복 제거)]
   const consultTools = [
     { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
@@ -148,7 +155,6 @@ export default function Sidebar({
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
 
-    // 탭 전환 (계산기 등)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -157,8 +163,7 @@ export default function Sidebar({
       return;
     }
 
-    // 외부 링크
-    if (item.url && (item.url.startsWith('http') || item.url.startsWith('kcdcode.kr'))) {
+    if (item.url && (item.url.startsWith('http') || item.url.includes('.kr'))) {
       const finalUrl = item.url.startsWith('http') ? item.url : `https://${item.url}`;
       window.open(finalUrl, "_blank", "noopener,noreferrer");
       setIsOpen(false);
@@ -166,7 +171,6 @@ export default function Sidebar({
       return;
     }
 
-    // 정적 HTML 파일
     if (item.url && item.url.endsWith('.html')) {
       window.open(item.url, "_blank");
       setIsOpen(false);
@@ -174,7 +178,6 @@ export default function Sidebar({
       return;
     }
 
-    // ✅ [3. 내부 라우팅 수정: 튕김 현상 방지를 위해 push 사용]
     if (item.url && item.url.startsWith('/')) {
       router.push(item.url); 
       setIsOpen(false);
@@ -185,29 +188,19 @@ export default function Sidebar({
 
   return (
     <>
-      {/* 메뉴 버튼 */}
       <button onClick={() => setIsOpen(!isOpen)} className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90">
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
       <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden'}`}>
-          
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-4 mt-14">
-            
-            {/* ✅ [4. 대시보드 연결 및 뒤로가기 버튼 통합] */}
             <div className="flex gap-2">
-              <button 
-                onClick={() => { router.push('/dashboard'); setIsOpen(false); }} 
-                className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black italic uppercase tracking-tighter hover:bg-black transition-colors"
-              >
+              <button onClick={() => { router.push('/dashboard'); setIsOpen(false); }} className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black italic uppercase tracking-tighter hover:bg-black transition-colors">
                 Go Dashboard
               </button>
               {onBack && (
-                <button 
-                  onClick={() => { onBack(); setIsOpen(false); }} 
-                  className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl text-[10px] font-black uppercase"
-                >
+                <button onClick={() => { onBack(); setIsOpen(false); }} className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl text-[10px] font-black uppercase">
                   Back
                 </button>
               )}
@@ -259,7 +252,6 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* ✅ [5. 달력 디자인 유지 및 안정화] */}
             {isApproved && mode === 'office' && (
               <>
                 <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
