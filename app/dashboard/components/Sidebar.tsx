@@ -143,7 +143,7 @@ export default function Sidebar({
     { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
   ];
 
-  // ✅ [수정 완료] 모든 보험 툴 클릭 시 새 창으로 열기
+  // ✅ 모든 링크 클릭 시 새 창으로 열기 (모바일 팝업 차단 회피를 위해 즉시 실행)
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
 
@@ -156,17 +156,15 @@ export default function Sidebar({
       return;
     }
 
-    // ✅ 내부/외부 링크 모두 새 창(_blank)으로 열기
+    // ✅ 내부/외부 경로 구분 없이 새 창(_blank)으로 열기
     if (item.url) {
-      // 1. URL 구성: 내부 경로(/)로 시작하면 현재 도메인을 붙여서 절대 경로 생성
       const finalUrl = item.url.startsWith('/') 
         ? `${window.location.origin}${item.url}` 
         : (item.url.startsWith('http') ? item.url : `https://${item.url}`);
 
-      // 2. 새 창 열기
+      // window.open은 사용자 클릭 이벤트 직후에 실행되어야 모바일에서 차단되지 않음
       window.open(finalUrl, "_blank", "noopener,noreferrer");
 
-      // 3. UI 정리 (사이드바 및 모달 닫기)
       setIsOpen(false);
       setIsConsultModalOpen(false);
       return;
@@ -179,7 +177,8 @@ export default function Sidebar({
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
+      {/* ✅ 모바일 최적화: 모바일에서는 너비 85%, PC에서는 80(320px) 적용 */}
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[85%] sm:w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden'}`}>
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-4 mt-14">
             <div className="flex gap-2">
@@ -306,6 +305,7 @@ export default function Sidebar({
 
       {isConsultModalOpen && isApproved && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          {/* ✅ 모바일 최적화: max-w-sm과 가변 너비 적용 */}
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
               <h3 className="text-[#d4af37] font-black italic text-xl uppercase tracking-tighter">Consult Tools</h3>

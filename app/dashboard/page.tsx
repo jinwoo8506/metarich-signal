@@ -46,16 +46,15 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
 
-  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치 (수술비 내부 경로 포함)
+  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치
   const allConsultingMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
     { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
     { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
     { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율", icon: "🧮", url: "tab:finance", color: "border-blue-500 text-blue-600", staffOnly: true },
     
-    // 🛠️ 내부 라우팅으로 변경됨
+    // 🛠️ 내부 라우팅 도구들
     { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관 조회", icon: "✂️", url: "/insurance-tools/surgery", color: "border-rose-400 text-rose-500", staffOnly: true },
-    
     { id: "show_disease", title: "질병코드 조회", desc: "KCD 질병사인분류 검색", icon: "🧬", url: "https://kcdcode.kr/browse/main", color: "border-indigo-400 text-indigo-500", staffOnly: true },
     { id: "show_disability", title: "장해분류표", desc: "상해/질병 장해분류 가이드", icon: "♿", url: "/insurance-tools/disability", color: "border-amber-500 text-amber-600", staffOnly: true },
     { id: "show_car_accident", title: "자동차사고 가이드", desc: "과실 비율 및 대처 가이드", icon: "🚗", url: "/insurance-tools/car-accident", color: "border-emerald-400 text-emerald-600", staffOnly: true },
@@ -91,36 +90,24 @@ export default function DashboardPage() {
     init();
   }, [init]);
 
-  // ✅ [네비게이션 통합 핸들러] 사이드바와 로직 일치
+  // ✅ [네비게이션 통합 핸들러] 모든 도구는 새 창으로 열리도록 일치화
   const handleNavigation = (item: any) => {
     const { url } = item;
     if (!url) return;
 
-    // 1. 탭 전환 (계산기 등)
+    // 1. 탭 전환 (계산기 등 내부 탭)
     if (url.startsWith('tab:')) {
       const targetTab = url.split(':')[1];
       setActiveTab(targetTab);
       return;
     }
 
-    // 2. 외부 링크
-    if (url.startsWith('http') || url.includes('.kr')) {
-      const finalUrl = url.startsWith('http') ? url : `https://${url}`;
-      window.open(finalUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
+    // ✅ 2. 모든 링크(내부/외부/HTML)를 새 창으로 열기 (사이드바 로직과 동기화)
+    const finalUrl = url.startsWith('/') 
+      ? `${window.location.origin}${url}` 
+      : (url.startsWith('http') ? url : `https://${url}`);
 
-    // 3. 퍼블릭 HTML (.html)
-    if (url.endsWith('.html')) {
-      window.open(url, "_blank");
-      return;
-    }
-
-    // 4. 내부 페이지 이동 (Next.js router.push 사용하여 안정화)
-    if (url.startsWith('/')) {
-      router.push(url);
-      return;
-    }
+    window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
@@ -143,21 +130,22 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
+  // ✅ 선택 화면 (모바일에서도 가독성 좋게 gap과 padding 조정)
   if (viewMode === 'select' && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
-        <h1 className="text-5xl mb-16 italic tracking-tighter">
+        <h1 className="text-3xl md:text-5xl mb-12 md:mb-16 italic tracking-tighter">
           <span className="text-blue-600">{user.name}</span>
-          <span className="ml-2 text-2xl text-slate-400 uppercase">[{userRole}]</span>
+          <span className="ml-2 text-xl md:text-2xl text-slate-400 uppercase">[{userRole}]</span>
         </h1>
-        <div className="flex flex-col md:flex-row gap-10 w-full max-w-5xl">
-          <button onClick={() => setViewMode('office')} className="flex-1 h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
-            <span className="text-8xl group-hover:scale-110 transition-transform">🏢</span>
-            <h2 className="text-4xl font-black uppercase">사무실 업무</h2>
+        <div className="flex flex-col md:flex-row gap-6 md:gap-10 w-full max-w-5xl">
+          <button onClick={() => setViewMode('office')} className="flex-1 h-64 md:h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
+            <span className="text-6xl md:text-8xl group-hover:scale-110 transition-transform">🏢</span>
+            <h2 className="text-2xl md:text-4xl font-black uppercase">사무실 업무</h2>
           </button>
-          <button onClick={() => setViewMode('consulting')} className="flex-1 h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-6 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
-            <span className="text-8xl group-hover:scale-110 transition-transform">🤝</span>
-            <h2 className="text-4xl font-black uppercase">고객 상담</h2>
+          <button onClick={() => setViewMode('consulting')} className="flex-1 h-64 md:h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
+            <span className="text-6xl md:text-8xl group-hover:scale-110 transition-transform">🤝</span>
+            <h2 className="text-2xl md:text-4xl font-black uppercase">고객 상담</h2>
           </button>
         </div>
       </div>
@@ -180,6 +168,7 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
+      {/* ✅ 모바일 반응형 여백 최적화: 사이드바가 열렸을 때 PC에서만 왼쪽 여백(lg:ml-80) 적용 */}
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
           {activeTab === 'finance' ? (
@@ -189,12 +178,12 @@ export default function DashboardPage() {
             </>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
-              <div className="max-w-6xl mx-auto py-10 font-black">
-                <div className="mb-12 border-l-8 border-blue-600 pl-6">
-                  <h1 className="text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
-                  <p className="text-slate-400 font-bold uppercase">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
+              <div className="max-w-6xl mx-auto py-6 md:py-10 font-black">
+                <div className="mb-8 md:mb-12 border-l-8 border-blue-600 pl-4 md:pl-6">
+                  <h1 className="text-3xl md:text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
+                  <p className="text-slate-400 font-bold uppercase text-xs md:text-base">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                   {allConsultingMenus
                     .filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]))
                     .map((menu) => (
@@ -217,15 +206,15 @@ export default function DashboardPage() {
 
 function HeaderBar({ title, icon, onBack }: any) {
   return (
-    <div className="mb-6 flex justify-between items-center bg-white p-4 rounded-[2rem] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-      <div className="flex items-center gap-4 ml-4">
-        <span className="text-3xl">{icon}</span>
+    <div className="mb-6 flex justify-between items-center bg-white p-3 md:p-4 rounded-[2rem] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex items-center gap-3 md:gap-4 ml-2 md:ml-4">
+        <span className="text-2xl md:text-3xl">{icon}</span>
         <div>
-          <h2 className="text-xl font-black italic uppercase leading-none">{title}</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Professional Support Tool</p>
+          <h2 className="text-lg md:text-xl font-black italic uppercase leading-none">{title}</h2>
+          <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase mt-1">Professional Support Tool</p>
         </div>
       </div>
-      <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-2xl font-black">×</button>
+      <button onClick={onBack} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-xl md:text-2xl font-black">×</button>
     </div>
   );
 }
