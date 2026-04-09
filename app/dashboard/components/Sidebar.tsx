@@ -45,7 +45,8 @@ export default function Sidebar({
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
-    show_calc: true, show_disability: true, show_car_accident: true
+    show_calc: true, show_disability: true, show_car_accident: true,
+    show_knia: true // 과실 비율 조회 기본값
   });
   const [isEditMode, setIsEditMode] = useState(false); 
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -126,11 +127,13 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
+  // ✅ 고정 퀵링크: 자동차 사고 과실 비율 조회 추가 (공시실 아래)
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준 (카페)', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
     { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
     { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
+    { id: 'show_knia', label: '과실 비율 조회', icon: '⚖️', url: 'https://accident.knia.or.kr', color: 'border-blue-400' },
   ];
 
   const consultTools = [
@@ -143,11 +146,9 @@ export default function Sidebar({
     { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
   ];
 
-  // ✅ 모든 링크 클릭 시 새 창으로 열기 (모바일 팝업 차단 회피를 위해 즉시 실행)
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
 
-    // 탭 전환 (내부 대시보드 내 탭 변경인 경우)
     if (item.url && item.url.startsWith('tab:')) {
       const targetTab = item.url.split(':')[1];
       if (onTabChange) onTabChange(targetTab);
@@ -156,13 +157,11 @@ export default function Sidebar({
       return;
     }
 
-    // ✅ 내부/외부 경로 구분 없이 새 창(_blank)으로 열기
     if (item.url) {
       const finalUrl = item.url.startsWith('/') 
         ? `${window.location.origin}${item.url}` 
         : (item.url.startsWith('http') ? item.url : `https://${item.url}`);
 
-      // window.open은 사용자 클릭 이벤트 직후에 실행되어야 모바일에서 차단되지 않음
       window.open(finalUrl, "_blank", "noopener,noreferrer");
 
       setIsOpen(false);
@@ -177,7 +176,6 @@ export default function Sidebar({
         {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
       </button>
 
-      {/* ✅ 모바일 최적화: 모바일에서는 너비 85%, PC에서는 80(320px) 적용 */}
       <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[85%] sm:w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden'}`}>
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-4 mt-14">
@@ -305,7 +303,6 @@ export default function Sidebar({
 
       {isConsultModalOpen && isApproved && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          {/* ✅ 모바일 최적화: max-w-sm과 가변 너비 적용 */}
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
               <h3 className="text-[#d4af37] font-black italic text-xl uppercase tracking-tighter">Consult Tools</h3>

@@ -46,11 +46,17 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
 
-  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치
+  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치 (과실 비율 조회 추가)
   const allConsultingMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
     { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
     { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
+    
+    // ✅ 추가된 고정 링크: 과실 비율 조회
+    { id: "show_knia", title: "과실 비율 조회", desc: "자동차 사고 과실 비율 검색", icon: "⚖️", url: "https://accident.knia.or.kr", color: "border-blue-400 text-blue-500", fixed: true },
+    
+    { id: "show_gongsi", title: "보험사 공시실", desc: "각 보험사별 상품 약관 공시", icon: "📑", url: "/gongsi.html", color: "border-slate-400 text-slate-500", fixed: true },
+
     { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율", icon: "🧮", url: "tab:finance", color: "border-blue-500 text-blue-600", staffOnly: true },
     
     // 🛠️ 내부 라우팅 도구들
@@ -62,7 +68,6 @@ export default function DashboardPage() {
     // 정적 HTML 도구
     { id: "show_finance", title: "재무 분석 도구", desc: "종합 금융 플래닝 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
     { id: "show_insu", title: "보장분석 PRO", desc: "정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-600 text-blue-600", staffOnly: true },
-    { id: "show_gongsi", title: "보험사 공시실", desc: "각 보험사별 상품 약관 공시", icon: "📑", url: "/gongsi.html", color: "border-slate-400 text-slate-500", staffOnly: true },
   ];
 
   const init = useCallback(async () => {
@@ -130,7 +135,6 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
-  // ✅ 선택 화면 (모바일에서도 가독성 좋게 gap과 padding 조정)
   if (viewMode === 'select' && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
@@ -168,7 +172,6 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      {/* ✅ 모바일 반응형 여백 최적화: 사이드바가 열렸을 때 PC에서만 왼쪽 여백(lg:ml-80) 적용 */}
       <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
         <div className="max-w-[1600px] mx-auto">
           {activeTab === 'finance' ? (
