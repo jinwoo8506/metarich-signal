@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>간편보험 인수기준 비교 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface2: #f8f9fb;
+  --border: #e4e8ed;
+  --border2: #cdd3dc;
+  --navy: #1a2d4f;
+  --navy2: #243d6a;
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+  --green: #059669;
+  --green-light: #d1fae5;
+  --amber: #d97706;
+  --amber-light: #fef3c7;
+  --red: #dc2626;
+  --red-light: #fee2e2;
+  --purple: #7c3aed;
+  --purple-light: #ede9fe;
+  --text: #111827;
+  --text2: #374151;
+  --text3: #6b7280;
+  --text4: #9ca3af;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.09);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+  --r: 10px;
+  --r-sm: 6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* ── 헤더 ── */
+.hdr{background:var(--navy);color:#fff;padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:var(--shadow-md);}
+.hdr-logo{font-size:15px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:10px;}
+.hdr-logo-badge{background:rgba(255,255,255,.15);font-size:10px;padding:2px 8px;border-radius:12px;font-weight:500;}
+.hdr-meta{font-size:11px;opacity:.5;}
+
+/* ── 레이아웃 ── */
+.layout{display:flex;min-height:calc(100vh - 54px);}
+
+/* ── 사이드바 ── */
+.sidebar{width:290px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto;display:flex;flex-direction:column;}
+.sb-section{padding:0 16px;margin-bottom:20px;}
+.sb-label{font-size:10px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* 고객 정보 입력 */
+.input-group{margin-bottom:10px;}
+.input-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block;}
+.inp{width:100%;height:36px;padding:0 10px;border:1px solid var(--border2);border-radius:var(--r-sm);font-family:inherit;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.inp-row{display:flex;gap:6px;}
+.inp-row .inp{flex:1;}
+select.inp{cursor:pointer;}
+
+/* 상품 유형 */
+.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.prod-chip{padding:7px 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);cursor:pointer;font-size:11px;color:var(--text3);text-align:center;transition:all .15s;font-family:inherit;}
+.prod-chip:hover{border-color:var(--blue);color:var(--blue);}
+.prod-chip.on{font-weight:600;}
+.손해보험.on{background:#dbeafe;color:#1e40af;border-color:#93c5fd;}
+.생명보험.on{background:#ede9fe;color:#6d28d9;border-color:#c4b5fd;}
+.건강보험.on{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
+.간병보험.on{background:#fef3c7;color:#92400e;border-color:#fcd34d;}
+.치매보험.on{background:#fce7f3;color:#9d174d;border-color:#f9a8d4;}
+
+/* 질환 검색 */
+.search-wrap{position:relative;}
+.search-inp{width:100%;height:38px;padding:0 38px 0 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:inherit;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:all .2s;}
+.search-inp:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.search-icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text4);font-size:16px;pointer-events:none;}
+.ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-radius:var(--r-sm);z-index:200;max-height:220px;overflow-y:auto;box-shadow:var(--shadow-lg);display:none;}
+.ac-list.show{display:block;}
+.ac-item{padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--surface2);}
+.ac-code{font-family:'JetBrains Mono',monospace;font-size:10px;color:#1e40af;background:var(--blue-light);padding:2px 6px;border-radius:3px;min-width:42px;text-align:center;}
+.ac-name{font-size:13px;color:var(--text);}
+.ac-cat{font-size:10px;color:var(--text4);margin-left:auto;}
+.hl{color:var(--blue);font-weight:600;}
+
+/* 선택된 질환 태그 */
+.tag-area{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;min-height:28px;}
+.dis-tag{font-size:11px;padding:3px 8px;background:var(--blue-light);color:#1e40af;border-radius:12px;display:flex;align-items:center;gap:4px;font-weight:500;}
+.dis-tag-x{cursor:pointer;color:#93c5fd;font-size:14px;line-height:1;}
+
+/* 빠른 질환 버튼 */
+.quick-list{display:flex;flex-direction:column;gap:3px;}
+.quick-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--r-sm);border:1px solid transparent;background:var(--surface2);cursor:pointer;transition:all .15s;}
+.quick-item:hover{background:#eff6ff;border-color:#bfdbfe;}
+.quick-item.sel{background:var(--blue-light);border-color:#93c5fd;}
+.qi-box{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--border2);background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.quick-item.sel .qi-box{background:var(--blue);border-color:var(--blue);}
+.qi-check{width:8px;height:8px;background:#fff;border-radius:1px;clip-path:polygon(14% 44%,0 65%,50% 100%,100% 16%,80% 0%,43% 62%);display:none;}
+.quick-item.sel .qi-check{display:block;}
+.qi-name{font-size:12px;color:var(--text2);flex:1;}
+.qi-code{font-size:10px;padding:1px 5px;border-radius:3px;background:#f1f5f9;color:var(--text3);}
+.qi-cat{font-size:9px;padding:1px 5px;border-radius:3px;}
+.cat-근골격{background:#e0e7ff;color:#3730a3;}
+.cat-소화기{background:#d1fae5;color:#065f46;}
+.cat-비뇨생식{background:#fce7f3;color:#9d174d;}
+.cat-호흡기{background:#f0fdf4;color:#166534;}
+.cat-감각기{background:#fef3c7;color:#92400e;}
+.cat-감염{background:#fee2e2;color:#991b1b;}
+.cat-피부{background:#fdf4ff;color:#7e22ce;}
+.cat-순환기{background:#fff1f2;color:#9f1239;}
+.cat-내분비{background:#fef9c3;color:#854d0e;}
+.cat-신경{background:#f0f9ff;color:#0c4a6e;}
+.cat-임신{background:#fdf2f8;color:#831843;}
+
+/* 조회 버튼 */
+.cta{margin:0 16px 16px;padding:13px;background:linear-gradient(135deg,#1a2d4f,#2563eb);color:#fff;border:none;border-radius:var(--r);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;letter-spacing:-.2px;}
+.cta:hover{opacity:.9;}
+.cta-badge{background:rgba(255,255,255,.2);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:400;}
+.cta-pill{background:rgba(255,255,255,.15);font-size:10px;padding:1px 7px;border-radius:8px;}
+
+/* ── 메인 ── */
+.main{flex:1;padding:20px;overflow-x:hidden;}
+
+/* 빈 상태 */
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:64px 20px;text-align:center;}
+.empty-icon{font-size:52px;margin-bottom:16px;}
+.empty-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.empty-desc{font-size:13px;color:var(--text3);line-height:1.8;}
+
+/* 결과 배너 */
+.result-banner{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rb-label{font-size:12px;color:var(--text3);}
+.rb-chip{font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;}
+.rb-prod{background:var(--blue-light);color:#1e40af;}
+.rb-dis{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
+
+/* 기준선 설명 */
+.baseline-info{background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--r-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400e;line-height:1.7;}
+
+/* 요약 카운터 */
+.sum-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.sum-card{background:var(--surface);border-radius:var(--r-sm);border:1px solid var(--border);padding:12px 14px;}
+.sum-n{font-size:22px;font-weight:700;line-height:1;margin-bottom:2px;}
+.sum-l{font-size:11px;color:var(--text3);}
+.c-green{color:var(--green);}
+.c-amber{color:var(--amber);}
+.c-red{color:var(--red);}
+.c-blue{color:var(--blue);}
+
+/* 섹션 제목 */
+.sec-title{font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.sec-dot{width:6px;height:6px;border-radius:50%;}
+
+/* 순위 카드 */
+.rank-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.rank-card{background:var(--surface);border-radius:var(--r);overflow:hidden;cursor:pointer;border:1px solid var(--border);transition:box-shadow .15s;}
+.rank-card:hover{box-shadow:var(--shadow-md);}
+.rank-card.tier1{border-left:4px solid var(--green);}
+.rank-card.tier2{border-left:4px solid var(--blue);}
+.rank-card.tier3{border-left:4px solid var(--amber);}
+.rc-top{display:flex;align-items:center;padding:12px 14px 8px;gap:10px;}
+.rc-rank{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.rk-gold{background:#fef3c7;color:#92400e;}
+.rk-silver{background:#f1f5f9;color:#475569;}
+.rk-bronze{background:#fde8d8;color:#9a3412;}
+.rk-blue{background:#dbeafe;color:#1e40af;}
+.rk-std{background:#f3f4f6;color:#6b7280;}
+.rc-company{font-size:15px;font-weight:700;color:var(--text);flex:1;}
+.rc-type{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;}
+.type-손해{background:#dbeafe;color:#1e40af;}
+.type-생명{background:#ede9fe;color:#6d28d9;}
+.rc-badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600;}
+.badge-best{background:var(--green-light);color:#065f46;}
+.badge-ok{background:#d1fae5;color:#065f46;}
+.badge-cond{background:var(--amber-light);color:#92400e;}
+.badge-warn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+.rc-body{padding:0 14px 12px 48px;}
+.rc-detail{font-size:12px;color:var(--text3);background:var(--surface2);border-radius:var(--r-sm);padding:7px 10px;line-height:1.7;margin-bottom:6px;}
+.rc-note-2q{font-size:11px;color:#7c3aed;background:var(--purple-light);border-radius:4px;padding:4px 8px;font-weight:600;display:inline-flex;align-items:center;gap:4px;}
+.rc-score-bar{display:flex;align-items:center;gap:8px;margin-top:6px;}
+.rc-score-label{font-size:10px;color:var(--text4);width:60px;}
+.rc-score-track{flex:1;background:var(--bg);border-radius:4px;height:5px;overflow:hidden;}
+.rc-score-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+.rc-dis-list{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.rc-dis-chip{font-size:10px;padding:2px 7px;border-radius:10px;background:#f1f5f9;color:var(--text3);}
+.rc-dis-chip.ok{background:var(--green-light);color:#065f46;}
+.rc-dis-chip.ng{background:var(--red-light);color:#991b1b;}
+.rc-dis-chip.cond{background:var(--amber-light);color:#92400e;}
+
+/* 조건부 섹션 */
+.cond-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:20px;}
+.cond-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:var(--r);overflow:hidden;}
+.cond-top{display:flex;align-items:center;padding:10px 12px 6px;gap:8px;}
+.cond-name{font-size:14px;font-weight:600;flex:1;}
+.cond-body{padding:0 12px 10px;}
+
+/* 불가 패널 */
+.ng-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;}
+.ng-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;}
+.ng-hdr-l{font-size:13px;color:var(--text3);display:flex;align-items:center;gap:6px;}
+.ng-expand{font-size:11px;color:var(--text4);}
+.ng-chips{padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:5px;}
+.ng-chip{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--red-light);color:#991b1b;}
+
+/* 전체 비교 테이블 */
+.compare-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:20px;}
+.tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);}
+.tab-btn{padding:11px 18px;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;font-family:inherit;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
+.tab-pane{display:none;padding:16px;}
+.tab-pane.active{display:block;}
+
+/* 비교 테이블 */
+.compare-table{width:100%;border-collapse:collapse;}
+.compare-table th{padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;}
+.compare-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.compare-table tr:last-child td{border-bottom:none;}
+.compare-table tr:hover td{background:#f8faff;}
+.status-ok{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--green-light);color:#065f46;}
+.status-cond{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--amber-light);color:#92400e;}
+.status-ng{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--red-light);color:#991b1b;}
+
+/* 미니 도트 */
+.dot-ok{color:var(--green);font-size:16px;}
+.dot-cond{color:var(--amber);font-size:16px;}
+.dot-ng{color:var(--red);font-size:16px;}
+
+/* 범례 */
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border);font-size:12px;color:var(--text3);}
+.legend-item{display:flex;align-items:center;gap:5px;}
+
+/* 직업 경고 */
+.job-warning{background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:#c2410c;margin-bottom:12px;display:none;}
+.job-warning.show{display:block;}
+
+/* 스크롤바 */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--surface2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* 애니메이션 */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.fade-in{animation:fadeIn .25s ease both;}
+
+/* 반응형 */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .layout{display:block;}
+  .main{padding:12px;}
+  .sum-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    🏥 간편보험 인수기준 비교
+    <span class="hdr-logo-badge">10개사</span>
+    <span class="hdr-logo-badge" style="background:rgba(255,255,255,.1);opacity:.7">메타리치 · 시그널그룹</span>
+  </div>
+  <div class="hdr-meta">기준일: 2025년 · 실제 심사결과는 각사 확인 필수</div>
+</div>
+
+<div class="layout">
+
+  <!-- ══ 사이드바 ══ -->
+  <div class="sidebar">
+
+    <!-- 고객 정보 -->
+    <div class="sb-section">
+      <div class="sb-label">① 고객 정보</div>
+      <div class="input-group">
+        <label class="input-label">나이 / 성별</label>
+        <div class="inp-row">
+          <input type="number" class="inp" id="age" placeholder="만 나이" min="0" max="100">
+          <select class="inp" id="gender">
+            <option value="">성별</option>
+            <option value="M">남성</option>
+            <option value="F">여성</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">직업</label>
+        <input type="text" class="inp" id="job" placeholder="직업을 입력하세요" id="job" oninput="checkJobRisk(this.value)">
+        <div class="job-warning" id="jobWarn">⚠️ <span id="jobWarnMsg"></span></div>
+      </div>
+    </div>
+
+    <!-- 상품 유형 -->
+    <div class="sb-section">
+      <div class="sb-label">② 희망 상품</div>
+      <div class="prod-grid">
+        <div class="prod-chip 손해보험 on" onclick="toggleProd(this,'손해보험')">실손보험</div>
+        <div class="prod-chip 생명보험" onclick="toggleProd(this,'생명보험')">종신/정기</div>
+        <div class="prod-chip 건강보험" onclick="toggleProd(this,'건강보험')">건강보험</div>
+        <div class="prod-chip 간병보험" onclick="toggleProd(this,'간병보험')">간병보험</div>
+        <div class="prod-chip 치매보험" onclick="toggleProd(this,'치매보험')">치매보험</div>
+        <div class="prod-chip 생명보험" onclick="toggleProd(this,'생명보험')">암보험</div>
+      </div>
+    </div>
+
+    <!-- 질환 검색 -->
+    <div class="sb-section">
+      <div class="sb-label">③ 고지 질환 검색</div>
+      <div class="search-wrap">
+        <input type="text" class="search-inp" id="searchInp" placeholder="질병명 또는 코드..." autocomplete="off" oninput="onSearch(this.value)">
+        <span class="search-icon">🔍</span>
+        <div class="ac-list" id="acList"></div>
+      </div>
+      <div class="tag-area" id="tagArea">
+        <span style="font-size:11px;color:var(--text4)">선택된 질환 없음</span>
+      </div>
+    </div>
+
+    <!-- 자주 고지되는 질환 -->
+    <div class="sb-section" style="flex:1;">
+      <div class="sb-label">자주 고지되는 질환</div>
+      <div class="quick-list" id="quickList"></div>
+    </div>
+
+    <!-- CTA -->
+    <div>
+      <button class="cta" onclick="doQuery()">
+        가능 보험사 조회
+        <span class="cta-badge" id="ctaBadge">선택 없음</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ 메인 ══ -->
+  <div class="main" id="mainArea">
+    <div class="empty">
+      <div class="empty-icon">🏢</div>
+      <div class="empty-title">고지 질환을 선택하고 조회하세요</div>
+      <div class="empty-desc">
+        왼쪽에서 고객 정보 입력 → 상품 선택 → 질환 선택 후<br>
+        <strong>가능 보험사 조회</strong> 버튼을 클릭하면<br>
+        10개사 인수 가능 여부를 비교해드립니다.<br><br>
+        <span style="color:var(--blue);font-weight:600">공통 교집합 질환 기준으로 더 넓은 곳 → 좁은 곳 순 정렬</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ================================================================
+// ■ 데이터
+// ================================================================
+const COMPANIES = {
+  '삼성화재': {type:'손해', color:'#1565C0'},
+  'DB손보':   {type:'손해', color:'#2E7D32'},
+  'KB손해':   {type:'손해', color:'#E65100'},
+  '현대해상': {type:'손해', color:'#6A1B9A', note:'2Q패스 설계 요청 필수'},
+  'NH농협손보':{type:'손해', color:'#00695C'},
+  '메리츠화재':{type:'손해', color:'#BF360C'},
+  '삼성생명': {type:'생명', color:'#1A237E'},
+  '한화생명': {type:'생명', color:'#E65100'},
+  '흥국생명': {type:'생명', color:'#880E4F'},
+  '미래에셋': {type:'생명', color:'#01579B'},
+};
+
+// 직업 위험군
+const JOB_RISK = {
+  '배달': {grade:3, msg:'배달직 – 3급 위험직종. 일부 회사 인수 불가 또는 담보 제한'},
+  '오토바이': {grade:3, msg:'오토바이 운전 – 3급 위험직종'},
+  '건설': {grade:2, msg:'건설 현장직 – 2~3급. 현장참여 여부, 작업내용 확인 필요'},
+  '철근': {grade:3, msg:'철근공 – 3급 위험직종'},
+  '지붕': {grade:3, msg:'지붕작업 – 3급 고위험'},
+  '용접': {grade:3, msg:'용접 – 3급 위험직종'},
+  '소방': {grade:2, msg:'소방관 – 2급. 직위 확인 필요'},
+  '경찰': {grade:1, msg:'경찰관 – 직위별 1~2급'},
+  '군인': {grade:2, msg:'군인 – 복무내용에 따라 위험급수 상이'},
+  '광부': {grade:4, msg:'광업 종사자 – 4급 이상. 대부분 인수불가'},
+  '스턴트': {grade:4, msg:'스턴트맨 – 4급. 대부분 인수불가'},
+  '운전': {grade:2, msg:'운전직 – 차종/목적 확인. 화물차·영업용은 2~3급'},
+  '가수': {grade:2, msg:'가수 – 2급 직종'},
+  '격투': {grade:3, msg:'격투기 선수 – 3급 고위험'},
+};
+
+// 질환 DB (20개 공통 기준)
+const DISEASE_DB = [
+  {id:'D001',name:'고혈압',code:'I10',cat:'순환기',
+   companies:{
+     '삼성화재':{status:'ng',note:'인수불가',score:0},
+     'DB손보':{status:'conditional',note:'입원 10일 이내, 조건부',score:2},
+     'KB손해':{status:'conditional',note:'입원 15일 이내',score:3},
+     '현대해상':{status:'conditional',note:'입원 15일 이내',score:3},
+     'NH농협손보':{status:'ng',note:'인수불가',score:0},
+     '메리츠화재':{status:'ng',note:'인수불가',score:0},
+     '삼성생명':{status:'conditional',note:'조건부 인수',score:2},
+     '한화생명':{status:'conditional',note:'30일 이하 입원',score:3},
+     '흥국생명':{status:'conditional',note:'담보별 상이',score:2},
+     '미래에셋':{status:'ok',note:'즉시인수 가능',score:5},
+   }},
+  {id:'D002',name:'대장용종',code:'D12',cat:'소화기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'KB손해':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'입원無, 수술必, 1회 이력',score:4},
+     '메리츠화재':{status:'ok',note:'5일 이내, 완전제거 2회이내',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'4일 이하',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D003',name:'갑상선결절',code:'D34',cat:'내분비',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'conditional',note:'수술 5일 이내, 담보제한',score:3},
+     'KB손해':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必',score:4},
+     '메리츠화재':{status:'ok',note:'완전제거',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'14일 이하 △',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D004',name:'디스크(추간판탈출증)',code:'M51',cat:'근골격',
+   companies:{
+     '삼성화재':{status:'ok',note:'15일 이내, 수술가능',score:4},
+     'DB손보':{status:'ok',note:'15일 이내',score:4},
+     'KB손해':{status:'ok',note:'5일 이내, 수술무관',score:3},
+     '현대해상':{status:'ok',note:'5일 이내, 수술무관',score:3},
+     'NH농협손보':{status:'ok',note:'7일 이하',score:3},
+     '메리츠화재':{status:'ok',note:'15일 이내',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D005',name:'난소낭종',code:'D27',cat:'비뇨생식',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'conditional',note:'수술 15일 이내, 담보제한',score:3},
+     'KB손해':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'7일 이하, 수술必, 1회 이력',score:3},
+     '메리츠화재':{status:'ok',note:'완전제거 경계성제외',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D006',name:'요로결석',code:'N20',cat:'비뇨생식',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'1일 이내, 수술가능',score:3},
+     '현대해상':{status:'ok',note:'1일 이내, 수술가능',score:3},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必',score:4},
+     '메리츠화재':{status:'ok',note:'완전제거 2회이내',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D007',name:'자궁근종',code:'D25',cat:'비뇨생식',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'KB손해':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'7일 이하, 수술必, 1회 이력',score:3},
+     '메리츠화재':{status:'ok',note:'완전제거 2회이내',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D008',name:'백내장',code:'H26',cat:'감각기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 양측수술한정',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'입원무관, 수술가능',score:5},
+     '현대해상':{status:'ok',note:'입원무관, 수술가능',score:5},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必',score:4},
+     '메리츠화재':{status:'ok',note:'양안시력정상',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'입원불가 O',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수, 양측한정',score:5},
+   }},
+  {id:'D009',name:'하지정맥류',code:'I83',cat:'순환기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'1일 이내, 수술가능',score:3},
+     '현대해상':{status:'ok',note:'1일 이내, 수술가능',score:3},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必, 1회 이력',score:4},
+     '메리츠화재':{status:'ok',note:'일측·양측 모두 인수',score:5},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수, 양측한정',score:5},
+   }},
+  {id:'D010',name:'담석증/담낭염',code:'K80',cat:'소화기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 담낭절제술',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하, 담낭절제必, 1회 이력',score:4},
+     '메리츠화재':{status:'ok',note:'담낭절제술',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D011',name:'치질(치핵/치루)',code:'K64',cat:'소화기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'3일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必',score:4},
+     '메리츠화재':{status:'ok',note:'수술가능',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D012',name:'탈장',code:'K40',cat:'소화기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수 2단계',score:5},
+     'KB손해':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必',score:4},
+     '메리츠화재':{status:'ok',note:'수술가능',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D013',name:'편도염',code:'J35',cat:'호흡기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술무관',score:4},
+     '메리츠화재':{status:'ok',note:'편도절제술 한함',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 △',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D014',name:'중이염',code:'H66',cat:'감각기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하',score:4},
+     '메리츠화재':{status:'ok',note:'양쪽청력정상',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 △',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D015',name:'아토피피부염',code:'L20',cat:'피부',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내, 수술불가',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술불가',score:4},
+     'NH농협손보':{status:'conditional',note:'14일 이하, 조건부',score:3},
+     '메리츠화재':{status:'ok',note:'입원가능',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 X(수술불가)',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D016',name:'대상포진',code:'B02',cat:'감염',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내',score:4},
+     '현대해상':{status:'ok',note:'5일 이내',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하',score:4},
+     '메리츠화재':{status:'ok',note:'입원가능',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'conditional',note:'6개월 경과 기준',score:3},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D017',name:'벨마비(안면신경마비)',code:'G51',cat:'신경',
+   companies:{
+     '삼성화재':{status:'conditional',note:'3일 이내, 후유증 없음',score:3},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'3일 이내',score:4},
+     '현대해상':{status:'ok',note:'3일 이내',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하',score:4},
+     '메리츠화재':{status:'ok',note:'입원가능',score:4},
+     '삼성생명':{status:'conditional',note:'5년 경과 후 가능',score:2},
+     '한화생명':{status:'ok',note:'30일 이하 X',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D018',name:'골절(일반)',code:'S/T',cat:'근골격',
+   companies:{
+     '삼성화재':{status:'ok',note:'15일 이내, 수술가능',score:4},
+     'DB손보':{status:'ok',note:'즉시인수 15일 이내',score:5},
+     'KB손해':{status:'ok',note:'5일 이내',score:3},
+     '현대해상':{status:'ok',note:'5일 이내',score:3},
+     'NH농협손보':{status:'ok',note:'7~14일 이하',score:4},
+     '메리츠화재':{status:'ok',note:'15일 이내',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D019',name:'수두',code:'B01',cat:'감염',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내',score:4},
+     '현대해상':{status:'ok',note:'5일 이내',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하',score:4},
+     '메리츠화재':{status:'ok',note:'입원가능',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 X',score:4},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+  {id:'D020',name:'맹장염(충수염)',code:'K37',cat:'소화기',
+   companies:{
+     '삼성화재':{status:'ok',note:'즉시인수, 수술가능',score:5},
+     'DB손보':{status:'ok',note:'즉시인수',score:5},
+     'KB손해':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     '현대해상':{status:'ok',note:'5일 이내, 수술가능',score:4},
+     'NH농협손보':{status:'ok',note:'14일 이하, 수술必',score:4},
+     '메리츠화재':{status:'ok',note:'수술가능',score:4},
+     '삼성생명':{status:'ok',note:'즉시 가능',score:5},
+     '한화생명':{status:'ok',note:'30일 이하 O',score:5},
+     '흥국생명':{status:'ok',note:'전담보 O',score:5},
+     '미래에셋':{status:'ok',note:'즉시인수',score:5},
+   }},
+];
+
+// ================================================================
+// ■ 상태
+// ================================================================
+let selectedDiseases = [];
+let selectedProds = ['손해보험'];
+
+// ================================================================
+// ■ 초기화
+// ================================================================
+function init() {
+  renderQuickList();
+  updateCTABadge();
+}
+
+function renderQuickList() {
+  const el = document.getElementById('quickList');
+  const quickItems = DISEASE_DB.slice(0, 12);
+  el.innerHTML = quickItems.map(d => `
+    <div class="quick-item ${selectedDiseases.includes(d.id) ? 'sel' : ''}" 
+         id="qi-${d.id}" onclick="toggleQuick('${d.id}')">
+      <div class="qi-box"><div class="qi-check"></div></div>
+      <span class="qi-name">${d.name}</span>
+      <span class="qi-cat cat-${d.cat}">${d.cat}</span>
+      <span class="qi-code">${d.code}</span>
+    </div>`).join('');
+}
+
+// ================================================================
+// ■ 상품 선택
+// ================================================================
+function toggleProd(el, prod) {
+  el.classList.toggle('on');
+  if (el.classList.contains('on')) {
+    if (!selectedProds.includes(prod)) selectedProds.push(prod);
+  } else {
+    selectedProds = selectedProds.filter(p => p !== prod);
+  }
+  updateCTABadge();
+}
+
+// ================================================================
+// ■ 질환 선택
+// ================================================================
+function toggleQuick(id) {
+  const d = DISEASE_DB.find(x => x.id === id);
+  if (!d) return;
+  if (selectedDiseases.includes(id)) {
+    selectedDiseases = selectedDiseases.filter(x => x !== id);
+  } else {
+    if (selectedDiseases.length >= 5) { alert('최대 5개까지 선택 가능합니다.'); return; }
+    selectedDiseases.push(id);
+  }
+  renderQuickList();
+  renderTags();
+  updateCTABadge();
+}
+
+function renderTags() {
+  const area = document.getElementById('tagArea');
+  if (!selectedDiseases.length) {
+    area.innerHTML = '<span style="font-size:11px;color:var(--text4)">선택된 질환 없음</span>';
+    return;
+  }
+  area.innerHTML = selectedDiseases.map(id => {
+    const d = DISEASE_DB.find(x => x.id === id);
+    return d ? `<span class="dis-tag">${d.name}<span class="dis-tag-x" onclick="toggleQuick('${id}')">×</span></span>` : '';
+  }).join('');
+}
+
+function updateCTABadge() {
+  const badge = document.getElementById('ctaBadge');
+  badge.textContent = selectedDiseases.length ? `질환 ${selectedDiseases.length}개 선택` : '선택 없음';
+}
+
+// ================================================================
+// ■ 검색
+// ================================================================
+function onSearch(q) {
+  const acList = document.getElementById('acList');
+  if (!q.trim()) { acList.classList.remove('show'); return; }
+  const matches = DISEASE_DB.filter(d =>
+    d.name.includes(q) || d.code.toLowerCase().includes(q.toLowerCase()) || d.cat.includes(q)
+  );
+  if (!matches.length) { acList.classList.remove('show'); return; }
+  const esc = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  acList.innerHTML = matches.map(d => {
+    const hl = s => s.replace(new RegExp(esc,'gi'), m => `<span class="hl">${m}</span>`);
+    return `<div class="ac-item" onclick="selectFromSearch('${d.id}')">
+      <span class="ac-code">${hl(d.code)}</span>
+      <span class="ac-name">${hl(d.name)}</span>
+      <span class="ac-cat">${d.cat}</span>
+    </div>`;
+  }).join('');
+  acList.classList.add('show');
+}
+
+function selectFromSearch(id) {
+  document.getElementById('acList').classList.remove('show');
+  document.getElementById('searchInp').value = '';
+  if (!selectedDiseases.includes(id)) {
+    if (selectedDiseases.length >= 5) { alert('최대 5개까지 선택 가능합니다.'); return; }
+    selectedDiseases.push(id);
+  }
+  renderQuickList();
+  renderTags();
+  updateCTABadge();
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) document.getElementById('acList').classList.remove('show');
+});
+
+// ================================================================
+// ■ 직업 위험 체크
+// ================================================================
+function checkJobRisk(val) {
+  const warn = document.getElementById('jobWarn');
+  const msg = document.getElementById('jobWarnMsg');
+  const found = Object.entries(JOB_RISK).find(([k]) => val.includes(k));
+  if (found) {
+    msg.textContent = found[1].msg;
+    warn.classList.add('show');
+  } else {
+    warn.classList.remove('show');
+  }
+}
+
+// ================================================================
+// ■ 조회 실행
+// ================================================================
+function doQuery() {
+  if (!selectedDiseases.length) {
+    alert('질환을 1개 이상 선택해주세요.');
+    return;
+  }
+  const main = document.getElementById('mainArea');
+  const selDiseases = DISEASE_DB.filter(d => selectedDiseases.includes(d.id));
+  const age = document.getElementById('age').value;
+  const gender = document.getElementById('gender').value;
+  const job = document.getElementById('job').value;
+
+  // 회사별 스코어 계산
+  const scores = {};
+  Object.keys(COMPANIES).forEach(c => {
+    let totalScore = 0, okCount = 0, condCount = 0, ngCount = 0;
+    selDiseases.forEach(d => {
+      const info = d.companies[c];
+      if (!info) return;
+      totalScore += info.score || 0;
+      if (info.status === 'ok') okCount++;
+      else if (info.status === 'conditional') condCount++;
+      else ngCount++;
+    });
+    scores[c] = { totalScore, okCount, condCount, ngCount, details: selDiseases.map(d => ({
+      name: d.name, cat: d.cat, code: d.code,
+      ...d.companies[c]
+    }))};
+  });
+
+  // 기준선: 모든 회사가 ok인 질환 수
+  const baselineCount = selDiseases.filter(d =>
+    Object.values(d.companies).every(c => c.status === 'ok')
+  ).length;
+
+  // 정렬: 총점 높은 순
+  const sorted = Object.entries(scores).sort((a, b) => {
+    if (b[1].ngCount !== a[1].ngCount) return a[1].ngCount - b[1].ngCount;
+    return b[1].totalScore - a[1].totalScore;
+  });
+
+  const maxScore = selDiseases.length * 5;
+
+  // 티어 분류
+  const tier1 = sorted.filter(([,s]) => s.ngCount === 0 && s.condCount === 0);
+  const tier2 = sorted.filter(([,s]) => s.ngCount === 0 && s.condCount > 0);
+  const tier3 = sorted.filter(([,s]) => s.ngCount > 0);
+
+  function rankCard(company, sc, rank) {
+    const info = COMPANIES[company];
+    const pct = Math.round((sc.totalScore / maxScore) * 100);
+    const hasBetter = sc.totalScore > (maxScore * 0.8);
+    const tierClass = sc.ngCount === 0 && sc.condCount === 0 ? 'tier1' :
+                      sc.ngCount === 0 ? 'tier2' : 'tier3';
+    const rankClass = rank === 1 ? 'rk-gold' : rank === 2 ? 'rk-silver' : rank === 3 ? 'rk-bronze' : 'rk-std';
+    const badgeText = sc.ngCount === 0 && sc.condCount === 0 ? '✅ 전담보 인수가능' :
+                      sc.ngCount === 0 ? '⚠️ 조건부 포함' : '❌ 일부 인수불가';
+    const badgeClass = sc.ngCount === 0 && sc.condCount === 0 ? 'badge-best' :
+                       sc.ngCount === 0 ? 'badge-cond' : 'badge-warn';
+    const fillColor = sc.ngCount === 0 && sc.condCount === 0 ? 'var(--green)' :
+                      sc.ngCount === 0 ? 'var(--amber)' : 'var(--red)';
+
+    const disChips = sc.details.map(det =>
+      `<span class="rc-dis-chip ${det.status}">${det.name}</span>`
+    ).join('');
+
+    const noteHtml = info.note
+      ? `<div class="rc-note-2q">🔔 ${info.note}</div>` : '';
+
+    return `<div class="rank-card ${tierClass}">
+      <div class="rc-top">
+        <div class="rc-rank ${rankClass}">${rank}</div>
+        <div class="rc-company">${company}</div>
+        <span class="rc-type type-${info.type}">${info.type}</span>
+        <span class="rc-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="rc-body">
+        <div class="rc-detail">${sc.details.map(det =>
+          `<strong>${det.name}</strong>: ${det.note || '-'}`
+        ).join('<br>')}</div>
+        ${noteHtml}
+        <div class="rc-score-bar">
+          <span class="rc-score-label">인수 유리도</span>
+          <div class="rc-score-track">
+            <div class="rc-score-fill" style="width:${pct}%;background:${fillColor}"></div>
+          </div>
+          <span style="font-size:11px;color:var(--text3);min-width:32px">${pct}%</span>
+        </div>
+        <div class="rc-dis-list">${disChips}</div>
+      </div>
+    </div>`;
+  }
+
+  // 비교 테이블 행
+  const tableRows = selDiseases.map(d => {
+    const cols = Object.keys(COMPANIES).map(c => {
+      const info = d.companies[c];
+      if (!info) return '<td>-</td>';
+      const cls = info.status === 'ok' ? 'dot-ok' : info.status === 'conditional' ? 'dot-cond' : 'dot-ng';
+      const sym = info.status === 'ok' ? '●' : info.status === 'conditional' ? '●' : '●';
+      return `<td title="${info.note || ''}" style="text-align:center"><span class="${cls}">${sym}</span></td>`;
+    }).join('');
+    return `<tr><td><span class="qi-code" style="font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 6px;">${d.code}</span></td>
+      <td style="font-weight:500">${d.name}</td><td><span class="qi-cat cat-${d.cat}">${d.cat}</span></td>
+      ${cols}</tr>`;
+  }).join('');
+
+  const customerInfo = [age && `만 ${age}세`, gender === 'M' ? '남성' : gender === 'F' ? '여성' : '', job].filter(Boolean).join(' · ');
+
+  main.innerHTML = `<div class="fade-in">
+    <!-- 조회 기준 배너 -->
+    <div class="result-banner">
+      <span class="rb-label">${customerInfo ? customerInfo + ' · ' : ''}조회 기준:</span>
+      ${selectedProds.map(p => `<span class="rb-chip rb-prod">${p}</span>`).join('')}
+      <span style="color:var(--text4);font-size:11px">·</span>
+      ${selDiseases.map(d => `<span class="rb-chip rb-dis">${d.code} ${d.name}</span>`).join('')}
+    </div>
+
+    <!-- 기준선 안내 -->
+    <div class="baseline-info">
+      📊 <strong>비교 기준:</strong> 선택한 ${selDiseases.length}개 질환 중 <strong>${baselineCount}개</strong>가 전 회사 공통 인수 가능 질환입니다.
+      공통 기준선 대비 <strong>더 유리한 회사</strong>(녹색) → <strong>동등</strong>(파란색) → <strong>불리</strong>(주황/빨간색) 순으로 정렬됩니다.
+    </div>
+
+    <!-- 요약 카운터 -->
+    <div class="sum-row">
+      <div class="sum-card">
+        <div class="sum-n c-green">${tier1.length}</div>
+        <div class="sum-l">전담보 인수가능</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-n c-amber">${tier2.length}</div>
+        <div class="sum-l">조건부 포함</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-n c-red">${tier3.length}</div>
+        <div class="sum-l">일부 인수불가</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-n c-blue">${selDiseases.length}</div>
+        <div class="sum-l">선택 질환 수</div>
+      </div>
+    </div>
+
+    ${tier1.length ? `
+    <!-- 우선 추천 -->
+    <div class="sec-title">
+      <div class="sec-dot" style="background:var(--green)"></div>
+      전담보 인수가능 · 우선 추천 보험사
+    </div>
+    <div class="rank-grid">
+      ${tier1.map(([c,s], i) => rankCard(c, s, i+1)).join('')}
+    </div>` : ''}
+
+    ${tier2.length ? `
+    <!-- 조건부 -->
+    <div class="sec-title">
+      <div class="sec-dot" style="background:var(--amber)"></div>
+      조건부 인수 포함 보험사
+    </div>
+    <div class="rank-grid">
+      ${tier2.map(([c,s], i) => rankCard(c, s, tier1.length + i + 1)).join('')}
+    </div>` : ''}
+
+    ${tier3.length ? `
+    <!-- 불가 포함 -->
+    <div class="ng-panel">
+      <div class="ng-hdr" onclick="toggleNgPanel(this)">
+        <div class="ng-hdr-l">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block"></div>
+          일부 인수불가 보험사 <strong style="color:var(--text)">${tier3.length}개</strong>
+        </div>
+        <span class="ng-expand">펼치기 ▾</span>
+      </div>
+      <div class="ng-chips">
+        ${tier3.map(([c]) => `<span class="ng-chip">${c}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- 전체 비교 -->
+    <div class="compare-section">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'pane-table')">📊 질환별 비교표</button>
+        <button class="tab-btn" onclick="switchTab(this,'pane-rank')">🏆 회사별 상세</button>
+        <button class="tab-btn" onclick="switchTab(this,'pane-guide')">📌 이용 안내</button>
+      </div>
+
+      <div id="pane-table" class="tab-pane active">
+        <div style="overflow-x:auto">
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>코드</th><th>질병명</th><th>분류</th>
+                ${Object.keys(COMPANIES).map(c => `<th style="text-align:center">${c}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><span class="dot-ok">●</span> 인수가능</div>
+          <div class="legend-item"><span class="dot-cond">●</span> 조건부</div>
+          <div class="legend-item"><span class="dot-ng">●</span> 인수불가</div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text4)">셀에 마우스를 올리면 상세 조건 확인</div>
+        </div>
+      </div>
+
+      <div id="pane-rank" class="tab-pane">
+        ${sorted.map(([c,s], i) => rankCard(c, s, i+1)).join('')}
+      </div>
+
+      <div id="pane-guide" class="tab-pane">
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;font-size:13px;color:#1e3a8a;line-height:2;margin-bottom:12px">
+          <strong>📌 결과 해석 안내</strong><br>
+          · <strong>전담보 인수가능</strong>: 선택한 모든 질환에서 조건 없이 인수 가능한 회사<br>
+          · <strong>조건부 포함</strong>: 일부 질환에서 부담보·입원일수 제한 등 조건 있음<br>
+          · <strong>인수불가 포함</strong>: 선택 질환 중 인수가 불가한 항목이 있는 회사<br>
+          · 현대해상은 <strong>2Q패스 설계 요청 필수</strong>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px 18px;font-size:13px;color:#92400e;line-height:2">
+          <strong>⚠️ 주의사항</strong><br>
+          · 본 자료는 설계 참고용이며 실제 인수결과는 각 보험사 최종 심사를 통해 확인하세요<br>
+          · 고위험 직종(3~4급)의 경우 병력과 무관하게 담보 제한이 발생할 수 있습니다<br>
+          · 데이터 기준: 삼성화재·DB손보·KB손해·현대해상·NH농협손보·메리츠화재·삼성생명·한화생명·흥국생명·미래에셋
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleNgPanel(hdr) {
+  const chips = hdr.nextElementSibling;
+  const expand = hdr.querySelector('.ng-expand');
+  const isOpen = chips.style.display !== 'none';
+  chips.style.display = isOpen ? 'none' : 'flex';
+  expand.textContent = isOpen ? '펼치기 ▾' : '접기 ▴';
+}
+
+function switchTab(btn, paneId) {
+  btn.closest('.compare-section').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.closest('.compare-section').querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(paneId).classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>

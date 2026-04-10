@@ -42,11 +42,13 @@ export default function Sidebar({
     }
   };
 
+  // ✅ [업데이트] show_underwriting 항목 추가
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
     show_calc: true, show_disability: true, show_car_accident: true,
-    show_knia: true // 과실 비율 조회 기본값
+    show_knia: true,
+    show_underwriting: true 
   });
   const [isEditMode, setIsEditMode] = useState(false); 
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -127,7 +129,6 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  // ✅ 고정 퀵링크: 자동차 사고 과실 비율 조회 추가 (공시실 아래)
   const fixedLinks = [
     { id: 'show_cafe', label: '보험의 기준 (카페)', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
     { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
@@ -136,10 +137,15 @@ export default function Sidebar({
     { id: 'show_knia', label: '과실 비율 조회', icon: '⚖️', url: 'https://accident.knia.or.kr', color: 'border-blue-400' },
   ];
 
+  // ✅ [업데이트] consultTools에 회사별 인수 확인 버튼 추가
   const consultTools = [
     { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
     { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' }, 
+    
+    // 신규 추가 항목
+    { id: 'show_underwriting', label: '회사별 간편 인수 확인(참고)', icon: '📝', url: '/underwriting_tool.html', color: 'border-cyan-500' },
+
     { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' }, 
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'https://kcdcode.kr/browse/main', color: 'border-indigo-400' }, 
     { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' }, 
