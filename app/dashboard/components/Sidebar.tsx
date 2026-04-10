@@ -137,13 +137,12 @@ export default function Sidebar({
     { id: 'show_knia', label: '과실 비율 조회', icon: '⚖️', url: 'https://accident.knia.or.kr', color: 'border-blue-400' },
   ];
 
-  // ✅ [업데이트] URL을 새로 만든 /underwriting/index.html로 변경
   const consultTools = [
     { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
     { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' }, 
     
-    // ✅ 경로 업데이트 완료
+    // ✅ 경로 재확인: public/underwriting/index.html 기준
     { id: 'show_underwriting', label: '회사별 간편 인수 확인(참고)', icon: '📝', url: '/underwriting/index.html', color: 'border-cyan-500' },
 
     { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' }, 
@@ -164,9 +163,15 @@ export default function Sidebar({
     }
 
     if (item.url) {
-      const finalUrl = item.url.startsWith('/') 
-        ? `${window.location.origin}${item.url}` 
-        : (item.url.startsWith('http') ? item.url : `https://${item.url}`);
+      let finalUrl = "";
+
+      if (item.url.startsWith('http')) {
+        finalUrl = item.url;
+      } else {
+        // ✅ [수정] 경로가 슬래시(/)로 시작하도록 보정하여 도메인과 결합
+        const cleanPath = item.url.startsWith('/') ? item.url : `/${item.url}`;
+        finalUrl = `${window.location.origin}${cleanPath}`;
+      }
 
       window.open(finalUrl, "_blank", "noopener,noreferrer");
 
