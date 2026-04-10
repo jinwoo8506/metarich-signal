@@ -42,7 +42,7 @@ export default function Sidebar({
     }
   };
 
-  // ✅ [업데이트] show_underwriting 항목 추가
+  // ✅ [업데이트] show_underwriting 항목 포함 초기화
   const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
     show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
     show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
@@ -137,14 +137,14 @@ export default function Sidebar({
     { id: 'show_knia', label: '과실 비율 조회', icon: '⚖️', url: 'https://accident.knia.or.kr', color: 'border-blue-400' },
   ];
 
-  // ✅ [업데이트] consultTools에 회사별 인수 확인 버튼 추가
+  // ✅ [업데이트] URL을 새로 만든 /underwriting/index.html로 변경
   const consultTools = [
     { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
     { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
     { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' }, 
     
-    // 신규 추가 항목
-    { id: 'show_underwriting', label: '회사별 간편 인수 확인(참고)', icon: '📝', url: '/underwriting_tool.html', color: 'border-cyan-500' },
+    // ✅ 경로 업데이트 완료
+    { id: 'show_underwriting', label: '회사별 간편 인수 확인(참고)', icon: '📝', url: '/underwriting/index.html', color: 'border-cyan-500' },
 
     { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' }, 
     { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'https://kcdcode.kr/browse/main', color: 'border-indigo-400' }, 
@@ -218,7 +218,7 @@ export default function Sidebar({
 
           <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
             {isMaster && showStaffManager && (
-              <div className="bg-indigo-50 p-4 rounded-[2rem] border-2 border-indigo-200">
+              <div className="bg-indigo-50 p-4 rounded-[2.5rem] border-2 border-indigo-200">
                 <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
                 <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
                   {staffList.map((staff) => (
