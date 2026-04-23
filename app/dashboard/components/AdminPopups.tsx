@@ -21,6 +21,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   // [규칙 반영] UI 표시용 한글 ↔ DB 저장용 영문 매핑
   const rankMap: { [key: string]: string } = {
     'master': '마스터',
+    'director': '본부장',
     'leader': '사업부장',
     'manager': '지점장',
     'agent': '설계사',
@@ -30,10 +31,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   // [규칙 반영] 권한 체계 (숫자가 낮을수록 높음)
   const rankPriority: { [key: string]: number } = {
     'master': 1,
-    'leader': 2,
-    'manager': 3,
-    'agent': 4,
-    'guest': 5
+    'director': 2,
+    'leader': 3,
+    'manager': 4,
+    'agent': 5,
+    'guest': 6
   };
 
   useEffect(() => {

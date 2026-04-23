@@ -127,6 +127,7 @@ export default function DashboardPage() {
 
   const userRole = (user.role || "agent").toLowerCase().trim();
   const isMaster = userRole === 'master';
+  const isDirector = userRole === 'director';
   const isLeader = userRole === 'leader';
   const isManager = userRole === 'manager';
   const isGuest = userRole === 'guest';
@@ -137,7 +138,7 @@ export default function DashboardPage() {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
     
-    if (isMaster) return <MasterView {...props} />;
+    if (isMaster || isDirector) return <MasterView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
     return <AgentView {...props} />;
@@ -145,6 +146,7 @@ export default function DashboardPage() {
 
   const rankMap: { [key: string]: string } = {
     'master': '마스터',
+    'director': '본부장',
     'leader': '사업부장',
     'manager': '지점장',
     'agent': '설계사',
