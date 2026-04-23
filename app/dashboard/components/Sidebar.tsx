@@ -21,19 +21,21 @@ export default function Sidebar({
   const userEmail = user?.email?.toLowerCase()?.trim();
   
   const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
+  const isDirector = user?.role === 'director' || user?.role_level === 'executive';
   const isLeader = user?.role === 'leader' || user?.role_level === 'director';
   const isManager = user?.role === 'manager';
-  const isAgent = user?.role === 'agent' || isManager || isLeader || isMaster;
+  const isAgent = user?.role === 'agent' || isManager || isLeader || isDirector || isMaster;
   
   const isAdmin = isMaster; 
   const isStaff = isAgent;
-  const isApproved = isMaster || isLeader || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
+  const isApproved = isMaster || isDirector || isLeader || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
 
   const getRankDisplay = (role: string) => {
     if (!isApproved) return '게스트(승인대기)';
     if (userEmail === 'qodbtjq@naver.com') return '최고관리자';
     switch(role) {
-      case 'master': return '사업부장';
+      case 'master': return '마스터';
+      case 'director': return '본부장';
       case 'leader': return '사업부장'; 
       case 'manager': return '지점장';
       case 'agent': return '설계사';
@@ -114,7 +116,7 @@ export default function Sidebar({
     const startOfRange = new Date(d.getFullYear(), d.getMonth() - 2, 1).toISOString().split('T')[0];
     const endOfRange = new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().split('T')[0];
     let queryBuilder = supabase.from("daily_perf").select("contract_amt, contract_cnt, user_id, date").gte("date", startOfRange).lt("date", endOfRange);
-    if (!isMaster && !isLeader) queryBuilder = queryBuilder.eq("user_id", user?.id);
+    if (!isMaster && !isDirector && !isLeader) queryBuilder = queryBuilder.eq("user_id", user?.id);
     const { data } = await queryBuilder; 
     if (data && data.length > 0) {
       const totalAmt = data.reduce((acc, curr) => acc + (Number(curr.contract_amt) || 0), 0);
@@ -239,6 +241,7 @@ export default function Sidebar({
                         <option value="agent">설계사 (Agent)</option>
                         <option value="manager">지점장 (Manager)</option>
                         <option value="leader">사업부장 (Leader)</option>
+                        <option value="director">본부장 (Director)</option>
                         <option value="master">최고관리자 (Master)</option>
                       </select>
                     </div>

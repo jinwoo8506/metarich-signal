@@ -28,6 +28,15 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   // 마스터 권한 체크 (이메일 및 역할 기반)
   const currentUserEmail = user?.email?.toLowerCase()?.trim() || "";
   const isMaster = currentUserEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
+  const isDirector = user?.role === 'director';
+
+  const rankMap: { [key: string]: string } = {
+    'master': '마스터',
+    'director': '본부장',
+    'leader': '사업부장',
+    'manager': '지점장',
+    'agent': '설계사'
+  };
 
   useEffect(() => { fetchTeamData(); }, [monthKey, user]);
 
@@ -195,7 +204,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-md italic uppercase bg-black text-white`}>
-                        {a.role_level || a.role || 'planner'}
+                        {rankMap[a.role] || '설계사'}
                       </span>
                       <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.branch_name || '미소속'})</span></p>
                     </div>

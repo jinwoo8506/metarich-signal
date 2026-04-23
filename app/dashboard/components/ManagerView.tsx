@@ -22,6 +22,14 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
 
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
+  const rankMap: { [key: string]: string } = {
+    'master': '마스터',
+    'director': '본부장',
+    'leader': '사업부장',
+    'manager': '지점장',
+    'agent': '설계사'
+  };
+
   useEffect(() => { fetchBranchData(); }, [monthKey, user]);
 
   async function fetchBranchData() {
@@ -135,7 +143,10 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
           {agents.map(a => (
             <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-5 bg-white rounded-[2rem] border-2 border-slate-100 hover:border-black transition-all cursor-pointer">
               <div className="flex justify-between items-start mb-4">
-                <p className="text-xl font-black">{a.name}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{rankMap[a.role] || '설계사'}</span>
+                  <p className="text-xl font-black">{a.name}</p>
+                </div>
                 <p className="text-sm font-black text-blue-600">{Number(a.performance.contract_amt).toLocaleString()}만</p>
               </div>
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-dashed">
