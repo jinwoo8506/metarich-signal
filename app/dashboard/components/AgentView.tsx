@@ -158,7 +158,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
       {/* 🟠 퀵링크 섹션 (관리자와 동일하게 5개 구성 유지) */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black shadow-sm">
         <div className="flex items-center gap-3 shrink-0">
-          <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
+          <p className="text-[16px] md:text-[20px] font-black leading-tight">
+            <span className="text-[10px] text-slate-400 block uppercase mb-1">{user.department_name || "미소속"} {user.branch_name || "지점미지정"}</span>
+            {user.name} <span className="text-blue-600 italic text-sm md:text-base">AGENT</span>
+          </p>
         </div>
         <div className="flex flex-wrap md:flex-nowrap gap-2 font-black w-full md:w-auto justify-center">
           <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" />

@@ -44,9 +44,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     
     if (user?.role_level !== 'master' && user?.role !== 'master') {
       if (user?.role_level === 'director' || user?.role === 'leader') {
-        userQuery = userQuery.eq('department', user.department); 
+        userQuery = userQuery.eq('department_name', user.department_name); 
       } else if (user?.role_level === 'manager' || user?.role === 'manager') {
-        userQuery = userQuery.eq('team', user.team);
+        userQuery = userQuery.eq('branch_name', user.branch_name);
       }
     }
 
@@ -93,7 +93,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         head: [['성명', '소속', '직책', '실적(만)', '건수', '전화', '만남', '제안']],
         body: agents.map(a => [
           a.name,
-          `${a.department || ''} ${a.team || ''}`,
+          `${a.department_name || ''} ${a.branch_name || ''}`,
           a.role_level || a.role || '설계사',
           Number(a.performance.contract_amt || 0),
           Number(a.performance.contract_cnt || 0),
@@ -181,7 +181,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       {/* 🟣 에이전트 모니터링 리스트 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border-2 border-black shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
-          {user?.role_level === 'master' ? 'All Centers' : (user?.department || 'My Unit')} Monitoring
+          {user?.role_level === 'master' ? 'All Centers' : (user?.department_name || 'My Unit')} Monitoring
         </h2>
         <div className="space-y-4 md:space-y-6">
           {agents.filter(a => a.is_approved).map(a => {
@@ -195,7 +195,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{a.role_level || a.role || 'planner'}</span>
-                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.team || '미소속'})</span></p>
+                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.branch_name || '미소속'})</span></p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <RecordBadge type="BEST" amt={a.best?.contract_amt} date={a.best ? formatDate(a.best.date) : ""} />

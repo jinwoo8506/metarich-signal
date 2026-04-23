@@ -143,12 +143,24 @@ export default function DashboardPage() {
     return <AgentView {...props} />;
   };
 
+  const rankMap: { [key: string]: string } = {
+    'master': '마스터',
+    'leader': '사업부장',
+    'manager': '지점장',
+    'agent': '설계사',
+    'guest': '사용자'
+  };
+
   if (viewMode === 'select' && !isGuest) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
-        <h1 className="text-3xl md:text-5xl mb-12 md:mb-16 italic tracking-tighter">
+        <h1 className="text-2xl md:text-5xl mb-12 md:mb-16 italic tracking-tighter leading-tight">
+          <span className="text-slate-400 block text-lg md:text-2xl mb-4 uppercase tracking-widest">
+            {user.department_name || "미소속"} {user.branch_name || "지점미지정"}
+          </span>
           <span className="text-blue-600">{user.name}</span>
-          <span className="ml-2 text-xl md:text-2xl text-slate-400 uppercase">[{userRole}]</span>
+          <span className="text-slate-900 ml-2">({rankMap[userRole] || "설계사"})님</span>
+          <span className="block mt-2">환영합니다!</span>
         </h1>
         <div className="flex flex-col md:flex-row gap-6 md:gap-10 w-full max-w-5xl">
           <button onClick={() => setViewMode('office')} className="flex-1 h-64 md:h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">

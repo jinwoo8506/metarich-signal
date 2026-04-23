@@ -15,6 +15,8 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [allUsers, setAllUsers] = useState<any[]>([]); 
   const [existingDepts, setExistingDepts] = useState<string[]>([]);
   const [existingTeams, setExistingTeams] = useState<{dept: string, team: string}[]>([]);
+  const [myRankValue, setMyRankValue] = useState(100);
+  const isMaster = myRankValue === 1;
 
   // [규칙 반영] UI 표시용 한글 ↔ DB 저장용 영문 매핑
   const rankMap: { [key: string]: string } = {
@@ -47,7 +49,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           .eq("id", authUser.id)
           .single();
         if (myData?.rank) {
-          myRankValue = rankPriority[myData.rank] || 100;
+          const rVal = rankPriority[myData.rank] || 100;
+          setMyRankValue(rVal);
+          currentMyRank = rVal; // 필터링용 로컬 변수
         }
       }
 
@@ -85,20 +89,25 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
         if (uData) {
           const filteredUsers = uData.filter(u => {
             const userRankValue = rankPriority[u.rank] || 999;
-            if (myRankValue === 1) return true; // 마스터는 전체 노출
-            return userRankValue > myRankValue; // 본인보다 하위 직급만 노출
+            if (currentMyRank === 1) return true; // 마스터는 전체 노출
+            return userRankValue > currentMyRank; // 본인보다 하위 직급만 노출
           });
 
-          setAllUsers(filteredUsers.map(u => ({ 
-            ...u, 
-            department: u.department_name || "", 
-            team: u.branch_name || "",
-            isCustomDept: false, 
-            isCustomTeam: false 
-          })));
+          setAllUsers(filteredUsers.map(u => {
+            const dVal = u.department_name || "";
+            const tVal = u.branch_name || "";
+            return { 
+              ...u, 
+              department: dVal, 
+              team: tVal,
+              isCustomDept: !!(dVal && !depts.includes(dVal)), 
+              isCustomTeam: !!(tVal && !teams.some(t => t.team === tVal)) 
+            };
+          }));
         }
       }
     }
+    let currentMyRank = 100; // 닫힘 함수 내에서 접근용
     load();
   }, [type]);
 
@@ -108,11 +117,27 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       if (u.id !== userId) return u;
       const updated = { ...u };
       if (field === 'department') {
-        if (value === 'CUSTOM_INPUT') { updated.department = ''; updated.isCustomDept = true; }
-        else { updated.department = value; updated.isCustomDept = false; }
+        if (value === 'CUSTOM_INPUT') { 
+          updated.department = ''; 
+          updated.isCustomDept = true; 
+        } else if (updated.isCustomDept) {
+          // 직접 입력 모드일 때는 값만 업데이트하고 모드 유지
+          updated.department = value;
+        } else {
+          // 드롭다운 선택 시 (CUSTOM_INPUT이 아닌 다른 값 선택 시)
+          updated.department = value;
+          updated.isCustomDept = false;
+        }
       } else if (field === 'team') {
-        if (value === 'CUSTOM_INPUT') { updated.team = ''; updated.isCustomTeam = true; }
-        else { updated.team = value; updated.isCustomTeam = false; }
+        if (value === 'CUSTOM_INPUT') { 
+          updated.team = ''; 
+          updated.isCustomTeam = true; 
+        } else if (updated.isCustomTeam) {
+          updated.team = value;
+        } else {
+          updated.team = value;
+          updated.isCustomTeam = false;
+        }
       } else {
         updated[field] = value;
       }
@@ -133,20 +158,46 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       alert("사업부와 지점을 모두 입력해주세요.");
       return;
     }
-    const { error } = await supabase.from("users").update({ 
+
+    // 1. users 테이블 업데이트 (표준 필드명 사용)
+    const { error: userError } = await supabase.from("users").update({ 
       is_approved: true,
       department_name: user.department,
       branch_name: user.team 
     }).eq("id", user.id);
 
-    if (error) { 
-      console.error(error);
-      alert("저장 중 오류 발생: " + error.message); 
+    if (userError) { 
+      console.error(userError);
+      alert("저장 중 오류 발생: " + userError.message); 
+      return;
     } 
-    else { 
-      alert(`${user.name}님의 정보가 업데이트 되었습니다.`); 
-      setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_approved: true } : u));
+
+    // 2. 신규 사업부/지점인 경우 조직 테이블에도 자동 등록 (회원가입 시 선택 가능하도록)
+    try {
+      // 사업부 등록 여부 확인 및 추가
+      if (!existingDepts.includes(user.department)) {
+        await supabase.from("departments").upsert({ name: user.department }, { onConflict: 'name' });
+      }
+      // 지점 등록 여부 확인 및 추가
+      const teamExists = existingTeams.some(t => t.dept === user.department && t.team === user.team);
+      if (!teamExists) {
+        await supabase.from("branches").upsert({ 
+          dept_name: user.department, 
+          name: user.team 
+        }, { onConflict: 'dept_name, name' });
+      }
+    } catch (e) {
+      console.warn("조직 정보 자동 등록 중 알림: ", e);
     }
+
+    alert(`${user.name}님의 정보가 업데이트 되었습니다.`); 
+    setAllUsers(prev => prev.map(u => u.id === user.id ? { 
+      ...u, 
+      ...user, 
+      is_approved: true,
+      department_name: user.department,
+      branch_name: user.team
+    } : u));
   };
 
   // 시스템 설정 저장
@@ -176,66 +227,74 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       <div className="bg-white w-full max-w-6xl rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50">✕</button>
 
-        {/* 1. 직원 관리 탭 */}
+        {/* 1. 직원 관리 탭 (마스터만 접근 가능) */}
         {type === 'users' && (
-          <div className="space-y-6 md:space-y-10 animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Employee Management</h3>
-            <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
-              <table className="w-full text-left font-black">
-                <thead className="bg-black text-[#d4af37] text-[10px] uppercase font-black">
-                  <tr>
-                    <th className="p-4 md:p-6">Employee Info</th>
-                    <th className="p-4 md:p-6 text-center">Set Dept / Branch</th>
-                    <th className="p-4 md:p-6 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y-2 divide-black">
-                  {allUsers.map((u) => (
-                    <tr key={u.id} className={`${u.is_approved ? 'bg-white' : 'bg-amber-50'} hover:bg-slate-50 transition-colors`}>
-                      <td className="p-4 md:p-6">
-                        <div className="flex items-center gap-2">
-                          <p className="font-black text-sm md:text-xl italic">{u.name}</p>
-                          {/* DB 영문값을 한글 직급으로 변환 표시 */}
-                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] md:text-[11px] rounded-md font-black uppercase">
-                            {rankMap[u.rank] || '설계사'}
-                          </span>
-                          {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-normal mt-1">{u.email}</p>
-                      </td>
-                      <td className="p-4 md:p-6 text-center">
-                        <div className="flex flex-col gap-2 max-w-[250px] mx-auto">
-                          {u.isCustomDept ? (
-                            <input type="text" autoFocus placeholder="사업부 직접 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} />
-                          ) : (
-                            <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
-                              <option value="">사업부 선택</option>
-                              {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
-                              <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
-                            </select>
-                          )}
-                          {u.isCustomTeam ? (
-                            <input type="text" autoFocus placeholder="지점 직접 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} />
-                          ) : (
-                            <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department && !u.isCustomDept} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
-                              <option value="">지점 선택</option>
-                              {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
-                              <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
-                            </select>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4 md:p-6 text-center">
-                        <button onClick={() => handleUserSave(u)} className={`px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black hover:invert transition-all ${u.is_approved ? 'bg-white' : 'bg-black text-[#d4af37]'}`}>
-                          {u.is_approved ? 'UPDATE INFO' : 'APPROVE'}
-                        </button>
-                      </td>
+          isMaster ? (
+            <div className="space-y-6 md:space-y-10 animate-in fade-in">
+              <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Employee Management</h3>
+              <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
+                <table className="w-full text-left font-black">
+                  <thead className="bg-black text-[#d4af37] text-[10px] uppercase font-black">
+                    <tr>
+                      <th className="p-4 md:p-6">Employee Info</th>
+                      <th className="p-4 md:p-6 text-center">Set Dept / Branch</th>
+                      <th className="p-4 md:p-6 text-center">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y-2 divide-black">
+                    {allUsers.map((u) => (
+                      <tr key={u.id} className={`${u.is_approved ? 'bg-white' : 'bg-amber-50'} hover:bg-slate-50 transition-colors`}>
+                        <td className="p-4 md:p-6">
+                          <div className="flex items-center gap-2">
+                            <p className="font-black text-sm md:text-xl italic">{u.name}</p>
+                            {/* DB 영문값을 한글 직급으로 변환 표시 */}
+                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] md:text-[11px] rounded-md font-black uppercase">
+                              {rankMap[u.rank] || '설계사'}
+                            </span>
+                            {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-normal mt-1">{u.email}</p>
+                        </td>
+                        <td className="p-4 md:p-6 text-center">
+                          <div className="flex flex-col gap-2 max-w-[250px] mx-auto">
+                            {u.isCustomDept ? (
+                              <input type="text" autoFocus placeholder="사업부 직접 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} />
+                            ) : (
+                              <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
+                                <option value="">사업부 선택</option>
+                                {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                                <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
+                              </select>
+                            )}
+                            {u.isCustomTeam ? (
+                              <input type="text" autoFocus placeholder="지점 직접 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} />
+                            ) : (
+                              <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department && !u.isCustomDept} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
+                                <option value="">지점 선택</option>
+                                {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
+                                <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
+                              </select>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 md:p-6 text-center">
+                          <button onClick={() => handleUserSave(u)} className={`px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black hover:invert transition-all ${u.is_approved ? 'bg-white' : 'bg-black text-[#d4af37]'}`}>
+                            {u.is_approved ? 'UPDATE INFO' : 'APPROVE'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20">
+              <span className="text-6xl mb-4">🚫</span>
+              <p className="text-xl font-black italic uppercase">Access Denied</p>
+              <p className="text-sm text-slate-400 mt-2">조직 관리 권한이 없습니다. 마스터 계정으로 문의하세요.</p>
+            </div>
+          )
         )}
 
         {/* 2. 팀 실적 탭 */}

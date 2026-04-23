@@ -96,8 +96,11 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
     <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
       <section className="bg-black p-8 rounded-[3rem] text-white border-4 border-[#d4af37] shadow-xl">
         <div className="flex justify-between items-end mb-6">
-          <div>
-            <p className="text-[#d4af37] text-xs italic mb-1 uppercase">{user.branch_name} Branch Goal</p>
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="bg-white/20 text-white px-3 py-1 rounded-full text-[10px] uppercase font-black">{user.department_name}</span>
+              <span className="text-[#d4af37] text-xs italic uppercase">{user.branch_name} Branch Goal</span>
+            </div>
             <h2 className="text-3xl italic font-black">{branchTotal.amt.toLocaleString()} / {branchTotal.targetAmt.toLocaleString()} 만</h2>
           </div>
           <span className="text-5xl italic font-black text-[#d4af37]">{branchRate}%</span>

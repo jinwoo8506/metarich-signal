@@ -66,8 +66,8 @@ export default function SignupPage() {
             name: formData.name,             // 관리자 팝업/대시보드와 이름 필드 매칭
             role: "agent",                   // 기본값은 설계사
             role_level: "staff",             // 기본값은 스태프
-            department: formData.department, // 선택한 사업부
-            team: formData.branch,           // 선택한 지점을 team 필드에 저장
+            department_name: formData.department, // 선택한 사업부
+            branch_name: formData.branch,      // 선택한 지점
             is_approved: false,              // 가입 직후는 미승인 상태
           },
         ]);
