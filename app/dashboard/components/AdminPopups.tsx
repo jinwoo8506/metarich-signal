@@ -72,10 +72,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       
       // 3. 조직 정보 및 유저 리스트 로드 (타입이 'users'일 때만)
       if (type === 'users') {
+        let depts: string[] = [];
+        let teams: {dept: string, team: string}[] = [];
+
         const { data: bData } = await supabase.from("branches").select("dept_name, name");
         if (bData) {
-          const depts = Array.from(new Set(bData.map(b => b.dept_name).filter(Boolean))) as string[];
-          const teams = bData.map(b => ({ dept: b.dept_name, team: b.name }));
+          depts = Array.from(new Set(bData.map(b => b.dept_name).filter(Boolean))) as string[];
+          teams = bData.map(b => ({ dept: b.dept_name, team: b.name }));
           setExistingDepts(depts.sort());
           setExistingTeams(teams);
         }
