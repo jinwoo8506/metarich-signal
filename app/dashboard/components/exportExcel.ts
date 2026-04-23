@@ -12,10 +12,10 @@ import * as XLSX from 'xlsx-js-style'
 // 테두리 프리셋
 // ────────────────────────────────────────────────────────────────
 const B_THIN = {
-  top:    { style: "thin",   color: { rgb: "FFAAAAAA" } },
-  bottom: { style: "thin",   color: { rgb: "FFAAAAAA" } },
-  left:   { style: "thin",   color: { rgb: "FFAAAAAA" } },
-  right:  { style: "thin",   color: { rgb: "FFAAAAAA" } },
+  top:    { style: "thin",   color: { rgb: "FF888888" } },
+  bottom: { style: "thin",   color: { rgb: "FF888888" } },
+  left:   { style: "thin",   color: { rgb: "FF888888" } },
+  right:  { style: "thin",   color: { rgb: "FF888888" } },
 }
 const B_MED = {
   top:    { style: "medium", color: { rgb: "FF000000" } },
@@ -39,12 +39,13 @@ function xs(
   bold: boolean,
   sz: number,
   hAlign = "center",
-  border: any = B_THIN
+  border: any = B_THIN,
+  wrap = true
 ): any {
   return {
     font:      { name: "맑은 고딕", sz, bold, color: { rgb: fg } },
     fill:      bg ? { fgColor: { rgb: bg }, patternType: "solid" } : { patternType: "none" },
-    alignment: { horizontal: hAlign, vertical: "center", wrapText: true },
+    alignment: { horizontal: hAlign, vertical: "center", wrapText: wrap },
     border,
   }
 }
@@ -209,17 +210,17 @@ export function exportExcel({
   const ws1: any = { "!merges": [], "!rows": [] }
   // ▼ v2: 열 너비 전체 확대 (기존 대비 +4~8 wch)
   ws1["!cols"] = [
-    {wch:3},   // A: 여백
-    {wch:20},  // B: 이름/라벨
-    {wch:18},  // C
-    {wch:18},  // D
-    {wch:16},  // E
-    {wch:16},  // F
-    {wch:16},  // G
-    {wch:16},  // H
-    {wch:18},  // I
-    {wch:18},  // J
-    {wch:3},   // K: 여백
+    {wch:4},   // A: 여백
+    {wch:25},  // B: 이름/라벨 (확대)
+    {wch:20},  // C
+    {wch:20},  // D
+    {wch:18},  // E
+    {wch:18},  // F
+    {wch:18},  // G
+    {wch:18},  // H
+    {wch:20},  // I
+    {wch:20},  // J
+    {wch:4},   // K: 여백
   ]
 
   let R = 0
@@ -445,16 +446,16 @@ export function exportExcel({
   // ══════════════════════════════════════════════════════════════
   const ws2: any = { "!merges": [], "!rows": [] }
   ws2["!cols"] = [
-    {wch:3},   // A
-    {wch:14},  // B
-    {wch:14},  // C
-    {wch:18},  // D
-    {wch:14},  // E
-    {wch:14},  // F
-    {wch:14},  // G
-    {wch:14},  // H
-    {wch:14},  // I
-    {wch:3},   // J
+    {wch:4},   // A
+    {wch:18},  // B (확대)
+    {wch:18},  // C
+    {wch:22},  // D
+    {wch:18},  // E
+    {wch:18},  // F
+    {wch:18},  // G
+    {wch:18},  // H
+    {wch:18},  // I
+    {wch:4},   // J
   ]
 
   let R2 = 0
@@ -575,16 +576,16 @@ export function exportExcel({
   // ══════════════════════════════════════════════════════════════
   const ws3: any = { "!merges": [], "!rows": [] }
   ws3["!cols"] = [
-    {wch:3},   // A 여백
-    {wch:22},  // B
-    {wch:18},  // C
-    {wch:18},  // D
-    {wch:18},  // E
-    {wch:18},  // F
-    {wch:18},  // G
-    {wch:18},  // H
-    {wch:22},  // I
-    {wch:3},   // J 여백
+    {wch:4},   // A 여백
+    {wch:26},  // B (확대)
+    {wch:22},  // C
+    {wch:22},  // D
+    {wch:22},  // E
+    {wch:22},  // F
+    {wch:22},  // G
+    {wch:22},  // H
+    {wch:26},  // I
+    {wch:4},   // J 여백
   ]
 
   let R3 = 0
