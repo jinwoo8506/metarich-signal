@@ -132,7 +132,7 @@ export default function DashboardPage() {
   const isManager = userRole === 'manager';
   const isGuest = userRole === 'guest';
   
-  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && (user.is_approved === true || user.is_approved === "true")));
+  const isApproved = !isGuest && (isMaster || isDirector || isLeader || isManager || (userRole === 'agent' && (user.is_approved === true || user.is_approved === "true")));
 
   const renderOfficeView = () => {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
@@ -161,17 +161,17 @@ export default function DashboardPage() {
             {user.department_name || "미소속"} {user.branch_name || "지점미지정"}
           </span>
           <span className="text-blue-600">{user.name}</span>
-          <span className="text-slate-900 ml-2">({rankMap[userRole] || "설계사"})님</span>
-          <span className="block mt-2">환영합니다!</span>
+          <span className="text-slate-900 ml-2">{rankMap[userRole] || "설계사"}님</span>
+          <span className="block mt-2 text-xl md:text-3xl font-black">환영합니다!</span>
         </h1>
-        <div className="flex flex-col md:flex-row gap-6 md:gap-10 w-full max-w-5xl">
-          <button onClick={() => setViewMode('office')} className="flex-1 h-64 md:h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
-            <span className="text-6xl md:text-8xl group-hover:scale-110 transition-transform">🏢</span>
-            <h2 className="text-2xl md:text-4xl font-black uppercase">사무실 업무</h2>
+        <div className="flex flex-col md:flex-row gap-4 md:gap-10 w-full max-w-5xl px-2">
+          <button onClick={() => setViewMode('office')} className="flex-1 h-52 md:h-[400px] bg-white border-[3px] md:border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-3 md:gap-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
+            <span className="text-5xl md:text-8xl group-hover:scale-110 transition-transform">🏢</span>
+            <h2 className="text-xl md:text-4xl font-black uppercase">사무실 업무</h2>
           </button>
-          <button onClick={() => setViewMode('consulting')} className="flex-1 h-64 md:h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
-            <span className="text-6xl md:text-8xl group-hover:scale-110 transition-transform">🤝</span>
-            <h2 className="text-2xl md:text-4xl font-black uppercase">고객 상담</h2>
+          <button onClick={() => setViewMode('consulting')} className="flex-1 h-52 md:h-[400px] bg-blue-600 border-[3px] md:border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-3 md:gap-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
+            <span className="text-5xl md:text-8xl group-hover:scale-110 transition-transform">🤝</span>
+            <h2 className="text-xl md:text-4xl font-black uppercase">고객 상담</h2>
           </button>
         </div>
       </div>
