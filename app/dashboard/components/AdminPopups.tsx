@@ -109,7 +109,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
               ...u, 
               hq: hVal,
               department: dVal, 
-              team: tVal
+              team: tVal,
+              isCustomDept: !!(dVal && !depts.includes(dVal)), 
+              isCustomTeam: !!(tVal && !teams.some(t => t.team === tVal)) 
             };
           }));
         }
@@ -124,9 +126,31 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     setAllUsers(prev => prev.map(u => {
       if (u.id !== userId) return u;
       const updated = { ...u };
-      updated[field] = value;
-      // 사업부 변경 시 지점 초기화
-      if (field === 'department') updated.team = "";
+      
+      if (field === 'department') {
+        if (value === 'CUSTOM_INPUT') {
+          updated.department = "";
+          updated.isCustomDept = true;
+        } else if (updated.isCustomDept) {
+          updated.department = value;
+        } else {
+          updated.department = value;
+          updated.isCustomDept = false;
+          updated.team = ""; // 사업부 변경 시 지점 초기화
+        }
+      } else if (field === 'team') {
+        if (value === 'CUSTOM_INPUT') {
+          updated.team = "";
+          updated.isCustomTeam = true;
+        } else if (updated.isCustomTeam) {
+          updated.team = value;
+        } else {
+          updated.team = value;
+          updated.isCustomTeam = false;
+        }
+      } else {
+        updated[field] = value;
+      }
       return updated;
     }));
   };
@@ -253,17 +277,29 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                               ))}
                             </select>
 
-                            {/* 사업부 선택 */}
-                            <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="flex-1 min-w-[150px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
-                              <option value="">사업부 선택</option>
-                              {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
+                            {/* 사업부 선택 / 직접 입력 */}
+                            {u.isCustomDept ? (
+                              <input type="text" autoFocus placeholder="사업부 입력" className="flex-1 min-w-[120px] p-2 border-2 border-blue-500 rounded-xl text-[10px] md:text-xs font-black bg-white" 
+                                value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} />
+                            ) : (
+                              <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="flex-1 min-w-[120px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
+                                <option value="">사업부 선택</option>
+                                {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                                <option value="CUSTOM_INPUT" className="text-blue-600 font-bold">+ 직접 입력</option>
+                              </select>
+                            )}
 
-                            {/* 지점 선택 */}
-                            <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department} className="flex-1 min-w-[150px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
-                              <option value="">지점 선택</option>
-                              {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
-                            </select>
+                            {/* 지점 선택 / 직접 입력 */}
+                            {u.isCustomTeam ? (
+                              <input type="text" autoFocus placeholder="지점 입력" className="flex-1 min-w-[120px] p-2 border-2 border-blue-500 rounded-xl text-[10px] md:text-xs font-black bg-white" 
+                                value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} />
+                            ) : (
+                              <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department && !u.isCustomDept} className="flex-1 min-w-[120px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
+                                <option value="">지점 선택</option>
+                                {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
+                                <option value="CUSTOM_INPUT" className="text-blue-600 font-bold">+ 직접 입력</option>
+                              </select>
+                            )}
                           </div>
                         </td>
                         <td className="p-4 md:p-6 text-center">
