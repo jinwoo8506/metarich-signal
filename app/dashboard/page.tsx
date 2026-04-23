@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
 
-  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치 (과실 비율 조회 추가)
+  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치 (회사별 간편인수 추가 완료)
   const allConsultingMenus = [
     { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
     { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
@@ -54,6 +54,9 @@ export default function DashboardPage() {
     
     // ✅ 추가된 고정 링크: 과실 비율 조회
     { id: "show_knia", title: "과실 비율 조회", desc: "자동차 사고 과실 비율 검색", icon: "⚖️", url: "https://accident.knia.or.kr", color: "border-blue-400 text-blue-500", fixed: true },
+    
+    // ✅ 회사별 간편인수 (정적 HTML 연결)
+    { id: "show_underwriting", title: "회사별 간편인수", desc: "간편심사 인수 기준 조회", icon: "📝", url: "/index.html", color: "border-[#d4af37] text-[#d4af37]", fixed: true },
     
     { id: "show_gongsi", title: "보험사 공시실", desc: "각 보험사별 상품 약관 공시", icon: "📑", url: "/gongsi.html", color: "border-slate-400 text-slate-500", fixed: true },
 
