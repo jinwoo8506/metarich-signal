@@ -16,7 +16,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   const [existingDepts, setExistingDepts] = useState<string[]>([]);
   const [existingTeams, setExistingTeams] = useState<{dept: string, team: string}[]>([]);
   const [myRankValue, setMyRankValue] = useState(100);
-  const isMaster = myRankValue === 1;
+  const [myEmail, setMyEmail] = useState("");
+  
+  const isMaster = myRankValue === 1 || myEmail === 'qodbtjq@naver.com' || myEmail === 'jw20371035@gmail.com';
 
   // [규칙 반영] UI 표시용 한글 ↔ DB 저장용 영문 매핑
   const rankMap: { [key: string]: string } = {
@@ -45,6 +47,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       let myRankValue = 100; 
 
       if (authUser) {
+        setMyEmail(authUser.email || "");
         const { data: myData } = await supabase
           .from("users")
           .select("rank")
@@ -99,14 +102,14 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           });
 
           setAllUsers(filteredUsers.map(u => {
+            const hVal = u.headquarters_name || "시그널그룹";
             const dVal = u.department_name || "";
             const tVal = u.branch_name || "";
             return { 
               ...u, 
+              hq: hVal,
               department: dVal, 
-              team: tVal,
-              isCustomDept: !!(dVal && !depts.includes(dVal)), 
-              isCustomTeam: !!(tVal && !teams.some(t => t.team === tVal)) 
+              team: tVal
             };
           }));
         }
@@ -121,31 +124,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     setAllUsers(prev => prev.map(u => {
       if (u.id !== userId) return u;
       const updated = { ...u };
-      if (field === 'department') {
-        if (value === 'CUSTOM_INPUT') { 
-          updated.department = ''; 
-          updated.isCustomDept = true; 
-        } else if (updated.isCustomDept) {
-          // 직접 입력 모드일 때는 값만 업데이트하고 모드 유지
-          updated.department = value;
-        } else {
-          // 드롭다운 선택 시 (CUSTOM_INPUT이 아닌 다른 값 선택 시)
-          updated.department = value;
-          updated.isCustomDept = false;
-        }
-      } else if (field === 'team') {
-        if (value === 'CUSTOM_INPUT') { 
-          updated.team = ''; 
-          updated.isCustomTeam = true; 
-        } else if (updated.isCustomTeam) {
-          updated.team = value;
-        } else {
-          updated.team = value;
-          updated.isCustomTeam = false;
-        }
-      } else {
-        updated[field] = value;
-      }
+      updated[field] = value;
+      // 사업부 변경 시 지점 초기화
+      if (field === 'department') updated.team = "";
       return updated;
     }));
   };
@@ -167,6 +148,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     // 1. users 테이블 업데이트 (표준 필드명 사용)
     const { error: userError } = await supabase.from("users").update({ 
       is_approved: true,
+      headquarters_name: user.hq,
       department_name: user.department,
       branch_name: user.team 
     }).eq("id", user.id);
@@ -200,6 +182,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       ...u, 
       ...user, 
       is_approved: true,
+      headquarters_name: user.hq,
       department_name: user.department,
       branch_name: user.team
     } : u));
@@ -232,59 +215,60 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       <div className="bg-white w-full max-w-6xl rounded-[2.5rem] md:rounded-[4rem] p-6 md:p-12 relative overflow-y-auto max-h-[90vh] border-4 border-black shadow-2xl">
         <button onClick={onClose} className="absolute top-6 right-6 md:top-8 md:right-8 text-2xl md:text-3xl font-black z-50">✕</button>
 
-        {/* 1. 직원 관리 탭 (마스터만 접근 가능) */}
+        {/* 1. 직원 소속 관리 탭 (마스터만 접근 가능) */}
         {type === 'users' && (
           isMaster ? (
             <div className="space-y-6 md:space-y-10 animate-in fade-in">
-              <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Employee Management</h3>
-              <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl">
-                <table className="w-full text-left font-black">
+              <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">직원 소속 관리</h3>
+              <div className="border-2 md:border-4 border-black rounded-2xl md:rounded-[2.5rem] overflow-x-auto shadow-xl">
+                <table className="w-full text-left font-black min-w-[900px]">
                   <thead className="bg-black text-[#d4af37] text-[10px] uppercase font-black">
                     <tr>
-                      <th className="p-4 md:p-6">Employee Info</th>
-                      <th className="p-4 md:p-6 text-center">Set Dept / Branch</th>
-                      <th className="p-4 md:p-6 text-center">Action</th>
+                      <th className="p-4 md:p-6 w-[200px]">직원 정보</th>
+                      <th className="p-4 md:p-6 text-center">본부 / 사업부 / 지점 설정</th>
+                      <th className="p-4 md:p-6 text-center w-[150px]">저장</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y-2 divide-black">
                     {allUsers.map((u) => (
                       <tr key={u.id} className={`${u.is_approved ? 'bg-white' : 'bg-amber-50'} hover:bg-slate-50 transition-colors`}>
                         <td className="p-4 md:p-6">
-                          <div className="flex items-center gap-2">
-                            <p className="font-black text-sm md:text-xl italic">{u.name}</p>
-                            {/* DB 영문값을 한글 직급으로 변환 표시 */}
-                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] md:text-[11px] rounded-md font-black uppercase">
-                              {rankMap[u.rank] || '설계사'}
-                            </span>
-                            {!u.is_approved && <span className="text-rose-500 text-[10px] ml-1">[PENDING]</span>}
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-normal mt-1">{u.email}</p>
-                        </td>
-                        <td className="p-4 md:p-6 text-center">
-                          <div className="flex flex-col gap-2 max-w-[250px] mx-auto">
-                            {u.isCustomDept ? (
-                              <input type="text" autoFocus placeholder="사업부 직접 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} />
-                            ) : (
-                              <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
-                                <option value="">사업부 선택</option>
-                                {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
-                                <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
-                              </select>
-                            )}
-                            {u.isCustomTeam ? (
-                              <input type="text" autoFocus placeholder="지점 직접 입력" className="p-2 border-2 border-indigo-500 rounded-xl text-xs font-black bg-white" value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} />
-                            ) : (
-                              <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department && !u.isCustomDept} className="p-2 bg-slate-100 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
-                                <option value="">지점 선택</option>
-                                {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
-                                <option value="CUSTOM_INPUT" className="text-indigo-600 font-bold">+ 직접 입력</option>
-                              </select>
-                            )}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-black text-sm md:text-xl italic">{u.name}</p>
+                              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 text-[9px] md:text-[11px] rounded-md font-black">
+                                {rankMap[u.rank] || '설계사'}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-normal">{u.email}</p>
+                            {!u.is_approved && <span className="text-rose-500 text-[10px] font-black italic">[승인 대기중]</span>}
                           </div>
                         </td>
+                        <td className="p-4 md:p-6">
+                          <div className="flex flex-row items-center justify-center gap-2">
+                            {/* 본부 선택 */}
+                            <select value={u.hq || "시그널그룹"} onChange={(e) => updateUserInfo(u.id, 'hq', e.target.value)} className="flex-1 min-w-[120px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
+                              {Array.from({ length: 10 }, (_, i) => `${i + 1}본부`).map(h => (
+                                <option key={h} value={h}>{h}</option>
+                              ))}
+                            </select>
+
+                            {/* 사업부 선택 */}
+                            <select value={u.department || ""} onChange={(e) => updateUserInfo(u.id, 'department', e.target.value)} className="flex-1 min-w-[150px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black">
+                              <option value="">사업부 선택</option>
+                              {existingDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+
+                            {/* 지점 선택 */}
+                            <select value={u.team || ""} onChange={(e) => updateUserInfo(u.id, 'team', e.target.value)} disabled={!u.department} className="flex-1 min-w-[150px] p-2 bg-slate-50 border-2 border-black rounded-xl text-[10px] md:text-xs font-black disabled:opacity-30">
+                              <option value="">지점 선택</option>
+                              {existingTeams.filter(t => t.dept === u.department).map((t, idx) => <option key={idx} value={t.team}>{t.team}</option>)}
+                            </select>
+                          </div>
+                        </td>
                         <td className="p-4 md:p-6 text-center">
-                          <button onClick={() => handleUserSave(u)} className={`px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black hover:invert transition-all ${u.is_approved ? 'bg-white' : 'bg-black text-[#d4af37]'}`}>
-                            {u.is_approved ? 'UPDATE INFO' : 'APPROVE'}
+                          <button onClick={() => handleUserSave(u)} className={`w-full py-2 rounded-full text-[10px] md:text-xs font-black italic border-2 border-black hover:invert transition-all ${u.is_approved ? 'bg-white' : 'bg-black text-[#d4af37]'}`}>
+                            {u.is_approved ? '정보 수정' : '가입 승인'}
                           </button>
                         </td>
                       </tr>
@@ -296,16 +280,16 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           ) : (
             <div className="flex flex-col items-center justify-center py-20">
               <span className="text-6xl mb-4">🚫</span>
-              <p className="text-xl font-black italic uppercase">Access Denied</p>
-              <p className="text-sm text-slate-400 mt-2">조직 관리 권한이 없습니다. 마스터 계정으로 문의하세요.</p>
+              <p className="text-xl font-black italic uppercase">접근 권한 없음</p>
+              <p className="text-sm text-slate-400 mt-2 text-center">이 탭은 마스터 권한 소유자만 접근할 수 있습니다.</p>
             </div>
           )
         )}
 
-        {/* 2. 팀 실적 탭 */}
+        {/* 2. 팀 실적 현황 탭 */}
         {type === 'perf' && (
           <div className="space-y-6 md:space-y-10 animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Team Performance</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">팀 실적 현황</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <StatBox label="매출 달성율" cur={totalAmt} tar={tarAmt} unit="만" color="bg-indigo-600" />
               <StatBox label="건수 달성율" cur={totalCnt} tar={tarCnt} unit="건" color="bg-emerald-500" />
@@ -319,11 +303,11 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <tbody className="divide-y-2 divide-black">
                   {agents?.map((a: any) => (
                     <tr key={a.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 md:p-6 text-sm md:text-xl italic">{a.name} CA</td>
+                      <td className="p-4 md:p-6 text-sm md:text-xl italic">{a.name}</td>
                       <td className="p-4 md:p-6 text-center text-lg md:text-2xl italic">{a.performance?.contract_amt || 0}만</td>
                       <td className="p-4 md:p-6 text-center">
                         <button onClick={() => handleApprovePerf(a.id, a.performance?.is_approved)} className={`px-4 py-2 rounded-full text-[10px] font-black border-2 border-black ${a.performance?.is_approved ? 'bg-black text-[#d4af37]' : 'bg-white'}`}>
-                          {a.performance?.is_approved ? 'APPROVED' : 'APPROVE'}
+                          {a.performance?.is_approved ? '승인 완료' : '실적 승인'}
                         </button>
                       </td>
                     </tr>
@@ -334,16 +318,16 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 3. 활동량 분석 탭 */}
+        {/* 3. 활동량 및 분석 탭 */}
         {type === 'act' && (
           <div className="space-y-6 md:space-y-8 font-black animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Activity & Funnel</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">활동량 및 깔대기 분석</h3>
             {selectedAgent ? (
               <div className="space-y-6">
                 <div className="bg-black p-6 rounded-2xl text-white flex justify-between items-center shadow-2xl">
-                  <p className="text-xl md:text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} CA Analysis</p>
+                  <p className="text-xl md:text-3xl font-black italic underline decoration-[#d4af37] underline-offset-8">{selectedAgent.name} 분석 리포트</p>
                   <button onClick={() => handleApprovePerf(selectedAgent.id, selectedAgent.performance?.is_approved)} className={`px-6 py-3 rounded-full text-xs font-black italic ${selectedAgent.performance?.is_approved ? 'bg-rose-600' : 'bg-[#d4af37] text-black'}`}>
-                    {selectedAgent.performance?.is_approved ? 'REVOKE LOCK' : 'CONFIRM & LOCK'}
+                    {selectedAgent.performance?.is_approved ? '승인 취소' : '실적 최종 승인'}
                   </button>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
@@ -385,10 +369,10 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 4. 교육 및 출석 탭 */}
+        {/* 4. 출석 및 교육 현황 탭 */}
         {type === 'edu' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
-            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">Attendance & Training</h3>
+            <h3 className="text-2xl md:text-4xl italic border-b-4 md:border-b-8 border-black inline-block uppercase">출석 및 교육 현황</h3>
             <div className="border-2 md:border-4 border-black rounded-2xl overflow-x-auto shadow-xl">
               <table className="w-full text-left min-w-[600px]">
                 <thead className="bg-black text-[#d4af37] text-[10px] uppercase">
@@ -400,7 +384,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                 <tbody className="divide-y-2 divide-black bg-white">
                   {agents?.map((a:any) => (
                     <tr key={a.id} className="hover:bg-slate-50">
-                      <td className="p-6 font-black text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name} CA</td>
+                      <td className="p-6 font-black text-lg italic sticky left-0 bg-white border-r-2 border-black/5">{a.name}</td>
                       {[1, 2, 3, 4, 5].map((w) => (
                         <td key={w} className="p-6 text-center">
                           <div className={`w-10 h-10 mx-auto rounded-xl border-4 flex items-center justify-center text-xl transition-all ${a.performance?.[`edu_${w}`] ? 'bg-black text-[#d4af37] border-black scale-110 shadow-lg' : 'border-slate-100 text-transparent'}`}>✓</div>
@@ -414,12 +398,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
           </div>
         )}
 
-        {/* 5. 시스템 설정 탭 */}
+        {/* 5. 시스템 환경 설정 탭 */}
         {type === 'sys' && (
           <div className="space-y-6 md:space-y-10 font-black animate-in fade-in">
             <div className="flex justify-between items-end border-b-4 md:border-b-8 border-black pb-4">
-              <h3 className="text-2xl md:text-4xl italic uppercase">Admin Settings</h3>
-              <button onClick={saveSys} className="bg-black text-[#d4af37] px-6 py-2 rounded-full text-xs italic font-black hover:invert transition-all">SAVE CHANGES</button>
+              <h3 className="text-2xl md:text-4xl italic uppercase">시스템 설정</h3>
+              <button onClick={saveSys} className="bg-black text-[#d4af37] px-6 py-2 rounded-full text-xs italic font-black hover:invert transition-all">설정 저장하기</button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <div className="space-y-4">
