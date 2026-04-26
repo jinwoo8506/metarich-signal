@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react"
 import { supabase } from "../../../lib/supabase"
 import CustomerManagerModal from "./CustomerManagerModal"
+// import CalcModal from "./CalcModal" // 파일 존재 여부에 따라 주석 해제 가능
 
 export default function AgentView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [mainTab, setMainTab] = useState<'input' | 'edu'>('input');
@@ -15,7 +16,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   });
   const [globalNotice, setGlobalNotice] = useState("");
   const [eduWeeks, setEduWeeks] = useState({ 1: "", 2: "", 3: "", 4: "", 5: "" });
-  const [isToolOpen, setIsToolOpen] = useState(false); 
+  const [isToolOpen, setIsToolOpen] = useState(false); // 계산기(영업도구) 상태
   const [isCustOpen, setIsCustOpen] = useState(false); 
   const [avgTab, setAvgTab] = useState<'perf' | 'act'>('perf'); 
   const [historyData, setHistoryData] = useState<any[]>([]);
@@ -130,128 +131,108 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     const rawPayload = customField ? { ...perfInput, ...customField } : perfInput;
     const payload = {
       ...rawPayload,
-      call: Number(rawPayload.call || 0),
-      meet: Number(rawPayload.meet || 0),
-      pt: Number(rawPayload.pt || 0),
-      intro: Number(rawPayload.intro || 0),
-      db_assigned: Number(rawPayload.db_assigned || 0),
-      db_returned: Number(rawPayload.db_returned || 0),
-      contract_cnt: Number(rawPayload.contract_cnt || 0),
-      contract_amt: Number(rawPayload.contract_amt || 0),
-      target_cnt: Number(rawPayload.target_cnt || 0),
-      target_amt: Number(rawPayload.target_amt || 0)
+      call: Number(rawPayload.call || 0), meet: Number(rawPayload.meet || 0),
+      pt: Number(rawPayload.pt || 0), intro: Number(rawPayload.intro || 0),
+      db_assigned: Number(rawPayload.db_assigned || 0), db_returned: Number(rawPayload.db_returned || 0),
+      contract_cnt: Number(rawPayload.contract_cnt || 0), contract_amt: Number(rawPayload.contract_amt || 0),
+      target_cnt: Number(rawPayload.target_cnt || 0), target_amt: Number(rawPayload.target_amt || 0)
     };
     const { error } = await supabase.from("daily_perf").upsert({ ...payload, user_id: user.id, date: monthKey }, { onConflict: 'user_id, date' });
     if (error) alert("저장 실패: " + error.message);
     else { 
       if(!customField) alert(`${month}월 실적이 업데이트되었습니다.`); 
-      await fetchData(); 
-      await fetchAllHistory();
+      await fetchData(); await fetchAllHistory();
     }
   };
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 pb-20 font-sans text-slate-900">
-      <div className="bg-blue-600 p-4 rounded-3xl flex items-center gap-4 overflow-hidden shadow-lg shadow-blue-600/20">
-        <span className="bg-white text-blue-600 px-3 py-1 rounded-full text-[11px] font-bold shrink-0">NOTICE</span>
+    <div className="space-y-6 animate-in slide-in-from-bottom-4 pb-20 font-black">
+      {/* 🔴 상단 공지 애니메이션 */}
+      <div className="bg-[#d4af37] p-4 rounded-3xl border-2 border-black flex items-center gap-4 overflow-hidden font-black shadow-lg">
+        <span className="bg-black text-[#d4af37] px-3 py-1 rounded-full text-[12px] italic shrink-0 font-black">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
-          <div className="absolute whitespace-nowrap animate-marquee text-[14px] text-white font-medium">{globalNotice}</div>
+          <div className="absolute whitespace-nowrap animate-marquee text-[14px] text-black italic font-black">{globalNotice}</div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl">👤</div>
-          <div>
-            <p className="text-[11px] text-slate-400 font-bold uppercase mb-0.5">{user.department_name || "미소속"} {user.branch_name || "지점미지정"}</p>
-            <h2 className="text-xl md:text-2xl font-bold">{user.name} <span className="text-blue-600 text-sm md:text-base ml-1">Agent</span></h2>
-          </div>
+      {/* 🟠 퀵링크 섹션 (관리자와 동일하게 5개 구성 유지) */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-5 rounded-[2.5rem] border font-black shadow-sm">
+        <div className="flex items-center gap-3 shrink-0">
+          <p className="text-[20px] font-black">{user.name} <span className="text-blue-600 italic">AGENT</span></p>
         </div>
-        <div className="flex flex-wrap md:flex-nowrap gap-2 w-full md:w-auto justify-center">
-          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50 text-slate-600" />
-          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50 text-slate-600" />
-          <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50 text-slate-600" />
-          <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-blue-600 text-white border-none shadow-md shadow-blue-600/20" />
+        <div className="flex flex-wrap md:flex-nowrap gap-2 font-black w-full md:w-auto justify-center">
+          <QuickBtn label="메타온" url={LINKS.metaon} color="bg-slate-50" />
+          <QuickBtn label="보험사" url={LINKS.insu} color="bg-slate-50" />
+          <QuickBtn label="자료실" url={LINKS.archive} color="bg-slate-50" />
+          <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-black text-[#d4af37]" />
+          <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-emerald-600 text-white border-none" />
         </div>
       </div>
 
-      <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl">
-        <button onClick={() => setMainTab('input')} className={`flex-1 py-3.5 rounded-xl text-sm font-bold transition-all ${mainTab === 'input' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>실적 입력</button>
-        <button onClick={() => setMainTab('edu')} className={`flex-1 py-3.5 rounded-xl text-sm font-bold transition-all ${mainTab === 'edu' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>교육 참여</button>
+      {/* 🟡 메인 탭 전환 */}
+      <div className="flex gap-2 font-black">
+        <button onClick={() => setMainTab('input')} className={`flex-1 py-4 rounded-2xl border-2 border-black italic transition-all ${mainTab === 'input' ? 'bg-black text-[#d4af37]' : 'bg-white text-black opacity-40'}`}>PERFORMANCE</button>
+        <button onClick={() => setMainTab('edu')} className={`flex-1 py-4 rounded-2xl border-2 border-black italic transition-all ${mainTab === 'edu' ? 'bg-black text-[#d4af37]' : 'bg-white text-black opacity-40'}`}>EDUCATION</button>
       </div>
 
       {mainTab === 'input' && (
-        <div className="space-y-8 animate-in fade-in duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">{month}월 매출 목표 대비</p>
-                  <p className="text-3xl font-bold text-slate-900">{calculateRate(perfInput.contract_amt, perfInput.target_amt)}%</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-300 font-bold mb-1">GOAL / CURRENT</p>
-                  <div className="flex items-center gap-2 font-bold text-slate-400">
-                    <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-16 bg-slate-50 p-1 rounded text-center outline-none focus:bg-slate-100" />
-                    <span>/</span>
-                    <span className="text-blue-600">{perfInput.contract_amt}</span>
-                  </div>
-                </div>
+        <div className="space-y-6 animate-in fade-in duration-300">
+          {/* 실적 입력 카드 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-black text-black">
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+              <div className="flex justify-between items-end px-2">
+                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 실적액(만)</p>
+                <p className={`text-3xl italic ${getRateStyles(calculateRate(perfInput.contract_amt, perfInput.target_amt)).text}`}>
+                  {calculateRate(perfInput.contract_amt, perfInput.target_amt)}%
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <input type="number" disabled={perfInput.is_approved} value={perfInput.target_amt} onChange={(e)=>setPerfInput({...perfInput, target_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
+                <input type="number" value={perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="w-1/2 p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-center text-[18px] font-black border border-indigo-100 outline-none" />
               </div>
               <ProgressBar rate={calculateRate(perfInput.contract_amt, perfInput.target_amt)} />
-              <div className="flex gap-3">
-                <input type="number" placeholder="금액 입력" value={perfInput.contract_amt === 0 ? '' : perfInput.contract_amt} onChange={(e)=>setPerfInput({...perfInput, contract_amt: Number(e.target.value)})} className="flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center text-lg font-bold outline-none focus:border-blue-500 focus:bg-white transition-all" />
-              </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase mb-1">{month}월 계약 건수 대비</p>
-                  <p className="text-3xl font-bold text-slate-900">{calculateRate(perfInput.contract_cnt, perfInput.target_cnt)}%</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-300 font-bold mb-1">GOAL / CURRENT</p>
-                  <div className="flex items-center gap-2 font-bold text-slate-400">
-                    <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-16 bg-slate-50 p-1 rounded text-center outline-none focus:bg-slate-100" />
-                    <span>/</span>
-                    <span className="text-emerald-600">{perfInput.contract_cnt}</span>
-                  </div>
-                </div>
+            <div className="bg-white p-6 rounded-[2.5rem] border shadow-sm space-y-4">
+              <div className="flex justify-between items-end px-2">
+                <p className="text-[11px] text-slate-400 uppercase font-black">{month}월 실적건</p>
+                <p className={`text-3xl italic ${getRateStyles(calculateRate(perfInput.contract_cnt, perfInput.target_cnt)).text}`}>
+                  {calculateRate(perfInput.contract_cnt, perfInput.target_cnt)}%
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <input type="number" disabled={perfInput.is_approved} value={perfInput.target_cnt} onChange={(e)=>setPerfInput({...perfInput, target_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-slate-100 rounded-2xl text-center text-[18px] font-black outline-none" />
+                <input type="number" value={perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="w-1/2 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-center text-[18px] font-black border border-emerald-100 outline-none" />
               </div>
               <ProgressBar rate={calculateRate(perfInput.contract_cnt, perfInput.target_cnt)} />
-              <div className="flex gap-3">
-                <input type="number" placeholder="건수 입력" value={perfInput.contract_cnt === 0 ? '' : perfInput.contract_cnt} onChange={(e)=>setPerfInput({...perfInput, contract_cnt: Number(e.target.value)})} className="flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center text-lg font-bold outline-none focus:border-emerald-500 focus:bg-white transition-all" />
-              </div>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-            <p className="text-xs text-slate-400 font-bold uppercase mb-6 text-center tracking-widest">Activity Detail Input</p>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-              <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
-              <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
-              <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
-              <MetricInput label="소개" val={perfInput.intro} onChange={(v:any)=>setPerfInput({...perfInput, intro:v})} />
-              <MetricInput label="배정" val={perfInput.db_assigned} onChange={(v:any)=>setPerfInput({...perfInput, db_assigned:v})} color="text-blue-600" />
-              <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
-            </div>
+          {/* 지표 상세 입력 */}
+          <div className="bg-white p-8 rounded-[2.5rem] border font-black grid grid-cols-3 md:grid-cols-6 gap-3 text-black shadow-sm">
+            <MetricInput label="전화" val={perfInput.call} onChange={(v:any)=>setPerfInput({...perfInput, call:v})} />
+            <MetricInput label="만남" val={perfInput.meet} onChange={(v:any)=>setPerfInput({...perfInput, meet:v})} />
+            <MetricInput label="제안" val={perfInput.pt} onChange={(v:any)=>setPerfInput({...perfInput, pt:v})} />
+            <MetricInput label="소개" val={perfInput.intro} onChange={(v:any)=>setPerfInput({...perfInput, intro:v})} />
+            <MetricInput label="배정" val={perfInput.db_assigned} onChange={(v:any)=>setPerfInput({...perfInput, db_assigned:v})} color="text-blue-600" />
+            <MetricInput label="반품" val={perfInput.db_returned} onChange={(v:any)=>setPerfInput({...perfInput, db_returned:v})} color="text-rose-500" />
           </div>
 
-          <div className="bg-slate-900 p-8 md:p-10 rounded-[3rem] text-white shadow-xl space-y-10">
+          {/* 3개월 통계 및 기네스 기록 */}
+          <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] text-white font-black shadow-xl space-y-8">
             <div>
-              <div className="flex gap-6 mb-8 border-b border-white/10 pb-4">
-                <button onClick={()=>setAvgTab('perf')} className={`text-sm font-bold transition-all ${avgTab==='perf' ? 'text-blue-400 border-b-2 border-blue-400 pb-4 -mb-[18px]' : 'text-white/40'}`}>3개월 평균 실적</button>
-                <button onClick={()=>setAvgTab('act')} className={`text-sm font-bold transition-all ${avgTab==='act' ? 'text-blue-400 border-b-2 border-blue-400 pb-4 -mb-[18px]' : 'text-white/40'}`}>3개월 평균 활동</button>
+              <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
+                <button onClick={()=>setAvgTab('perf')} className={`text-[14px] italic font-black transition-all ${avgTab==='perf' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 실적</button>
+                <button onClick={()=>setAvgTab('act')} className={`text-[14px] italic font-black transition-all ${avgTab==='act' ? 'text-[#d4af37] border-b-2 border-[#d4af37]' : 'text-white/40'}`}>3개월 평균 활동</button>
               </div>
               {avgTab === 'perf' ? (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-3 md:gap-4 text-center">
                   <AvgBox label="평균 매출" val={`${avgData.amt.toLocaleString()}만`} />
                   <AvgBox label="평균 건수" val={`${avgData.cnt}건`} />
                   <AvgBox label="건당 매출" val={`${avgData.perAmt.toLocaleString()}만`} />
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-center">
                   <AvgBox label="전화" val={`${avgData.call}회`} />
                   <AvgBox label="만남" val={`${avgData.meet}회`} />
                   <AvgBox label="제안" val={`${avgData.pt}회`} />
@@ -260,64 +241,64 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               )}
             </div>
 
-            <div className="pt-6 border-t border-white/10">
-              <p className="text-[11px] text-white/30 font-bold uppercase mb-6 tracking-widest">Personal Records (All Time)</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div onClick={() => setViewDetail(records.best)} className={`p-6 rounded-3xl border transition-all cursor-pointer group ${viewDetail?.date === records.best?.date ? 'bg-blue-600 border-blue-400' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                  <p className="text-[10px] text-blue-400 font-bold uppercase mb-2">🏆 Best Month</p>
-                  <p className="text-2xl font-bold">{records.best ? `${new Date(records.best.date).getFullYear()}년 ${new Date(records.best.date).getMonth() + 1}월` : '-'}</p>
-                  <p className="text-sm opacity-50">{records.best ? `${records.best.contract_amt.toLocaleString()}만원 달성` : '데이터 없음'}</p>
+            {/* 기네스 / 로우 기록 */}
+            <div className="pt-4 border-t border-white/10 font-black">
+              <p className="text-[12px] italic text-white/40 mb-4 uppercase tracking-widest font-black">Personal Records (All Time)</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div onClick={() => setViewDetail(records.best)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.best?.date ? 'bg-[#d4af37] border-white' : 'bg-white/5 border-white/10'}`}>
+                  <p className={`text-[10px] mb-1 uppercase font-black ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-[#d4af37]'}`}>🏆 GUINNESS</p>
+                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${new Date(records.best.date).getFullYear()}년 ${new Date(records.best.date).getMonth() + 1}월` : '-'}</p>
+                  <p className={`text-[12px] opacity-60 font-black ${viewDetail?.date === records.best?.date ? 'text-black' : 'text-white'}`}>{records.best ? `${records.best.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
-                <div onClick={() => setViewDetail(records.worst)} className={`p-6 rounded-3xl border transition-all cursor-pointer group ${viewDetail?.date === records.worst?.date ? 'bg-rose-600 border-rose-400' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                  <p className="text-[10px] text-rose-400 font-bold uppercase mb-2">📉 Low Month</p>
-                  <p className="text-2xl font-bold">{records.worst ? `${new Date(records.worst.date).getFullYear()}년 ${new Date(records.worst.date).getMonth() + 1}월` : '-'}</p>
-                  <p className="text-sm opacity-50">{records.worst ? `${records.worst.contract_amt.toLocaleString()}만원 달성` : '데이터 없음'}</p>
+                <div onClick={() => setViewDetail(records.worst)} className={`p-5 rounded-[2rem] border-2 cursor-pointer transition-all hover:scale-[1.02] active:scale-95 ${viewDetail?.date === records.worst?.date ? 'bg-rose-500 border-white' : 'bg-white/5 border-white/10'}`}>
+                  <p className={`text-[10px] mb-1 uppercase font-black ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-rose-400'}`}>📉 LOWEST</p>
+                  <p className={`text-[18px] font-black italic ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${new Date(records.worst.date).getFullYear()}년 ${new Date(records.worst.date).getMonth() + 1}월` : '-'}</p>
+                  <p className={`text-[12px] opacity-60 font-black ${viewDetail?.date === records.worst?.date ? 'text-black' : 'text-white'}`}>{records.worst ? `${records.worst.contract_amt.toLocaleString()}만` : '데이터 없음'}</p>
                 </div>
               </div>
 
               {viewDetail && (
-                <div className="mt-6 p-8 bg-white/5 rounded-[2.5rem] border border-white/10 animate-in fade-in zoom-in duration-300">
-                  <div className="flex justify-between items-center mb-8">
-                    <p className="text-lg font-bold text-blue-400">{new Date(viewDetail.date).getFullYear()}년 {new Date(viewDetail.date).getMonth() + 1}월 상세 리포트</p>
-                    <button onClick={() => setViewDetail(null)} className="text-xs text-white/40 hover:text-white transition-colors">닫기</button>
+                <div className="mt-6 p-6 bg-white/10 rounded-[2.5rem] border border-white/20 animate-in fade-in zoom-in duration-300">
+                  <div className="flex justify-between items-center mb-6">
+                    <p className="text-[14px] font-black italic text-[#d4af37] underline underline-offset-4 tracking-tighter">{new Date(viewDetail.date).getFullYear()}년 {new Date(viewDetail.date).getMonth() + 1}월 정밀 레포트</p>
+                    <button onClick={() => setViewDetail(null)} className="text-[10px] opacity-40 uppercase bg-black px-3 py-1 rounded-full border border-white/20">Close</button>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <DetailBox label="매출액" val={`${viewDetail.contract_amt.toLocaleString()}만`} color="text-blue-400" />
-                    <DetailBox label="계약건" val={`${viewDetail.contract_cnt}건`} color="text-emerald-400" />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <DetailBox label="매출액" val={`${viewDetail.contract_amt.toLocaleString()}만`} color="text-[#d4af37]" />
+                    <DetailBox label="계약건" val={`${viewDetail.contract_cnt}건`} color="text-[#d4af37]" />
                     <DetailBox label="전화" val={`${viewDetail.call}회`} />
                     <DetailBox label="만남" val={`${viewDetail.meet}회`} />
                     <DetailBox label="제안" val={`${viewDetail.pt}회`} />
                     <DetailBox label="소개" val={`${viewDetail.intro}회`} />
-                    <DetailBox label="DB배정" val={`${viewDetail.db_assigned}개`} />
-                    <DetailBox label="DB반품" val={`${viewDetail.db_returned}개`} />
+                    <DetailBox label="DB배정" val={`${viewDetail.db_assigned}개`} color="text-blue-400" />
+                    <DetailBox label="DB반품" val={`${viewDetail.db_returned}개`} color="text-rose-400" />
                   </div>
                 </div>
               )}
             </div>
           </div>
-          <button onClick={() => handleSave()} className="w-full bg-blue-600 text-white py-6 rounded-[2rem] font-bold text-xl shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95">실적 데이터 업데이트</button>
+          <button onClick={() => handleSave()} className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black text-[20px] shadow-2xl italic uppercase hover:bg-slate-800 transition-colors">Save & Update Record</button>
         </div>
       )}
 
       {mainTab === 'edu' && (
-        <div className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-100 shadow-sm space-y-8 animate-in slide-in-from-right-4 duration-500">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-1">Weekly Training</h2>
-            <p className="text-sm text-slate-400">주차별 교육 참여 현황을 체크해 주세요.</p>
+        <div className="bg-white p-6 md:p-10 rounded-[3rem] border-4 border-black shadow-2xl space-y-6 animate-in slide-in-from-right-4 duration-300 font-black text-black">
+          <div className="flex justify-between items-center border-b-8 border-black pb-4">
+            <h2 className="text-2xl md:text-3xl italic uppercase font-black">Weekly Training</h2>
           </div>
-          <div className="grid gap-4">
+          <div className="bg-slate-50 p-4 md:p-10 rounded-[2.5rem] border-2 border-dashed border-slate-300 space-y-4">
             {[1, 2, 3, 4, 5].map((w) => {
               const fieldName = `edu_${w}` as keyof typeof perfInput;
               const isChecked = perfInput[fieldName];
               return (
-                <div key={w} onClick={() => handleSave({ [fieldName]: !isChecked })} className={`flex items-center gap-6 p-6 rounded-3xl border transition-all cursor-pointer group ${isChecked ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}>
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-bold transition-all ${isChecked ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-white text-slate-400'}`}>
+                <div key={w} onClick={() => handleSave({ [fieldName]: !isChecked })} className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99] ${isChecked ? 'bg-emerald-50 border-emerald-500' : 'bg-rose-50 border-rose-200'}`}>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 italic text-sm font-black ${isChecked ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
                     {w === 5 ? "추가" : `${w}W`}
                   </div>
-                  <p className={`flex-1 text-lg font-bold ${isChecked ? 'text-blue-900' : 'text-slate-600'}`}>
+                  <p className={`flex-1 text-lg italic font-black leading-snug break-keep ${isChecked ? 'text-emerald-900' : 'text-rose-900'}`}>
                     {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
                   </p>
-                  <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-transparent'}`}>✓</div>
+                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${isChecked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-rose-300 text-transparent'}`}>✓</div>
                 </div>
               );
             })}
@@ -325,6 +306,8 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       )}
 
+      {/* 🟢 모달 영역 */}
+      {/* {isToolOpen && <CalcModal onClose={() => setIsToolOpen(false)} />} */}
       {isCustOpen && (
         <CustomerManagerModal onClose={() => setIsCustOpen(false)} onSaveToGoogle={handleGoogleSync} />
       )}
@@ -332,37 +315,45 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
+/** 하위 컴포넌트 **/
+function getRateStyles(rate: number) {
+  if (rate >= 80) return { bar: "bg-blue-500", text: "text-blue-600" };
+  if (rate >= 65) return { bar: "bg-orange-500", text: "text-orange-600" };
+  if (rate >= 30) return { bar: "bg-yellow-400", text: "text-yellow-500" };
+  return { bar: "bg-red-500", text: "text-red-600" };
+}
+
 function ProgressBar({ rate }: { rate: number }) {
-  const color = rate >= 100 ? "bg-blue-600" : (rate >= 70 ? "bg-emerald-500" : (rate >= 40 ? "bg-amber-400" : "bg-rose-500"));
+  const { bar } = getRateStyles(rate);
   return (
-    <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-      <div className={`${color} h-full transition-all duration-1000 ease-out`} style={{ width: `${Math.min(rate, 100)}%` }} />
+    <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden border border-black/5">
+      <div className={`${bar} h-full transition-all duration-700 ease-out`} style={{ width: `${Math.min(rate, 100)}%` }} />
     </div>
   );
 }
 
 function DetailBox({ label, val, color = "text-white" }: any) {
   return (
-    <div className="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-      <p className="text-[10px] text-white/30 font-bold uppercase mb-1">{label}</p>
-      <p className={`text-lg font-bold ${color}`}>{val}</p>
+    <div className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-center justify-center font-black">
+      <p className="text-[9px] text-white/30 uppercase mb-1">{label}</p>
+      <p className={`text-[15px] font-black italic ${color}`}>{val}</p>
     </div>
   )
 }
 
 function AvgBox({ label, val }: any) { 
   return (
-    <div className="bg-white/5 p-6 rounded-2xl border border-white/10 text-center">
-      <p className="text-[11px] text-white/30 font-bold uppercase mb-2">{label}</p>
-      <p className="text-xl font-bold text-blue-400">{val}</p>
+    <div className="text-center bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col justify-center items-center min-h-[80px] font-black">
+      <p className="text-[10px] text-white/40 uppercase mb-1">{label}</p>
+      <p className="text-[16px] text-[#d4af37] font-black italic leading-tight">{val}</p>
     </div>
   ) 
 }
 
-function QuickBtn({ label, url, onClick, color }: any) { 
-  const handleClick = () => { if (onClick) onClick(); else if (url) window.open(url, "_blank"); };
+function QuickBtn({ label, url, onClick, color, className }: any) { 
+  const handleClick = () => { if (onClick) onClick(); else if (url && url !== "#") window.open(url, "_blank"); };
   return (
-    <button onClick={handleClick} className={`${color} px-5 py-2.5 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95`}>
+    <button onClick={handleClick} className={`${color} ${className || ""} px-4 md:px-5 py-2.5 rounded-xl font-black text-[11px] md:text-[12px] border-2 border-black shadow-sm shrink-0 transition-transform active:scale-95`}>
       {label}
     </button> 
   )
@@ -370,9 +361,9 @@ function QuickBtn({ label, url, onClick, color }: any) {
 
 function MetricInput({ label, val, onChange, color }: any) { 
   return (
-    <div className="space-y-2 text-center">
-      <label className="text-[11px] text-slate-400 font-bold uppercase">{label}</label>
-      <input type="number" value={val === 0 ? '' : val} placeholder="0" onChange={e=>onChange(Number(e.target.value))} className={`w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center text-lg font-bold outline-none focus:border-blue-500 focus:bg-white transition-all ${color}`} />
+    <div className="space-y-1 text-center font-black">
+      <label className="text-[11px] text-slate-400">{label}</label>
+      <input type="number" inputMode="numeric" value={val === 0 ? '' : val} placeholder="0" onChange={e=>onChange(Number(e.target.value))} className={`w-full p-3 md:p-4 bg-slate-50 border-2 border-transparent focus:border-black rounded-2xl text-center text-[16px] md:text-[18px] font-black outline-none transition-all ${color}`} />
     </div>
   ) 
 }

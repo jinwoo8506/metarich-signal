@@ -28,15 +28,6 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
   // 마스터 권한 체크 (이메일 및 역할 기반)
   const currentUserEmail = user?.email?.toLowerCase()?.trim() || "";
   const isMaster = currentUserEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
-  const isDirector = user?.role === 'director';
-
-  const rankMap: { [key: string]: string } = {
-    'master': '마스터',
-    'director': '본부장',
-    'leader': '사업부장',
-    'manager': '지점장',
-    'agent': '설계사'
-  };
 
   useEffect(() => { fetchTeamData(); }, [monthKey, user]);
 
@@ -57,9 +48,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     
     if (!isMaster) {
       if (user?.role_level === 'director' || user?.role === 'leader') {
-        userQuery = userQuery.eq('department_name', user.department_name);
+        userQuery = userQuery.eq('department', user.department);
       } else if (user?.role_level === 'manager' || user?.role === 'manager') {
-        userQuery = userQuery.eq('branch_name', user.branch_name);
+        userQuery = userQuery.eq('team', user.team);
       }
     }
 
@@ -181,7 +172,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           { id: 'edu', label: '교육 관리' },
           { id: 'sys', label: '시스템 설정' },
           { id: 'users', label: '조직 관리' }
-        ].filter(t => t.id !== 'users' || isMaster).map(tab => (
+        ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             className={`${activeTab === tab.id ? 'bg-black text-[#d4af37]' : 'bg-white text-black'} border-2 border-black py-4 px-1 rounded-2xl text-[10px] md:text-sm italic font-black text-center transition-all ${tab.id === 'users' ? 'border-dashed border-indigo-500' : ''}`}>
             {tab.label}
@@ -192,7 +183,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       {/* 팀 모니터링 섹션 */}
       <section className="bg-white p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border shadow-sm font-black">
         <h2 className="text-lg md:text-xl mb-6 border-l-8 border-black pl-4 italic uppercase font-black">
-          {isMaster ? 'All Centers' : (user.department_name || 'My Unit')} Monitoring
+          {isMaster ? 'All Centers' : (user.department || 'My Unit')} Monitoring
         </h2>
         <div className="space-y-4 md:space-y-6">
           {agents.filter(a => a.is_approved).map(a => {
@@ -204,9 +195,9 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded-md italic uppercase bg-black text-white`}>
-                        {rankMap[a.role] || '설계사'}
+                        {a.role_level || a.role || 'planner'}
                       </span>
-                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.branch_name || '미소속'})</span></p>
+                      <p className="text-xl font-black">{a.name} <span className="text-sm text-slate-400 font-normal">({a.team || '미소속'})</span></p>
                     </div>
                   </div>
                 </div>

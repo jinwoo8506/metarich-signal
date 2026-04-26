@@ -22,14 +22,6 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
 
   const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-01`;
 
-  const rankMap: { [key: string]: string } = {
-    'master': '마스터',
-    'director': '본부장',
-    'leader': '사업부장',
-    'manager': '지점장',
-    'agent': '설계사'
-  };
-
   useEffect(() => { fetchBranchData(); }, [monthKey, user]);
 
   async function fetchBranchData() {
@@ -104,11 +96,8 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
     <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
       <section className="bg-black p-8 rounded-[3rem] text-white border-4 border-[#d4af37] shadow-xl">
         <div className="flex justify-between items-end mb-6">
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="bg-white/20 text-white px-3 py-1 rounded-full text-[10px] uppercase font-black">{user.department_name}</span>
-              <span className="text-[#d4af37] text-xs italic uppercase">{user.branch_name} Branch Goal</span>
-            </div>
+          <div>
+            <p className="text-[#d4af37] text-xs italic mb-1 uppercase">{user.branch_name} Branch Goal</p>
             <h2 className="text-3xl italic font-black">{branchTotal.amt.toLocaleString()} / {branchTotal.targetAmt.toLocaleString()} 만</h2>
           </div>
           <span className="text-5xl italic font-black text-[#d4af37]">{branchRate}%</span>
@@ -143,10 +132,7 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
           {agents.map(a => (
             <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-5 bg-white rounded-[2rem] border-2 border-slate-100 hover:border-black transition-all cursor-pointer">
               <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-md italic uppercase">{rankMap[a.role] || '설계사'}</span>
-                  <p className="text-xl font-black">{a.name}</p>
-                </div>
+                <p className="text-xl font-black">{a.name}</p>
                 <p className="text-sm font-black text-blue-600">{Number(a.performance.contract_amt).toLocaleString()}만</p>
               </div>
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-dashed">

@@ -18,7 +18,6 @@ export default function SignupPage() {
     email: "",
     password: "",
     name: "",
-    hq: "",
     department: "",
     branch: ""
   });
@@ -64,13 +63,12 @@ export default function SignupPage() {
           {
             id: authData.user.id,
             email: formData.email,
-            name: formData.name,
-            role: "agent",
-            role_level: "staff",
-            headquarters_name: formData.hq || "시그널그룹",
-            department_name: formData.department,
-            branch_name: formData.branch,
-            is_approved: false,
+            name: formData.name,             // 관리자 팝업/대시보드와 이름 필드 매칭
+            role: "agent",                   // 기본값은 설계사
+            role_level: "staff",             // 기본값은 스태프
+            department: formData.department, // 선택한 사업부
+            team: formData.branch,           // 선택한 지점을 team 필드에 저장
+            is_approved: false,              // 가입 직후는 미승인 상태
           },
         ]);
 
@@ -110,25 +108,6 @@ export default function SignupPage() {
             <label className="text-[10px] uppercase ml-2 text-slate-400">Password</label>
             <input type="password" placeholder="••••••••" required className="w-full mt-1 p-4 bg-slate-50 border-2 border-black/5 rounded-2xl outline-none focus:border-blue-600 transition-all text-black"
               value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
-          </div>
-
-          {/* 그룹 및 본부 선택 */}
-          <div className="space-y-3">
-            <div className="bg-slate-100 p-4 rounded-2xl text-center border-2 border-black/5">
-              <span className="text-slate-400 text-[10px] uppercase block mb-1">Group</span>
-              <span className="text-xl font-black italic text-blue-600 tracking-widest">SIGNAL GROUP</span>
-            </div>
-            
-            <div>
-              <label className="text-[10px] uppercase ml-2 text-slate-400">Headquarters</label>
-              <select required className="w-full mt-1 p-4 bg-slate-50 border-2 border-black/5 rounded-2xl outline-none focus:border-blue-600 transition-all cursor-pointer text-black"
-                value={formData.hq} onChange={(e) => setFormData({...formData, hq: e.target.value})}>
-                <option value="">본부 선택</option>
-                {Array.from({ length: 10 }, (_, i) => `${i + 1}본부`).map(h => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
