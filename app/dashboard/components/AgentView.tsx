@@ -152,7 +152,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 pb-20 font-sans text-slate-900">
-      {/* 🔴 상단 공지 애니메이션 */}
       <div className="bg-blue-600 p-4 rounded-3xl flex items-center gap-4 overflow-hidden shadow-lg shadow-blue-600/20">
         <span className="bg-white text-blue-600 px-3 py-1 rounded-full text-[11px] font-bold shrink-0">NOTICE</span>
         <div className="relative flex-1 overflow-hidden h-5">
@@ -160,7 +159,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 🟠 프로필 및 퀵링크 섹션 */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
         <div className="flex items-center gap-4 shrink-0">
           <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-2xl">👤</div>
@@ -177,7 +175,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 🟡 메인 탭 전환 */}
       <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl">
         <button onClick={() => setMainTab('input')} className={`flex-1 py-3.5 rounded-xl text-sm font-bold transition-all ${mainTab === 'input' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>실적 입력</button>
         <button onClick={() => setMainTab('edu')} className={`flex-1 py-3.5 rounded-xl text-sm font-bold transition-all ${mainTab === 'edu' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>교육 참여</button>
@@ -185,7 +182,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
 
       {mainTab === 'input' && (
         <div className="space-y-8 animate-in fade-in duration-500">
-          {/* 실적 입력 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 space-y-6">
               <div className="flex justify-between items-end">
@@ -230,7 +226,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          {/* 지표 상세 입력 */}
           <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
             <p className="text-xs text-slate-400 font-bold uppercase mb-6 text-center tracking-widest">Activity Detail Input</p>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
@@ -243,7 +238,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
             </div>
           </div>
 
-          {/* 3개월 통계 및 기록 */}
           <div className="bg-slate-900 p-8 md:p-10 rounded-[3rem] text-white shadow-xl space-y-10">
             <div>
               <div className="flex gap-6 mb-8 border-b border-white/10 pb-4">
@@ -316,14 +310,14 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
               const fieldName = `edu_${w}` as keyof typeof perfInput;
               const isChecked = perfInput[fieldName];
               return (
-                <div key={w} onClick={() => handleSave({ [fieldName]: !isChecked })} className={`flex items-center gap-6 p-6 rounded-3xl border-2 transition-all cursor-pointer group ${isChecked ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}>
+                <div key={w} onClick={() => handleSave({ [fieldName]: !isChecked })} className={`flex items-center gap-6 p-6 rounded-3xl border transition-all cursor-pointer group ${isChecked ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100 hover:border-slate-200'}`}>
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-bold transition-all ${isChecked ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-white text-slate-400'}`}>
                     {w === 5 ? "추가" : `${w}W`}
                   </div>
                   <p className={`flex-1 text-lg font-bold ${isChecked ? 'text-blue-900' : 'text-slate-600'}`}>
                     {eduWeeks[w as keyof typeof eduWeeks] || "등록된 교육 내용이 없습니다."}
                   </p>
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-transparent'}`}>✓</div>
+                  <div className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isChecked ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-transparent'}`}>✓</div>
                 </div>
               );
             })}
@@ -338,7 +332,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   )
 }
 
-/** 하위 컴포넌트 **/
 function ProgressBar({ rate }: { rate: number }) {
   const color = rate >= 100 ? "bg-blue-600" : (rate >= 70 ? "bg-emerald-500" : (rate >= 40 ? "bg-amber-400" : "bg-rose-500"));
   return (
