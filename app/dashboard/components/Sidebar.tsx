@@ -185,59 +185,59 @@ export default function Sidebar({
 
   return (
     <>
-      <button onClick={() => setIsOpen(!isOpen)} className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90">
-        {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
+      <button onClick={() => setIsOpen(!isOpen)} className="fixed top-5 left-5 z-[60] bg-blue-900 text-white p-3 rounded-xl shadow-lg font-bold text-xs transition-transform active:scale-90 flex items-center gap-2">
+        {isOpen ? '메뉴 닫기' : '메뉴 열기'}
       </button>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[85%] sm:w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#0f172a] text-white flex flex-col shadow-2xl transition-all duration-300 ${isOpen ? 'w-[85%] sm:w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden'}`}>
-          <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-4 mt-14">
+          <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-4 mt-16">
             <div className="flex gap-2">
-              <button onClick={() => { router.push('/dashboard'); setIsOpen(false); }} className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black italic uppercase tracking-tighter hover:bg-black transition-colors">
-                Go Dashboard
+              <button onClick={() => { router.push('/dashboard'); setIsOpen(false); }} className="flex-1 bg-blue-700 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-tight hover:bg-blue-600 transition-colors">
+                대시보드
               </button>
               {onBack && (
-                <button onClick={() => { onBack(); setIsOpen(false); }} className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl text-[10px] font-black uppercase">
-                  Back
+                <button onClick={() => { onBack(); setIsOpen(false); }} className="px-4 bg-slate-800 text-slate-300 py-3 rounded-xl text-xs font-bold">
+                  뒤로가기
                 </button>
               )}
             </div>
 
-            <div className="flex justify-between items-center border-b-4 border-black pb-1">
-              <h2 className="text-2xl italic font-black uppercase tracking-tighter">
-                {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
+            <div className="flex justify-between items-center border-b border-white/10 pb-2">
+              <h2 className="text-xl font-bold tracking-tight text-white/90">
+                {isApproved ? (mode === 'office' ? '히스토리' : '상담 툴') : '게스트'}
               </h2>
               {isMaster && (
-                <button onClick={() => setShowStaffManager(!showStaffManager)} className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {showStaffManager ? "CLOSE STAFF" : "MANAGE STAFF"}
+                <button onClick={() => setShowStaffManager(!showStaffManager)} className={`text-[10px] px-3 py-1 rounded-full font-bold transition-colors ${showStaffManager ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                  {showStaffManager ? "관리 닫기" : "직원 관리"}
                 </button>
               )}
             </div>
 
-            <div className={`p-5 rounded-[2rem] border-2 shadow-lg ${isApproved ? 'bg-black text-white border-[#d4af37]' : 'bg-slate-100 text-slate-400'}`}>
-              <p className="text-[9px] uppercase font-black tracking-widest mb-1 opacity-80">{isApproved ? 'Logged in as' : 'Access Restricted'}</p>
+            <div className={`p-5 rounded-2xl shadow-inner ${isApproved ? 'bg-blue-950/50 border border-white/10' : 'bg-slate-800 text-slate-500'}`}>
+              <p className="text-[10px] uppercase font-medium tracking-widest mb-1 opacity-50">{isApproved ? '현재 접속 중' : '접근 제한됨'}</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl italic font-black">{user?.name || "사용자"}</span>
-                <span className={`text-sm font-black italic ${isApproved ? 'text-[#d4af37]' : 'text-slate-400'}`}>{getRankDisplay(user?.role)}</span>
+                <span className="text-lg font-bold text-white">{user?.name || "사용자"}</span>
+                <span className={`text-xs font-medium ${isApproved ? 'text-blue-400' : 'text-slate-500'}`}>{getRankDisplay(user?.role)}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-8 no-scrollbar">
             {isMaster && showStaffManager && (
-              <div className="bg-indigo-50 p-4 rounded-[2.5rem] border-2 border-indigo-200">
-                <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
-                <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
+              <div className="bg-white/5 p-5 rounded-2xl border border-white/10">
+                <p className="text-[11px] font-bold text-blue-400 uppercase mb-4 tracking-wider">직원 권한 설정</p>
+                <div className="space-y-4 max-h-60 overflow-y-auto no-scrollbar pr-1">
                   {staffList.map((staff) => (
-                    <div key={staff.id} className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[11px] font-black">{staff.name || staff.email}</span>
+                    <div key={staff.id} className="bg-slate-800/50 p-3 rounded-xl border border-white/5 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-slate-200">{staff.name || staff.email}</span>
                         <button onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
-                          className={`text-[8px] px-2 py-1 rounded-lg font-black ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                          className={`text-[9px] px-2 py-1 rounded-md font-bold transition-colors ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                           {(staff.is_approved === true || staff.is_approved === "true") ? '승인됨' : '미승인'}
                         </button>
                       </div>
-                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg">
+                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-xs font-medium p-2 bg-slate-900 border border-white/10 rounded-lg text-slate-300 outline-none focus:border-blue-500">
                         <option value="agent">설계사 (Agent)</option>
                         <option value="manager">지점장 (Manager)</option>
                         <option value="leader">사업부장 (Leader)</option>
@@ -251,97 +251,100 @@ export default function Sidebar({
             )}
 
             {isApproved && mode === 'office' && (
-              <>
-                <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-xl p-2 text-slate-900">
                   <Calendar 
                     onChange={(d: any) => onDateChange(d)} 
                     value={selectedDate} 
                     calendarType="gregory"
                     formatDay={(_, date) => date.getDate().toString()} 
-                    className="border-0 w-full font-black text-xs" 
+                    className="border-0 w-full text-sm font-medium" 
                   />
                 </div>
-                <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
-                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 text-center font-black">Performance Summary</p>
-                  <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-6 rounded-2xl shadow-xl text-white">
+                  <p className="text-[10px] text-white/60 uppercase tracking-widest mb-4 text-center font-bold">3개월 평균 실적</p>
+                  <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="border-r border-white/10">
-                      <p className="text-[8px] opacity-40 font-black uppercase">Avg Amt</p>
-                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
+                      <p className="text-[10px] text-white/40 font-bold uppercase mb-1">평균 매출</p>
+                      <p className="text-xl text-white font-bold tracking-tight">{threeMonthAvg.amt.toLocaleString()}<span className="text-xs ml-0.5 opacity-60">만</span></p>
                     </div>
                     <div>
-                      <p className="text-[8px] opacity-40 font-black uppercase">Avg Cnt</p>
-                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
+                      <p className="text-[10px] text-white/40 font-bold uppercase mb-1">평균 건수</p>
+                      <p className="text-xl text-white font-bold tracking-tight">{threeMonthAvg.cnt}<span className="text-xs ml-0.5 opacity-60">건</span></p>
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
-            <div className="space-y-3">
-              <p className="text-[9px] text-slate-400 uppercase italic font-black">Quick Tools</p>
-              <div className="grid grid-cols-1 gap-2">
+            <div className="space-y-4">
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold ml-1">빠른 실행</p>
+              <div className="grid grid-cols-1 gap-2.5">
                 {fixedLinks.map(item => (
-                  <button key={item.id} onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 active:scale-95 transition-all`}>
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-[11px] font-black">{item.label}</span>
+                  <button key={item.id} onClick={() => handleLinkClick(item)} className="w-full flex items-center gap-3 px-5 py-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all text-left group">
+                    <span className="text-xl group-hover:scale-110 transition-transform">{item.icon}</span>
+                    <span className="text-xs font-medium text-slate-200">{item.label}</span>
                   </button>
                 ))}
               </div>
               
-              <button onClick={() => setIsConsultModalOpen(true)} className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 shadow-xl transition-all active:scale-95 group">
-                <span className="text-2xl group-hover:scale-110 transition-transform">💼</span>
-                <span className="text-[13px] font-black italic uppercase">Open Consult Tools</span>
+              <button onClick={() => setIsConsultModalOpen(true)} className="w-full flex flex-col items-center justify-center gap-2 py-6 bg-blue-600 rounded-2xl text-white hover:bg-blue-500 shadow-xl transition-all active:scale-95 group mt-4">
+                <span className="text-2xl group-hover:rotate-12 transition-transform">💼</span>
+                <span className="text-sm font-bold tracking-tight">상담 도구 열기</span>
               </button>
             </div>
 
             {isApproved && mode === 'office' && (
-              <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 min-h-[120px] flex flex-col">
-                <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2">Instruction</p>
+              <div className="bg-slate-800/50 p-5 rounded-2xl border border-white/5 min-h-[140px] flex flex-col">
+                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-3">전달 사항</p>
                 <textarea 
                   value={dailyAdminNotice} 
                   onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
                   readOnly={!isAdmin} 
-                  className="w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900" 
+                  className="w-full flex-1 bg-transparent text-xs font-medium outline-none resize-none leading-relaxed text-slate-300 placeholder:text-slate-600" 
+                  placeholder={isAdmin ? "공지 내용을 입력하세요..." : "공지사항이 없습니다."}
                 />
               </div>
             )}
           </div>
 
           <div className="p-6 pt-2 flex-shrink-0">
-            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic">
-              Logout System
+            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-slate-800/50 text-slate-500 py-4 rounded-xl font-bold text-xs hover:bg-rose-500/10 hover:text-rose-400 transition-all">
+              로그아웃
             </button>
           </div>
         </div>
       </aside>
 
       {isConsultModalOpen && isApproved && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
-            <div className="bg-black p-6 flex justify-between items-center">
-              <h3 className="text-[#d4af37] font-black italic text-xl uppercase tracking-tighter">Consult Tools</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-[#0f172a] p-6 flex justify-between items-center text-white">
+              <h3 className="font-bold text-lg tracking-tight">상담 도구함</h3>
               <div className="flex items-center gap-3">
                 {isMaster && (
-                  <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-3 py-1 rounded-full font-black ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
-                    {isEditMode ? "FINISH" : "EDIT"}
+                  <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-3 py-1 rounded-full font-bold transition-colors ${isEditMode ? 'bg-blue-500 text-white' : 'bg-white/10 text-white/50 border border-white/10 hover:bg-white/20'}`}>
+                    {isEditMode ? "편집 완료" : "도구 편집"}
                   </button>
                 )}
-                <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black">×</button>
+                <button onClick={() => setIsConsultModalOpen(false)} className="text-white/60 hover:text-white text-2xl font-light transition-colors leading-none">✕</button>
               </div>
             </div>
             
-            <div className="p-6 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar">
+            <div className="p-6 grid grid-cols-1 gap-2.5 max-h-[60vh] overflow-y-auto no-scrollbar bg-slate-50">
               {consultTools.map((item) => {
                 const isVisible = menuStatus[item.id] || isEditMode;
                 if (!isVisible) return null;
                 return (
                   <div key={item.id} className="relative">
-                    <button onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-4 px-6 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-black hover:text-[#d4af37] transition-all ${!menuStatus[item.id] && 'opacity-30'}`}>
-                      <span className="text-xl">{item.icon}</span>
-                      <span className="text-[13px] font-black">{item.label}</span>
+                    <button onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl bg-white border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all group ${!menuStatus[item.id] && 'opacity-40'}`}>
+                      <span className="text-xl group-hover:scale-110 transition-transform">{item.icon}</span>
+                      <span className="text-sm font-semibold text-slate-700">{item.label}</span>
                     </button>
                     {isMaster && isEditMode && (
-                      <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 accent-black" />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                        <input type="checkbox" checked={menuStatus[item.id]} onChange={() => toggleMenu(item.id)} className="w-5 h-5 accent-blue-600 rounded cursor-pointer" />
+                      </div>
                     )}
                   </div>
                 );
