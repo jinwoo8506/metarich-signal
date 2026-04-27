@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>연금설계 | MetaRich Signal</title>
+<script src="common.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style id="commonStyle"></style>
+<style>
+/* 세제 탭 색상 */
+.qualified-color{color:#2563eb;} .nonqualified-color{color:#059669;}
+.q-border{border-color:#2563eb!important;} .nq-border{border-color:#059669!important;}
+
+/* 연금 유형 카드 */
+.pension-type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:24px;}
+.pension-type-card{border:2px solid var(--gray200);border-radius:var(--radius);
+  padding:20px;cursor:pointer;transition:.22s;}
+.pension-type-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.pension-type-card.q.active{border-color:#2563eb;background:#eff6ff;}
+.pension-type-card.nq.active{border-color:#059669;background:#f0fdf4;}
+.ptc-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.ptc-icon{font-size:28px;}
+.ptc-tag{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;}
+.q .ptc-tag{background:#dbeafe;color:#2563eb;}
+.nq .ptc-tag{background:#d1fae5;color:#059669;}
+.ptc-name{font-size:16px;font-weight:700;color:var(--gray800);}
+.ptc-desc{font-size:12px;color:var(--gray600);line-height:1.7;}
+.ptc-limit{margin-top:12px;padding:10px 12px;border-radius:var(--radius-sm);font-size:12px;}
+.q .ptc-limit{background:#dbeafe;color:#1d4ed8;}
+.nq .ptc-limit{background:#d1fae5;color:#065f46;}
+
+/* 역산 계산기 */
+.calc-hero{background:linear-gradient(135deg,#1a3a6e,#1e40af);border-radius:var(--radius);
+  padding:28px;color:#fff;margin-bottom:24px;}
+.calc-hero-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+.calc-hero-sub{font-size:13px;color:rgba(255,255,255,.7);}
+.want-box{background:rgba(255,255,255,.12);border-radius:var(--radius-sm);
+  padding:20px;margin-top:16px;display:flex;align-items:center;gap:16px;}
+.want-label{font-size:13px;color:rgba(255,255,255,.8);white-space:nowrap;}
+.want-input{flex:1;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);
+  border-radius:var(--radius-sm);padding:10px 14px;color:#fff;font-family:'Noto Sans KR',sans-serif;
+  font-size:20px;font-weight:700;outline:none;text-align:center;}
+.want-input::placeholder{color:rgba(255,255,255,.4);}
+.want-unit{font-size:14px;color:rgba(255,255,255,.7);white-space:nowrap;}
+
+/* 계산 결과 */
+.result-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.result-item{background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);
+  padding:18px 20px;border-left:4px solid transparent;}
+.result-item.blue{border-left-color:#2563eb;}
+.result-item.green{border-left-color:#059669;}
+.result-item.gold{border-left-color:#f59e0b;}
+.result-item-label{font-size:11px;color:var(--gray400);margin-bottom:4px;font-weight:600;letter-spacing:.3px;}
+.result-item-val{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--primary);}
+.result-item-sub{font-size:11px;color:var(--gray400);margin-top:2px;}
+
+/* 종신형 요건 박스 */
+.requirement-box{background:#fff7ed;border:1.5px solid #fed7aa;border-radius:var(--radius);padding:20px;}
+.req-title{font-size:14px;font-weight:700;color:#c2410c;margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.req-list{display:flex;flex-direction:column;gap:10px;}
+.req-item{display:flex;gap:12px;align-items:flex-start;}
+.req-num{width:22px;height:22px;border-radius:50%;background:#c2410c;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.req-text strong{display:block;font-size:13px;font-weight:700;color:#7c2d12;}
+.req-text p{font-size:12px;color:#92400e;margin-top:2px;line-height:1.5;}
+
+/* 한도 경고 */
+.limit-checker{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;}
+.limit-bar-wrap{margin-bottom:14px;}
+.limit-bar-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.limit-bar-track{height:10px;background:var(--gray200);border-radius:99px;overflow:hidden;}
+.limit-bar-fill{height:100%;border-radius:99px;transition:width .6s;}
+.limit-ok .limit-bar-fill{background:linear-gradient(90deg,var(--mint),#059669);}
+.limit-warn .limit-bar-fill{background:linear-gradient(90deg,var(--gold),#d97706);}
+.limit-over .limit-bar-fill{background:linear-gradient(90deg,var(--red),#dc2626);}
+.limit-status{font-size:12px;font-weight:600;margin-top:4px;}
+.limit-ok .limit-status{color:var(--mint);}
+.limit-warn .limit-status{color:#d97706;}
+.limit-over .limit-status{color:var(--red);}
+
+.products-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.product-item{border:1.5px solid var(--gray200);border-radius:var(--radius-sm);padding:16px;transition:.2s;}
+.product-item:hover{border-color:var(--primary-mid);box-shadow:var(--shadow);}
+.product-item-name{font-size:14px;font-weight:700;color:var(--gray800);margin-bottom:4px;}
+.product-item-type{font-size:11px;font-weight:700;margin-bottom:8px;}
+.product-item-desc{font-size:12px;color:var(--gray600);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="navArea"></div>
+<main class="fs-main">
+  <div class="page-header">
+    <div class="page-title">🌅 연금 <span>설계</span></div>
+    <div class="page-sub" id="clientBadge">고객을 선택하면 맞춤 설계가 시작됩니다</div>
+  </div>
+
+  <!-- ① 역산 계산기 -->
+  <div class="calc-hero">
+    <div class="calc-hero-title">🎯 연금 역산 설계</div>
+    <div class="calc-hero-sub">노후에 받고 싶은 금액을 입력하면, 지금 얼마를 납입해야 하는지 계산해드립니다</div>
+    <div class="want-box">
+      <span class="want-label">노후에 월</span>
+      <input class="want-input" id="targetMonthly" type="number" placeholder="200" oninput="calcReverse()">
+      <span class="want-unit">만원을 받고 싶다</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;">현재 나이</div>
+        <input id="currentAge" type="number" placeholder="35" value="35"
+          style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);
+          background:rgba(255,255,255,.12);color:#fff;font-family:'Noto Sans KR',sans-serif;
+          font-size:14px;outline:none;" oninput="calcReverse()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;">연금 수령 시작 나이</div>
+        <input id="pensionAge" type="number" placeholder="65" value="65"
+          style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);
+          background:rgba(255,255,255,.12);color:#fff;font-family:'Noto Sans KR',sans-serif;
+          font-size:14px;outline:none;" oninput="calcReverse()">
+      </div>
+      <div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;">예상 수익률</div>
+        <select id="rateSelect"
+          style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);
+          background:rgba(255,255,255,.12);color:#fff;font-family:'Noto Sans KR',sans-serif;
+          font-size:14px;outline:none;" onchange="calcReverse()">
+          <option value="0.03">3.0% (보수적)</option>
+          <option value="0.035" selected>3.5% (안정적)</option>
+          <option value="0.05">5.0% (균형)</option>
+          <option value="0.07">7.0% (적극적)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 계산 결과 -->
+  <div class="result-row" id="reverseResult" style="display:none;">
+    <div class="result-item blue">
+      <div class="result-item-label">필요 월 납입액</div>
+      <div class="result-item-val" id="res-monthly">-</div>
+      <div class="result-item-sub" id="res-monthly-sub"></div>
+    </div>
+    <div class="result-item green">
+      <div class="result-item-label">목표 적립금 (수령 시점)</div>
+      <div class="result-item-val" id="res-fv">-</div>
+      <div class="result-item-sub" id="res-fv-sub"></div>
+    </div>
+    <div class="result-item gold">
+      <div class="result-item-label">세액공제 환급 (연간)</div>
+      <div class="result-item-val" id="res-tax">-</div>
+      <div class="result-item-sub" id="res-tax-sub"></div>
+    </div>
+  </div>
+
+  <!-- 차트 -->
+  <div class="card" id="chartCard" style="display:none;">
+    <div class="card-title">적립 시뮬레이션</div>
+    <canvas id="pensionChart" height="120"></canvas>
+  </div>
+
+  <!-- ② 세제적격 / 비적격 구분 -->
+  <div class="card">
+    <div class="card-title">세제적격 vs 비적격 연금</div>
+    <div class="pension-type-grid">
+      <div class="pension-type-card q active" id="ptc-qualified">
+        <div class="ptc-header">
+          <span class="ptc-icon">📋</span>
+          <div>
+            <div class="ptc-tag">세제적격</div>
+            <div class="ptc-name">Qualified Pension</div>
+          </div>
+        </div>
+        <div class="ptc-desc">
+          납입 시 세액공제 혜택을 받는 연금.<br>
+          수령 시 연금소득세(3.3~5.5%) 부과.<br>
+          <strong>연금저축보험·연금저축펀드·IRP</strong>
+        </div>
+        <div class="ptc-limit">
+          💡 연간 한도: 연금저축 <strong>600만원</strong> + IRP <strong>300만원</strong> = 합계 <strong>900만원</strong><br>
+          세액공제율: 소득 5,500만원 이하 <strong>16.5%</strong> / 초과 <strong>13.2%</strong>
+        </div>
+      </div>
+      <div class="pension-type-card nq" id="ptc-nonqualified">
+        <div class="ptc-header">
+          <span class="ptc-icon">🌿</span>
+          <div>
+            <div class="ptc-tag">세제비적격</div>
+            <div class="ptc-name">Non-Qualified Pension</div>
+          </div>
+        </div>
+        <div class="ptc-desc">
+          납입 시 세액공제 없음.<br>
+          10년 이상 유지 + 요건 충족 시 이자 <strong>비과세</strong>.<br>
+          <strong>연금보험 (생명보험사)</strong>
+        </div>
+        <div class="ptc-limit">
+          💡 월 납입 <strong>150만원</strong> / 연 <strong>1,800만원</strong> 이하 또는<br>
+          일시납 <strong>1억원</strong> 이하 → 비과세 요건 충족
+        </div>
+      </div>
+    </div>
+
+    <!-- 비과세 한도 체크 -->
+    <div class="card-title" style="margin-bottom:14px;">비적격 연금 비과세 한도 확인</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div class="fg">
+        <label>월 납입 예정액 (원)</label>
+        <input type="number" id="nqMonthly" placeholder="1500000" oninput="checkLimit()">
+      </div>
+      <div class="fg">
+        <label>일시납 금액 (원)</label>
+        <input type="number" id="nqLump" placeholder="100000000" oninput="checkLimit()">
+      </div>
+    </div>
+    <div class="limit-checker" id="limitResult" style="display:none;">
+      <div class="card-title" style="margin-bottom:14px;">📊 비과세 요건 충족 여부</div>
+      <div id="limitBars"></div>
+    </div>
+  </div>
+
+  <!-- ③ 종신형 연금 요건 -->
+  <div class="card">
+    <div class="card-title">종신형 연금 요건 (비과세 핵심)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="requirement-box">
+        <div class="req-title">⚠️ 종신형 연금 비과세 4대 요건</div>
+        <div class="req-list">
+          <div class="req-item">
+            <div class="req-num">1</div>
+            <div class="req-text">
+              <strong>계약자 = 피보험자 = 수익자</strong>
+              <p>계약자·피보험자·수익자가 동일인이어야 합니다</p>
+            </div>
+          </div>
+          <div class="req-item">
+            <div class="req-num">2</div>
+            <div class="req-text">
+              <strong>연금 개시 나이: 만 55세 이상</strong>
+              <p>최소 만 55세가 되어야 연금 수령 가능</p>
+            </div>
+          </div>
+          <div class="req-item">
+            <div class="req-num">3</div>
+            <div class="req-text">
+              <strong>사망 시까지 연금 수령 (종신 지급)</strong>
+              <p>일시금 수령 불가 · 반드시 종신형 선택</p>
+            </div>
+          </div>
+          <div class="req-item">
+            <div class="req-num">4</div>
+            <div class="req-text">
+              <strong>매년 인출금액 ≤ 연금 수령 한도</strong>
+              <p>기준금액의 120% 이내에서 수령해야 비과세 유지</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card-title" style="margin-bottom:14px;">연금 유형별 비교</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="padding:14px;border:1.5px solid var(--gray200);border-radius:var(--radius-sm);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:14px;font-weight:700;">확정기간형</span>
+              <span class="badge badge-blue" style="font-size:10px;">기간 보장</span>
+              <span style="margin-left:auto;font-size:11px;font-weight:600;color:#d97706;">⚠️ 비과세 요건 주의</span>
+            </div>
+            <p style="font-size:12px;color:var(--gray600);">10·15·20년 등 기간 선택. 기간 종료 후 지급 종료</p>
+          </div>
+          <div style="padding:14px;border:1.5px solid #6ee7b7;border-radius:var(--radius-sm);background:#f0fdf4;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:14px;font-weight:700;">종신형</span>
+              <span class="badge badge-green" style="font-size:10px;">평생 보장</span>
+              <span style="margin-left:auto;font-size:11px;font-weight:600;color:#059669;">✅ 비과세 완전 충족</span>
+            </div>
+            <p style="font-size:12px;color:var(--gray600);">사망할 때까지 지급. 비과세 완벽 충족. 권장 유형</p>
+          </div>
+          <div style="padding:14px;border:1.5px solid #6ee7b7;border-radius:var(--radius-sm);background:#f0fdf4;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:14px;font-weight:700;">상속형</span>
+              <span class="badge badge-green" style="font-size:10px;">종신+상속</span>
+              <span style="margin-left:auto;font-size:11px;font-weight:600;color:#059669;">✅ 비과세 가능</span>
+            </div>
+            <p style="font-size:12px;color:var(--gray600);">수령 후 잔액 상속인에게 이전. 상속 설계에 활용</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 상품 연결 -->
+  <div class="card">
+    <div class="card-title">연금 상품 포트폴리오</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(this,'pt-q')">세제적격 상품</button>
+      <button class="tab-btn" onclick="switchTab(this,'pt-nq')">세제비적격 상품</button>
+    </div>
+    <div class="tab-content active" id="pt-q">
+      <div class="products-grid">
+          <div class="product-item">
+            <div class="product-item-name">연금저축보험</div>
+            <div class="product-item-type" style="color:#2563eb;">세제적격</div>
+            <div class="product-item-desc">생명보험사 운용. 원금 보장형. 이율 확정. 보수적 성향에 적합. 연 600만원 한도.</div>
+          </div>
+          <div class="product-item">
+            <div class="product-item-name">연금저축펀드</div>
+            <div class="product-item-type" style="color:#2563eb;">세제적격</div>
+            <div class="product-item-desc">증권사 운용. ETF·펀드 자유 투자. 수익률 높음. 연 600만원 한도. 손실 가능.</div>
+          </div>
+          <div class="product-item">
+            <div class="product-item-name">IRP (개인형 퇴직연금)</div>
+            <div class="product-item-type" style="color:#2563eb;">세제적격</div>
+            <div class="product-item-desc">퇴직금 수령 필수. 연 300만원 추가 공제. 55세 이후 수령. 연금저축과 합산 900만원.</div>
+          </div>
+      </div>
+      <div style="margin-top:16px;padding:14px;background:#eff6ff;border-radius:var(--radius-sm);font-size:12px;color:#1d4ed8;">
+        💡 <strong>절세 전략:</strong> 연금저축펀드 600만원 + IRP 300만원 = 연 900만원 납입 시<br>
+        소득 5,500만원 이하: <strong>148.5만원</strong> 환급 / 초과: <strong>118.8만원</strong> 환급 (매년!)
+      </div>
+    </div>
+    <div class="tab-content" id="pt-nq">
+      <div class="products-grid">
+          <div class="product-item">
+            <div class="product-item-name">연금보험 (일반)</div>
+            <div class="product-item-type" style="color:#059669;">세제비적격</div>
+            <div class="product-item-desc">월 150만원 이하 납입 시 10년 후 이자 비과세. 종신형 선택 권장. 안정적 노후 현금흐름.</div>
+          </div>
+          <div class="product-item">
+            <div class="product-item-name">즉시연금 (일시납)</div>
+            <div class="product-item-type" style="color:#059669;">세제비적격</div>
+            <div class="product-item-desc">1억원 일시납. 바로 다음 달부터 연금 수령 시작. 은퇴 자금 즉시 전환. 비과세 요건 충족 필수.</div>
+          </div>
+          <div class="product-item">
+            <div class="product-item-name">변액연금</div>
+            <div class="product-item-type" style="color:#059669;">세제비적격</div>
+            <div class="product-item-desc">펀드 투자로 수익 추구. 납입보험료 원금 보증(GMAB). 비과세 혜택 + 수익 가능성.</div>
+          </div>
+      </div>
+      <div style="margin-top:16px;padding:14px;background:#f0fdf4;border-radius:var(--radius-sm);font-size:12px;color:#065f46;">
+        💡 <strong>비과세 전략:</strong> 월 150만원 × 12 = 연 1,800만원 한도 이내로 납입 유지.<br>
+        10년 이상 유지 후 종신형으로 수령 → 이자소득세 15.4% 완전 비과세
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 종합 설계안 저장 -->
+  <div class="card">
+    <div class="card-title">연금 설계안 저장</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="fg">
+        <label>세제적격 월 납입액 (원)</label>
+        <input type="number" id="save-q" placeholder="750000">
+      </div>
+      <div class="fg">
+        <label>세제비적격 월 납입액 (원)</label>
+        <input type="number" id="save-nq" placeholder="1500000">
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label>연금 상담 메모</label>
+      <textarea id="save-memo" placeholder="설계 내용, 고객 요청 사항, 추천 상품 등..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-success" onclick="savePension()">💾 연금 설계안 저장</button>
+      <button class="btn btn-ghost" onclick="location.href='index.html'">← 대시보드</button>
+      <button class="btn btn-primary" onclick="location.href='01_risk.html'">보험 설계로 →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+document.getElementById('navArea').innerHTML = renderNav('pension');
+
+// 클라이언트 로드
+const client = FS.getActive();
+if (client) {
+  document.getElementById('clientBadge').textContent =
+    `${client.name} 고객님 (${client.age}세) · ${client.monthly.toLocaleString()}원/월 저축 가능`;
+  document.getElementById('currentAge').value = client.age;
+  // 기존 저장 데이터 복원
+  const saved = FS.getSection(client.id, 'pension');
+  if (saved) {
+    if (saved.targetMonthly) document.getElementById('targetMonthly').value = saved.targetMonthly;
+    if (saved.qMonthly) document.getElementById('save-q').value = saved.qMonthly;
+    if (saved.nqMonthly) document.getElementById('save-nq').value = saved.nqMonthly;
+    if (saved.memo) document.getElementById('save-memo').value = saved.memo;
+    calcReverse();
+  }
+}
+
+let pensionChart = null;
+
+function calcReverse() {
+  const target = parseFloat(document.getElementById('targetMonthly').value) * 10000;
+  const curAge = parseInt(document.getElementById('currentAge').value);
+  const penAge = parseInt(document.getElementById('pensionAge').value);
+  const rate   = parseFloat(document.getElementById('rateSelect').value);
+
+  if (!target || !curAge || !penAge || penAge <= curAge) return;
+
+  const months = (penAge - curAge) * 12;
+  const monthRate = rate / 12;
+  // 종신 25년(300개월) 수령 기준 현가
+  const pvFactor = (1 - Math.pow(1 + monthRate, -300)) / monthRate;
+  const requiredFV = target * pvFactor;
+  const annuityFactor = (Math.pow(1 + monthRate, months) - 1) / monthRate;
+  const monthly = Math.ceil(requiredFV / annuityFactor);
+
+  // 세액공제
+  const annualQ = Math.min(monthly * 12, 9000000);
+  const income = client ? client.income : 55000000;
+  const taxRate = income <= 55000000 ? 0.165 : 0.132;
+  const taxCredit = Math.round(annualQ * taxRate);
+
+  document.getElementById('res-monthly').textContent = Math.round(monthly/10000) + '만원';
+  document.getElementById('res-monthly-sub').textContent = `연 ${Math.round(monthly*12/10000)}만원 납입`;
+  document.getElementById('res-fv').textContent = Math.round(requiredFV/100000000*10)/10 + '억';
+  document.getElementById('res-fv-sub').textContent = `${penAge}세 기준 적립금`;
+  document.getElementById('res-tax').textContent = Math.round(taxCredit/10000) + '만원';
+  document.getElementById('res-tax-sub').textContent = `세액공제율 ${(taxRate*100).toFixed(1)}% 적용`;
+
+  document.getElementById('reverseResult').style.display = 'grid';
+  document.getElementById('chartCard').style.display = 'block';
+  drawChart(monthly, months, monthRate, penAge, curAge);
+}
+
+function drawChart(monthly, months, monthRate, penAge, curAge) {
+  const labels = [];
+  const data = [];
+  const step = Math.max(1, Math.floor(months/12/10));
+  for (let y = 0; y <= (penAge - curAge); y += step) {
+    labels.push((curAge + y) + '세');
+    const m = y * 12;
+    const fv = monthly * ((Math.pow(1 + monthRate, m) - 1) / monthRate);
+    data.push(Math.round(fv / 10000));
+  }
+  if (pensionChart) pensionChart.destroy();
+  pensionChart = new Chart(document.getElementById('pensionChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '적립금 (만원)',
+        data,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#2563eb'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false } },
+        y: { ticks: { callback: v => v >= 10000 ? Math.floor(v/10000) + '억' : v + '만' } }
+      }
+    }
+  });
+}
+
+function checkLimit() {
+  const monthly = parseFloat(document.getElementById('nqMonthly').value) || 0;
+  const lump    = parseFloat(document.getElementById('nqLump').value) || 0;
+  if (!monthly && !lump) { document.getElementById('limitResult').style.display = 'none'; return; }
+
+  document.getElementById('limitResult').style.display = 'block';
+  const monthlyLimit = 1500000;
+  const lumpLimit = 100000000;
+  const annual = monthly * 12;
+  const annualLimit = 18000000;
+
+  let html = '';
+  if (monthly) {
+    const pct = Math.min(100, monthly / monthlyLimit * 100);
+    const cls = monthly <= monthlyLimit ? 'limit-ok' : 'limit-over';
+    html += limitBar('월 납입액', monthly.toLocaleString() + '원', monthlyLimit.toLocaleString() + '원 한도', pct, cls,
+      monthly <= monthlyLimit ? '✅ 비과세 요건 충족' : '❌ 월 150만원 초과 — 비과세 불가');
+    const apct = Math.min(100, annual / annualLimit * 100);
+    const acls = annual <= annualLimit ? 'limit-ok' : 'limit-over';
+    html += limitBar('연간 납입액', annual.toLocaleString() + '원', annualLimit.toLocaleString() + '원 한도', apct, acls,
+      annual <= annualLimit ? '✅ 연 1,800만원 이내' : '❌ 연 1,800만원 초과 — 비과세 불가');
+  }
+  if (lump) {
+    const pct = Math.min(100, lump / lumpLimit * 100);
+    const cls = lump <= lumpLimit ? 'limit-ok' : 'limit-over';
+    html += limitBar('일시납 금액', lump.toLocaleString() + '원', lumpLimit.toLocaleString() + '원 한도', pct, cls,
+      lump <= lumpLimit ? '✅ 1억원 이내 — 비과세 충족' : '❌ 1억원 초과 — 비과세 불가');
+  }
+  document.getElementById('limitBars').innerHTML = html;
+}
+
+function limitBar(title, val, limit, pct, cls, status) {
+  return `<div class="limit-bar-wrap ${cls}">
+    <div class="limit-bar-label">
+      <span style="font-size:13px;font-weight:600;">${title}</span>
+      <span style="font-size:12px;color:var(--gray400);">${val} / ${limit}</span>
+    </div>
+    <div class="limit-bar-track"><div class="limit-bar-fill" style="width:${pct}%;"></div></div>
+    <div class="limit-status">${status}</div>
+  </div>`;
+}
+
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function savePension() {
+  if (!client) { alert('고객을 먼저 선택하세요'); return; }
+  FS.saveSection(client.id, 'pension', {
+    targetMonthly: document.getElementById('targetMonthly').value,
+    currentAge: document.getElementById('currentAge').value,
+    pensionAge: document.getElementById('pensionAge').value,
+    rate: document.getElementById('rateSelect').value,
+    qMonthly: document.getElementById('save-q').value,
+    nqMonthly: document.getElementById('save-nq').value,
+    memo: document.getElementById('save-memo').value
+  });
+  FS.markDone(client.id, 'pension');
+  alert('✅ 연금 설계안이 저장되었습니다');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부동산 | MetaRich Signal</title>
+<script src="common.js"></script>
+<style id="commonStyle"></style>
+<style>
+.tax-result-box{background:linear-gradient(135deg,#1a3a6e,#1e40af);border-radius:var(--radius);
+  padding:24px;color:#fff;margin-top:20px;}
+.tax-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px;}
+.tax-result-item{text-align:center;padding:14px;background:rgba(255,255,255,.1);border-radius:var(--radius-sm);}
+.tax-result-val{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:#fbbf24;}
+.tax-result-label{font-size:11px;color:rgba(255,255,255,.7);margin-top:3px;}
+
+.rate-table{width:100%;border-collapse:collapse;font-size:13px;}
+.rate-table th{background:var(--primary);color:#fff;padding:10px 14px;text-align:left;font-weight:600;}
+.rate-table td{padding:10px 14px;border-bottom:1px solid var(--gray200);}
+.rate-table tr:hover td{background:var(--gray100);}
+.rate-table tr.highlight td{background:#eff6ff;font-weight:600;color:var(--primary);}
+
+.home-pension-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.hp-card{border:1.5px solid var(--gray200);border-radius:var(--radius-sm);padding:18px;transition:.2s;}
+.hp-card:hover{border-color:var(--primary-mid);box-shadow:var(--shadow);}
+.hp-card-title{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:8px;}
+.hp-card-val{font-family:'Montserrat',sans-serif;font-size:24px;font-weight:900;color:var(--accent);margin-bottom:4px;}
+.hp-card-desc{font-size:12px;color:var(--gray600);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="navArea"></div>
+<main class="fs-main">
+  <div class="page-header">
+    <div class="page-title">🏢 부동산 <span>세금 설계</span></div>
+    <div class="page-sub" id="clientBadge">취득세·양도세 시뮬레이션 및 주택연금 설계</div>
+  </div>
+
+  <!-- 취득세 계산기 -->
+  <div class="card">
+    <div class="card-title">취득세 계산기</div>
+    <div class="form-grid form-row-3" style="margin-bottom:16px;">
+      <div class="fg">
+        <label>매매 가격 (원)</label>
+        <input type="number" id="acq-price" placeholder="500000000" oninput="calcAcquisition()">
+      </div>
+      <div class="fg">
+        <label>주택 보유 현황</label>
+        <select id="acq-house" onchange="calcAcquisition()">
+          <option value="0">무주택 (생애최초)</option>
+          <option value="0b">무주택 (일반)</option>
+          <option value="1">1주택자</option>
+          <option value="2">2주택자</option>
+          <option value="3">3주택자↑</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>지역</label>
+        <select id="acq-region" onchange="calcAcquisition()">
+          <option value="normal">일반 지역</option>
+          <option value="adjust">조정대상지역</option>
+        </select>
+      </div>
+    </div>
+    <div id="acqResult" style="display:none;">
+      <div class="tax-result-box">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">🏠 취득세 계산 결과</div>
+        <div class="tax-result-grid">
+          <div class="tax-result-item">
+            <div class="tax-result-val" id="acq-rate-val">-</div>
+            <div class="tax-result-label">취득세율</div>
+          </div>
+          <div class="tax-result-item">
+            <div class="tax-result-val" id="acq-tax-val">-</div>
+            <div class="tax-result-label">취득세 (지방교육세 포함)</div>
+          </div>
+          <div class="tax-result-item">
+            <div class="tax-result-val" id="acq-total-val">-</div>
+            <div class="tax-result-label">총 납부 예상액</div>
+          </div>
+        </div>
+      </div>
+      <div id="acqNote" style="margin-top:12px;padding:12px;background:#fffbeb;border-radius:var(--radius-sm);font-size:12px;color:#92400e;"></div>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="card-title" style="margin-bottom:12px;">취득세율 기준표</div>
+      <table class="rate-table">
+        <tr><th>구분</th><th>6억 이하</th><th>6억~9억</th><th>9억 초과</th></tr>
+        <tr><td>무주택 (생애최초)</td><td>0.8% ~ 면제</td><td>1~3%</td><td>3%</td></tr>
+        <tr><td>무주택·1주택 (일반)</td><td>1%</td><td>1~3%</td><td>3%</td></tr>
+        <tr><td>2주택 (조정지역)</td><td colspan="3" style="color:#dc2626;font-weight:600;">8%</td></tr>
+        <tr><td>3주택↑ (조정지역)</td><td colspan="3" style="color:#dc2626;font-weight:600;">12%</td></tr>
+        <tr><td>2주택 (비조정)</td><td colspan="3">1~3% (일반세율)</td></tr>
+        <tr><td>3주택↑ (비조정)</td><td colspan="3" style="color:#d97706;font-weight:600;">8%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 양도세 계산기 -->
+  <div class="card">
+    <div class="card-title">양도세 시뮬레이터</div>
+    <div class="form-grid form-row-3" style="margin-bottom:16px;">
+      <div class="fg">
+        <label>취득 가격 (원)</label>
+        <input type="number" id="trf-buy" placeholder="300000000" oninput="calcTransfer()">
+      </div>
+      <div class="fg">
+        <label>양도 가격 (원)</label>
+        <input type="number" id="trf-sell" placeholder="600000000" oninput="calcTransfer()">
+      </div>
+      <div class="fg">
+        <label>보유 기간</label>
+        <select id="trf-period" onchange="calcTransfer()">
+          <option value="1">1년 미만</option>
+          <option value="2">1~2년</option>
+          <option value="3" selected>2~3년</option>
+          <option value="5">3~5년</option>
+          <option value="10">5~10년</option>
+          <option value="15">10~15년</option>
+          <option value="20">15년 이상</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid form-row-3" style="margin-bottom:16px;">
+      <div class="fg">
+        <label>1세대 1주택 여부</label>
+        <select id="trf-type" onchange="calcTransfer()">
+          <option value="1h">1세대 1주택</option>
+          <option value="multi">다주택자</option>
+          <option value="adjust_multi">다주택 (조정지역)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>필요경비 (수리비 등, 원)</label>
+        <input type="number" id="trf-cost" placeholder="10000000" oninput="calcTransfer()">
+      </div>
+      <div class="fg">
+        <label>연소득 (종합소득세 합산)</label>
+        <input type="number" id="trf-income" placeholder="50000000" oninput="calcTransfer()">
+      </div>
+    </div>
+    <div id="trfResult" style="display:none;">
+      <div class="tax-result-box">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">📊 양도세 계산 결과</div>
+        <div class="tax-result-grid">
+          <div class="tax-result-item">
+            <div class="tax-result-val" id="trf-gain-val">-</div>
+            <div class="tax-result-label">양도차익</div>
+          </div>
+          <div class="tax-result-item">
+            <div class="tax-result-val" id="trf-deduct-val">-</div>
+            <div class="tax-result-label">장기보유특별공제</div>
+          </div>
+          <div class="tax-result-item">
+            <div class="tax-result-val" id="trf-tax-val">-</div>
+            <div class="tax-result-label">예상 양도소득세</div>
+          </div>
+        </div>
+      </div>
+      <div id="trfNote" style="margin-top:12px;padding:12px;background:#fffbeb;border-radius:var(--radius-sm);font-size:12px;color:#92400e;"></div>
+    </div>
+  </div>
+
+  <!-- 주택연금 -->
+  <div class="card">
+    <div class="card-title">주택연금 설계</div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--gray600);">
+      55세 이상 · 공시지가 12억 이하 주택 소유자 가입 가능. 평생 거주하면서 월 연금 수령
+    </div>
+    <div class="form-grid form-row-3" style="margin-bottom:16px;">
+      <div class="fg">
+        <label>주택 시가 (원)</label>
+        <input type="number" id="hp-price" placeholder="400000000" oninput="calcHomePension()">
+      </div>
+      <div class="fg">
+        <label>가입 나이</label>
+        <input type="number" id="hp-age" placeholder="65" min="55" max="84" oninput="calcHomePension()">
+      </div>
+      <div class="fg">
+        <label>지급 방식</label>
+        <select id="hp-type" onchange="calcHomePension()">
+          <option value="lifetime">종신지급형</option>
+          <option value="fixed">확정기간형</option>
+        </select>
+      </div>
+    </div>
+    <div class="home-pension-grid" id="hpResult" style="display:none;"></div>
+    <div style="margin-top:14px;padding:12px;background:#eff6ff;border-radius:var(--radius-sm);font-size:12px;color:#1d4ed8;">
+      💡 주택연금은 한국주택금융공사(HF) 보증 상품. 사망 시 주택 처분해 상환. 
+      남은 금액은 상속인에게 돌아갑니다. 정확한 금액은 HF 홈페이지에서 확인하세요.
+    </div>
+  </div>
+
+  <!-- 저장 -->
+  <div class="card">
+    <div class="card-title">부동산 상담 저장</div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label>부동산 상담 메모</label>
+      <textarea id="save-memo" placeholder="보유 부동산, 매매 계획, 절세 전략..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-success" onclick="saveRealty()">💾 저장</button>
+      <button class="btn btn-ghost" onclick="location.href='index.html'">← 대시보드</button>
+      <button class="btn btn-primary" onclick="location.href='05_inheritance.html'">상속·증여로 →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+document.getElementById('navArea').innerHTML = renderNav('realty');
+const client = FS.getActive();
+if (client) {
+  document.getElementById('clientBadge').textContent = client.name + ' 고객님 부동산 설계';
+  const saved = FS.getSection(client.id, 'realty');
+  if (saved && saved.memo) document.getElementById('save-memo').value = saved.memo;
+}
+
+function won(n) {
+  if (!n) return '-';
+  n = Math.round(n);
+  if (n >= 100000000) return (Math.floor(n/10000000)/10).toFixed(1) + '억원';
+  if (n >= 10000) return Math.floor(n/10000) + '만원';
+  return n.toLocaleString() + '원';
+}
+
+function calcAcquisition() {
+  const price = parseFloat(document.getElementById('acq-price').value) || 0;
+  const house = document.getElementById('acq-house').value;
+  const region = document.getElementById('acq-region').value;
+  if (!price) { document.getElementById('acqResult').style.display = 'none'; return; }
+
+  let rate = 0.01; // 기본 1%
+  let note = '';
+
+  if (house === '0') { // 생애최초
+    if (price <= 150000000) { rate = 0; note = '✅ 생애최초 취득세 면제 (1.5억 이하)'; }
+    else if (price <= 300000000) { rate = 0.005; note = '✅ 생애최초 50% 감면 (3억 이하)'; }
+    else { rate = 0.01; note = '💡 생애최초 감면 기준 초과. 일반세율 적용'; }
+  } else if (house === '2') {
+    rate = region === 'adjust' ? 0.08 : 0.01;
+    if (region === 'adjust') note = '⚠️ 조정대상지역 2주택: 취득세 8%';
+  } else if (house === '3') {
+    rate = region === 'adjust' ? 0.12 : 0.08;
+    note = region === 'adjust' ? '⚠️ 조정대상지역 3주택↑: 취득세 12%' : '⚠️ 비조정 3주택↑: 취득세 8%';
+  } else {
+    // 1주택 일반: 가격구간별
+    if (price <= 600000000) rate = 0.01;
+    else if (price <= 900000000) rate = 0.01 + (price - 600000000) / 300000000 * 0.02;
+    else rate = 0.03;
+  }
+
+  const tax = price * rate;
+  const eduTax = tax * 0.1; // 지방교육세
+  const total = tax + eduTax;
+
+  document.getElementById('acq-rate-val').textContent = (rate * 100).toFixed(1) + '%';
+  document.getElementById('acq-tax-val').textContent = won(total);
+  document.getElementById('acq-total-val').textContent = won(price + total);
+  document.getElementById('acqResult').style.display = 'block';
+  document.getElementById('acqNote').textContent = note || '일반 취득세율이 적용됩니다. 실제 세액은 관할 구청에서 확인하세요.';
+}
+
+function calcTransfer() {
+  const buy = parseFloat(document.getElementById('trf-buy').value) || 0;
+  const sell = parseFloat(document.getElementById('trf-sell').value) || 0;
+  const cost = parseFloat(document.getElementById('trf-cost').value) || 0;
+  const period = parseInt(document.getElementById('trf-period').value);
+  const type = document.getElementById('trf-type').value;
+  if (!buy || !sell || sell <= buy) { document.getElementById('trfResult').style.display = 'none'; return; }
+
+  const gain = sell - buy - cost;
+
+  // 장기보유특별공제율
+  let deductRate = 0;
+  let note = '';
+  if (type === '1h') {
+    // 1세대 1주택: 보유 2년 이상 + 거주 2년 이상 비과세 (12억 이하)
+    if (sell <= 1200000000 && period >= 3) {
+      document.getElementById('trf-gain-val').textContent = won(gain);
+      document.getElementById('trf-deduct-val').textContent = '비과세';
+      document.getElementById('trf-tax-val').textContent = '0원';
+      document.getElementById('trfResult').style.display = 'block';
+      document.getElementById('trfNote').textContent = '✅ 1세대 1주택 + 12억 이하 + 2년 보유·거주 시 양도소득세 비과세';
+      return;
+    }
+    const rates = {3:0.24,5:0.32,10:0.40,15:0.60,20:0.80};
+    for (const [y, r] of Object.entries(rates).reverse()) {
+      if (period >= parseInt(y)) { deductRate = r; break; }
+    }
+    note = `1세대 1주택 장기보유특별공제 ${(deductRate*100).toFixed(0)}% 적용`;
+  } else if (type === 'adjust_multi') {
+    deductRate = 0; note = '⚠️ 조정대상지역 다주택: 장기보유특별공제 배제 + 중과세';
+  } else {
+    const rates = {3:0.06,5:0.10,10:0.20,15:0.24,20:0.30};
+    for (const [y, r] of Object.entries(rates).reverse()) {
+      if (period >= parseInt(y)) { deductRate = r; break; }
+    }
+    note = `일반 장기보유특별공제 ${(deductRate*100).toFixed(0)}% 적용`;
+  }
+
+  const deduct = Math.round(gain * deductRate);
+  const taxBase = Math.max(0, gain - deduct - 2500000); // 기본공제 250만
+  let taxRate = 0.06;
+  if (taxBase > 1400000000) taxRate = 0.45;
+  else if (taxBase > 880000000) taxRate = 0.42;
+  else if (taxBase > 500000000) taxRate = 0.40;
+  else if (taxBase > 300000000) taxRate = 0.38;
+  else if (taxBase > 150000000) taxRate = 0.35;
+  else if (taxBase > 88000000) taxRate = 0.24;
+  else if (taxBase > 46000000) taxRate = 0.15;
+  else if (taxBase > 14000000) taxRate = 0.15;
+  if (type === 'adjust_multi') taxRate = Math.min(taxRate + (period < 2 ? 0.20 : 0.10), 0.75);
+
+  const tax = Math.round(taxBase * taxRate);
+
+  document.getElementById('trf-gain-val').textContent = won(gain);
+  document.getElementById('trf-deduct-val').textContent = (deductRate * 100).toFixed(0) + '%';
+  document.getElementById('trf-tax-val').textContent = won(tax);
+  document.getElementById('trfResult').style.display = 'block';
+  document.getElementById('trfNote').textContent = note + '. 실제 세액은 세무사 확인 권장.';
+}
+
+function calcHomePension() {
+  const price = parseFloat(document.getElementById('hp-price').value) || 0;
+  const age = parseInt(document.getElementById('hp-age').value) || 65;
+  const type = document.getElementById('hp-type').value;
+  if (!price || age < 55) { document.getElementById('hpResult').style.display = 'none'; return; }
+
+  // 한국주택금융공사 주택연금 지급률 (근사값, 2024 기준)
+  // 종신지급형: 나이별 지급률 (주택가격 × 지급률 / 12)
+  const lifetimeRates = {55:0.0018,60:0.0022,65:0.0028,70:0.0034,75:0.0042,80:0.0052};
+  let rate = 0.0028;
+  const ages = Object.keys(lifetimeRates).map(Number).sort((a,b)=>a-b);
+  for (const a of ages) { if (age >= a) rate = lifetimeRates[a]; }
+
+  const monthlyFixed = type === 'lifetime' ? Math.round(price * rate) : Math.round(price * rate * 0.85);
+  const annual = monthlyFixed * 12;
+  const lifetime = monthlyFixed * Math.max(1, (85 - age)) * 12;
+
+  document.getElementById('hpResult').style.display = 'grid';
+  document.getElementById('hpResult').innerHTML = `
+    <div class="hp-card">
+      <div class="hp-card-title">월 예상 수령액</div>
+      <div class="hp-card-val">${won(monthlyFixed)}</div>
+      <div class="hp-card-desc">${type === 'lifetime' ? '종신지급형 — 사망 시까지 지급' : '확정기간형 — 선택 기간 동안 지급'}</div>
+    </div>
+    <div class="hp-card">
+      <div class="hp-card-title">연간 수령액</div>
+      <div class="hp-card-val">${won(annual)}</div>
+      <div class="hp-card-desc">주택에 계속 거주하며 수령 가능</div>
+    </div>
+    <div class="hp-card">
+      <div class="hp-card-title">85세까지 총 수령 (예상)</div>
+      <div class="hp-card-val">${won(lifetime)}</div>
+      <div class="hp-card-desc">수명이 길수록 유리한 구조</div>
+    </div>
+    <div class="hp-card">
+      <div class="hp-card-title">가입 조건 요약</div>
+      <div style="font-size:12px;color:var(--gray600);line-height:1.8;margin-top:4px;">
+        ✅ 만 55세 이상<br>
+        ✅ 공시가격 12억 이하<br>
+        ✅ 1세대 1주택 (2주택 합산 12억 이하)<br>
+        ✅ 실제 거주 필수
+      </div>
+    </div>
+  `;
+}
+
+function saveRealty() {
+  if (!client) { alert('고객을 먼저 선택하세요'); return; }
+  FS.saveSection(client.id, 'realty', { memo: document.getElementById('save-memo').value });
+  FS.markDone(client.id, 'realty');
+  alert('✅ 부동산 설계가 저장되었습니다');
+}
+</script>
+</body>
+</html>

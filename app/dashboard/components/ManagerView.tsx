@@ -7,6 +7,7 @@ import FinancialCalc from "./FinancialCalc"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import { exportExcel } from "./exportExcel"
+import { getBranch } from "../../../lib/roles"
 
 export default function ManagerView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -28,10 +29,12 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
     const { data: settings } = await supabase.from("team_settings").select("*");
     setGlobalNotice(settings?.find(s => s.key === 'global_notice')?.value || "공지사항이 없습니다.");
     
-    const branchKey = `target_amt_${user.branch_name}`;
+    const branchName = getBranch(user);
+    const branchKey = `target_amt_${branchName}`;
     const branchTarget = Number(settings?.find(s => s.key === branchKey)?.value) || 2000;
 
-    const { data: users } = await supabase.from("users").select("*").eq('branch_name', user.branch_name);
+    const { data: allUsers } = await supabase.from("users").select("*");
+    const users = allUsers?.filter((u) => getBranch(u) === branchName) || [];
     const { data: allPerfs } = await supabase.from("daily_perf").select("*");
 
     if (users) {
@@ -74,7 +77,7 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
         head: [['성명', '실적(만)', '건수', '전화', '만남']],
         body: agents.map(a => [a.name, a.performance.contract_amt, a.performance.contract_cnt, a.performance.call, a.performance.meet]),
       });
-      doc.save(`${user.branch_name}_Report_${monthKey}.pdf`);
+      doc.save(`${getBranch(user)}_Report_${monthKey}.pdf`);
     }
     setShowExportOpt(false);
   };
@@ -83,7 +86,7 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
     return (
       <div className="flex-1 animate-in fade-in duration-500">
         <div className="flex justify-end p-4">
-          <button onClick={() => setActiveTab(null)} className="bg-black text-[#d4af37] px-6 py-2 rounded-full font-black italic text-xs border-2 border-[#d4af37]">CLOSE ×</button>
+          <button onClick={() => setActiveTab(null)} className="rounded-xl bg-[#1a3a6e] px-5 py-2 text-[13px] font-black text-white hover:bg-[#2563eb] transition-all">닫기</button>
         </div>
         <FinancialCalc />
       </div>
@@ -94,43 +97,43 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
 
   return (
     <div className="flex-1 space-y-6 font-black p-4 md:p-6 text-black">
-      <section className="bg-black p-8 rounded-[3rem] text-white border-4 border-[#d4af37] shadow-xl">
+      <section className="bg-[#1a3a6e] p-8 rounded-2xl text-white border border-[#1a3a6e] shadow-xl">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <p className="text-[#d4af37] text-xs italic mb-1 uppercase">{user.branch_name} Branch Goal</p>
-            <h2 className="text-3xl italic font-black">{branchTotal.amt.toLocaleString()} / {branchTotal.targetAmt.toLocaleString()} 만</h2>
+            <p className="text-sky-200 text-[13px] mb-1">{getBranch(user)} 지점 목표</p>
+            <h2 className="text-3xl font-black">{branchTotal.amt.toLocaleString()} / {branchTotal.targetAmt.toLocaleString()} 만</h2>
           </div>
-          <span className="text-5xl italic font-black text-[#d4af37]">{branchRate}%</span>
+          <span className="text-5xl font-black text-white">{branchRate}%</span>
         </div>
         <div className="w-full h-4 bg-white/10 rounded-full border border-white/20 overflow-hidden">
-          <div className="bg-[#d4af37] h-full transition-all duration-1000" style={{ width: `${Math.min(branchRate, 100)}%` }} />
+          <div className="bg-[#0ea5e9] h-full transition-all duration-1000" style={{ width: `${Math.min(branchRate, 100)}%` }} />
         </div>
       </section>
 
       <div className="grid grid-cols-3 gap-3">
-        <ActivityCard label="Total Call" val={branchTotal.call} color="bg-blue-50 text-blue-600" />
-        <ActivityCard label="Total Meet" val={branchTotal.meet} color="bg-orange-50 text-orange-600" />
-        <ActivityCard label="Total PT" val={branchTotal.pt} color="bg-purple-50 text-purple-600" />
+        <ActivityCard label="전화 합계" val={branchTotal.call} color="bg-blue-50 text-blue-600" />
+        <ActivityCard label="만남 합계" val={branchTotal.meet} color="bg-orange-50 text-orange-600" />
+        <ActivityCard label="제안 합계" val={branchTotal.pt} color="bg-purple-50 text-purple-600" />
       </div>
 
       <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-        <button onClick={() => setActiveTab('finance')} className="whitespace-nowrap bg-white border-2 border-black px-6 py-4 rounded-2xl text-xs italic font-black uppercase hover:bg-black hover:text-[#d4af37] transition-all">영업도구</button>
-        <button onClick={() => setShowExportOpt(!showExportOpt)} className="whitespace-nowrap bg-white border-2 border-black px-6 py-4 rounded-2xl text-xs italic font-black uppercase relative">
+        <button onClick={() => setActiveTab('finance')} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black hover:bg-[#1a3a6e] hover:text-white transition-all">영업도구</button>
+        <button onClick={() => setShowExportOpt(!showExportOpt)} className="whitespace-nowrap bg-white border border-slate-200 px-6 py-4 rounded-2xl text-[13px] font-black relative">
           리포트 출력
           {showExportOpt && (
             <div className="absolute top-full left-0 mt-2 bg-white border-2 border-black rounded-xl shadow-2xl z-50 min-w-[140px] text-black overflow-hidden">
-              <button onClick={() => handleExport('excel')} className="w-full p-4 border-b hover:bg-slate-100 text-xs">EXCEL Export</button>
-              <button onClick={() => handleExport('pdf')} className="w-full p-4 hover:bg-slate-100 text-xs">PDF Export</button>
+              <button onClick={() => handleExport('excel')} className="w-full p-4 border-b hover:bg-slate-100 text-[13px]">엑셀 출력</button>
+              <button onClick={() => handleExport('pdf')} className="w-full p-4 hover:bg-slate-100 text-[13px]">PDF 출력</button>
             </div>
           )}
         </button>
       </div>
 
-      <section className="bg-white p-6 rounded-[2.5rem] border shadow-sm">
-        <h2 className="text-lg mb-6 border-l-8 border-black pl-4 italic uppercase font-black">Agent Activity</h2>
+      <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 className="text-lg mb-6 border-l-[6px] border-[#2563eb] pl-4 font-black text-[#1a3a6e]">지점 직원 활동</h2>
         <div className="space-y-4">
           {agents.map(a => (
-            <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-5 bg-white rounded-[2rem] border-2 border-slate-100 hover:border-black transition-all cursor-pointer">
+            <div key={a.id} onClick={() => { setSelectedAgent(a); setActiveTab('act'); }} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:border-[#2563eb] hover:bg-white transition-all cursor-pointer">
               <div className="flex justify-between items-start mb-4">
                 <p className="text-xl font-black">{a.name}</p>
                 <p className="text-sm font-black text-blue-600">{Number(a.performance.contract_amt).toLocaleString()}만</p>
@@ -155,8 +158,8 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
 function ActivityCard({ label, val, color }: any) {
   return (
     <div className={`${color} p-4 rounded-2xl border border-black/5 text-center`}>
-      <p className="text-[8px] font-black uppercase opacity-60 mb-1">{label}</p>
-      <p className="text-lg italic font-black">{val}건</p>
+      <p className="text-[13px] font-black opacity-60 mb-1">{label}</p>
+      <p className="text-lg font-black">{val}건</p>
     </div>
   )
 }
@@ -164,8 +167,8 @@ function ActivityCard({ label, val, color }: any) {
 function MiniStat({ label, val }: any) {
   return (
     <div className="text-center">
-      <span className="text-[8px] text-slate-400 block">{label}</span>
-      <span className="text-xs font-black italic">{val}</span>
+      <span className="text-[13px] text-slate-400 block">{label}</span>
+      <span className="text-[13px] font-black">{val}</span>
     </div>
   )
 }

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퇴직설계 | MetaRich Signal</title>
+<script src="common.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style id="commonStyle"></style>
+<style>
+.compare-3col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.ret-card{border-radius:var(--radius);padding:22px;border:1.5px solid var(--gray200);transition:.2s;}
+.ret-card:hover{box-shadow:var(--shadow-lg);}
+.ret-card.db{border-top:4px solid #2563eb;background:linear-gradient(135deg,#eff6ff,#fff);}
+.ret-card.dc{border-top:4px solid #059669;background:linear-gradient(135deg,#f0fdf4,#fff);}
+.ret-card.irp{border-top:4px solid #7c3aed;background:linear-gradient(135deg,#f5f3ff,#fff);}
+.ret-card-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.ret-card-tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;margin-bottom:12px;}
+.db .ret-card-tag{background:#dbeafe;color:#2563eb;}
+.dc .ret-card-tag{background:#d1fae5;color:#059669;}
+.irp .ret-card-tag{background:#ede9fe;color:#7c3aed;}
+.ret-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--gray100);font-size:12px;line-height:1.5;}
+.ret-row:last-child{border:none;}
+.ret-row-label{color:var(--gray600);font-weight:600;flex-shrink:0;margin-right:8px;}
+.ret-row-val{color:var(--gray800);text-align:right;}
+
+.public-pension-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.pp-tab{padding:9px 20px;border-radius:99px;border:2px solid var(--gray200);
+  font-size:13px;font-weight:600;cursor:pointer;transition:.18s;background:var(--white);color:var(--gray600);}
+.pp-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+.calc-result-box{background:linear-gradient(135deg,#1a3a6e,#1e40af);border-radius:var(--radius);
+  padding:24px;color:#fff;margin-top:20px;}
+.calc-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;}
+.calc-result-item{background:rgba(255,255,255,.1);border-radius:var(--radius-sm);padding:14px;text-align:center;}
+.calc-result-val{font-family:'Montserrat',sans-serif;font-size:20px;font-weight:900;color:#fbbf24;}
+.calc-result-label{font-size:11px;color:rgba(255,255,255,.7);margin-top:3px;}
+
+.responsibility-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.resp-box{padding:18px;border-radius:var(--radius-sm);border:1.5px solid var(--gray200);}
+.resp-box.company{background:#eff6ff;border-color:#93c5fd;}
+.resp-box.employee{background:#f0fdf4;border-color:#6ee7b7;}
+.resp-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+.company .resp-title{color:#1d4ed8;}
+.employee .resp-title{color:#059669;}
+</style>
+</head>
+<body>
+<div id="navArea"></div>
+<main class="fs-main">
+  <div class="page-header">
+    <div class="page-title">🏦 퇴직 <span>설계</span></div>
+    <div class="page-sub" id="clientBadge">DB·DC·IRP 차이 및 공적연금 통합 설계</div>
+  </div>
+
+  <!-- ① DB / DC / IRP 비교 -->
+  <div class="card">
+    <div class="card-title">퇴직연금 3종 완전 비교 — DB · DC · IRP</div>
+    <div style="margin-bottom:14px;padding:12px 16px;background:#fffbeb;border-radius:var(--radius-sm);font-size:13px;color:#92400e;">
+      💡 <strong>DB는 회사 책임, DC는 본인 책임</strong>이 핵심 차이입니다. IRP는 개인이 추가 납입하는 보조 계좌입니다.
+    </div>
+    <div class="compare-3col">
+      <div class="ret-card db">
+        <div class="ret-card-title" style="color:#2563eb;">🏢 DB형</div>
+        <div class="ret-card-tag">확정급여형</div>
+        <div class="ret-row"><span class="ret-row-label">운용 주체</span><span class="ret-row-val" style="color:#dc2626;font-weight:700;">회사 (사용자)</span></div>
+        <div class="ret-row"><span class="ret-row-label">수익 귀속</span><span class="ret-row-val">회사가 책임</span></div>
+        <div class="ret-row"><span class="ret-row-label">퇴직금 계산</span><span class="ret-row-val">직전 3개월<br>평균임금 × 근속연수</span></div>
+        <div class="ret-row"><span class="ret-row-label">개인 추가납입</span><span class="ret-row-val" style="color:#dc2626;">불가</span></div>
+        <div class="ret-row"><span class="ret-row-label">임금상승 효과</span><span class="ret-row-val" style="color:#059669;">✓ 자동 반영</span></div>
+        <div class="ret-row"><span class="ret-row-label">적합한 상황</span><span class="ret-row-val">임금 인상 빠른<br>대기업 장기근속</span></div>
+        <div style="margin-top:12px;padding:10px;background:#eff6ff;border-radius:8px;font-size:12px;color:#1d4ed8;">
+          퇴직 시: 평균임금 400만원 × 20년 = <strong>8,000만원</strong> 확정
+        </div>
+      </div>
+      <div class="ret-card dc">
+        <div class="ret-card-title" style="color:#059669;">👤 DC형</div>
+        <div class="ret-card-tag">확정기여형</div>
+        <div class="ret-row"><span class="ret-row-label">운용 주체</span><span class="ret-row-val" style="color:#059669;font-weight:700;">근로자 (본인)</span></div>
+        <div class="ret-row"><span class="ret-row-label">수익 귀속</span><span class="ret-row-val" style="color:#059669;">본인이 전부 취득</span></div>
+        <div class="ret-row"><span class="ret-row-label">회사 납입</span><span class="ret-row-val">연간 임금총액의<br>1/12 이상</span></div>
+        <div class="ret-row"><span class="ret-row-label">개인 추가납입</span><span class="ret-row-val" style="color:#059669;">✓ 가능 (연 1,800만원)</span></div>
+        <div class="ret-row"><span class="ret-row-label">운용 리스크</span><span class="ret-row-val" style="color:#dc2626;">본인 부담</span></div>
+        <div class="ret-row"><span class="ret-row-label">적합한 상황</span><span class="ret-row-val">이직 잦음<br>투자 능력 있음</span></div>
+        <div style="margin-top:12px;padding:10px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#065f46;">
+          ETF·펀드 운용으로 수익 추구 가능 — <strong>본인이 운용 결정</strong>
+        </div>
+      </div>
+      <div class="ret-card irp">
+        <div class="ret-card-title" style="color:#7c3aed;">💼 IRP</div>
+        <div class="ret-card-tag">개인형 퇴직연금</div>
+        <div class="ret-row"><span class="ret-row-label">성격</span><span class="ret-row-val">퇴직금 수령 + 추가납입</span></div>
+        <div class="ret-row"><span class="ret-row-label">세액공제</span><span class="ret-row-val" style="color:#7c3aed;font-weight:700;">연 300만원 (연금저축 합산 900만원)</span></div>
+        <div class="ret-row"><span class="ret-row-label">필수 수령</span><span class="ret-row-val">퇴직 시 퇴직금 반드시 이체</span></div>
+        <div class="ret-row"><span class="ret-row-label">수령 나이</span><span class="ret-row-val">만 55세 이후</span></div>
+        <div class="ret-row"><span class="ret-row-label">예금자 보호</span><span class="ret-row-val" style="color:#059669;">1억원까지 별도 보호</span></div>
+        <div class="ret-row"><span class="ret-row-label">이직 시</span><span class="ret-row-val">퇴직금 자동 이체 후 재운용</span></div>
+        <div style="margin-top:12px;padding:10px;background:#ede9fe;border-radius:8px;font-size:12px;color:#5b21b6;">
+          세액공제 + 퇴직금 운용 = <strong>이중 절세 효과</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- 책임 소재 -->
+    <div class="card-title" style="margin-bottom:14px;">운용 책임자별 특징</div>
+    <div class="responsibility-grid">
+      <div class="resp-box company">
+        <div class="resp-title">🏢 DB형 — 회사가 책임</div>
+        <div style="font-size:12px;color:var(--gray600);line-height:1.8;">
+          ✅ 운용 손실이 나도 회사가 부담<br>
+          ✅ 임금 인상 시 자동으로 퇴직금 증가<br>
+          ✅ 안정적인 확정 금액 보장<br>
+          ⚠️ 근로자가 운용에 관여 불가<br>
+          ⚠️ 회사 도산 시 일부 위험 가능
+        </div>
+      </div>
+      <div class="resp-box employee">
+        <div class="resp-title">👤 DC형 — 근로자가 책임</div>
+        <div style="font-size:12px;color:var(--gray600);line-height:1.8;">
+          ✅ 운용 수익이 나면 전부 본인 취득<br>
+          ✅ ETF·펀드 자유롭게 운용 가능<br>
+          ✅ 이직해도 그대로 유지<br>
+          ⚠️ 운용 손실은 본인 책임<br>
+          ⚠️ 투자 지식 필요
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② DB / DC 퇴직금 계산기 -->
+  <div class="card">
+    <div class="card-title">퇴직연금 수령액 계산기</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-db')">DB형 계산</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-dc')">DC형 계산</button>
+    </div>
+
+    <div class="tab-content active" id="tab-db">
+      <div class="form-grid form-row-3" style="margin-bottom:16px;">
+        <div class="fg"><label>현재 월 평균임금 (원)</label><input type="number" id="db-salary" placeholder="4,000,000" oninput="calcDB()"></div>
+        <div class="fg"><label>퇴직 시 예상 월 평균임금 (원)</label><input type="number" id="db-retire-salary" placeholder="6,000,000" oninput="calcDB()"></div>
+        <div class="fg"><label>총 근속 예정 연수</label><input type="number" id="db-years" placeholder="20" min="1" oninput="calcDB()"></div>
+      </div>
+      <div id="dbResult" style="display:none;">
+        <div class="calc-result-box">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;">🏢 DB형 퇴직금 계산 결과</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.7);">퇴직 시 확정 수령액</div>
+          <div class="calc-result-grid">
+            <div class="calc-result-item"><div class="calc-result-val" id="db-total">-</div><div class="calc-result-label">퇴직금 총액</div></div>
+            <div class="calc-result-item"><div class="calc-result-val" id="db-monthly">-</div><div class="calc-result-label">연금 수령 시 월 수령액 (20년)</div></div>
+            <div class="calc-result-item"><div class="calc-result-val" id="db-tax">-</div><div class="calc-result-label">퇴직소득세 (근속 20년)</div></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:#eff6ff;border-radius:var(--radius-sm);font-size:12px;color:#1d4ed8;">
+          💡 DB형 계산식: <strong>퇴직 직전 3개월 평균임금 × 근속연수</strong><br>
+          임금이 많이 오를수록, 오래 근무할수록 유리합니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-dc">
+      <div class="form-grid form-row-3" style="margin-bottom:16px;">
+        <div class="fg"><label>연간 회사 납입액 (원)</label><input type="number" id="dc-company" placeholder="4,800,000" oninput="calcDC()"></div>
+        <div class="fg"><label>개인 추가납입 월액 (원)</label><input type="number" id="dc-personal" placeholder="300,000" oninput="calcDC()"></div>
+        <div class="fg"><label>운용 예상 수익률 (%)</label>
+          <select id="dc-rate" onchange="calcDC()">
+            <option value="3">3% (안정형 예금)</option>
+            <option value="5" selected>5% (채권혼합형)</option>
+            <option value="7">7% (주식혼합형)</option>
+            <option value="9">9% (글로벌ETF)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:16px;max-width:200px;">
+        <label>운용 기간 (년)</label>
+        <input type="number" id="dc-years" placeholder="20" min="1" oninput="calcDC()">
+      </div>
+      <div id="dcResult" style="display:none;">
+        <div class="calc-result-box" style="background:linear-gradient(135deg,#065f46,#059669);">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;">👤 DC형 퇴직금 계산 결과</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.7);">운용 수익 포함 예상 적립액</div>
+          <div class="calc-result-grid">
+            <div class="calc-result-item"><div class="calc-result-val" id="dc-total">-</div><div class="calc-result-label">총 예상 적립액</div></div>
+            <div class="calc-result-item"><div class="calc-result-val" id="dc-monthly">-</div><div class="calc-result-label">월 수령액 (20년 수령 시)</div></div>
+            <div class="calc-result-item"><div class="calc-result-val" id="dc-gain">-</div><div class="calc-result-label">운용 수익 (납입액 초과분)</div></div>
+          </div>
+        </div>
+        <canvas id="dcChart" height="80" style="margin-top:16px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 공적연금 설계 -->
+  <div class="card">
+    <div class="card-title">공적연금 설계 — 직업군별 맞춤 계산</div>
+    <div class="public-pension-tabs">
+      <div class="pp-tab active" onclick="showPublicPension('national',this)">🏛️ 국민연금</div>
+      <div class="pp-tab" onclick="showPublicPension('civil',this)">🎖️ 공무원연금</div>
+      <div class="pp-tab" onclick="showPublicPension('teacher',this)">📚 사학연금</div>
+      <div class="pp-tab" onclick="showPublicPension('military',this)">⚔️ 군인연금</div>
+    </div>
+    <div id="publicPensionContent"></div>
+  </div>
+
+  <!-- ④ 저장 -->
+  <div class="card">
+    <div class="card-title">퇴직 설계 저장</div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label>퇴직 상담 메모</label>
+      <textarea id="save-memo" placeholder="퇴직연금 유형, 전환 계획, 공적연금 예상액 등..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-success" onclick="saveRetirement()">💾 저장</button>
+      <button class="btn btn-ghost" onclick="location.href='index.html'">← 대시보드</button>
+      <button class="btn btn-primary" onclick="location.href='08_investment.html'">투자설계로 →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+document.getElementById('navArea').innerHTML = renderNav('retirement');
+const client = FS.getActive();
+if (client) {
+  document.getElementById('clientBadge').textContent = client.name + ' 고객님 퇴직설계';
+  const saved = FS.getSection(client.id,'retirement');
+  if (saved && saved.memo) document.getElementById('save-memo').value = saved.memo;
+}
+
+function fw(n) { return Math.round(n/10000).toLocaleString()+'만원'; }
+
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── DB 계산 ── */
+function calcDB() {
+  const salary = parseFloat(document.getElementById('db-retire-salary').value)||0;
+  const years  = parseFloat(document.getElementById('db-years').value)||0;
+  if (!salary || !years) { document.getElementById('dbResult').style.display='none'; return; }
+  const total = Math.round(salary * years);
+  const monthly = Math.round(total / (20*12)); // 20년 수령 기준
+  // 퇴직소득세 (근속 20년 기준 세액공제 약 50% 적용 근사)
+  const taxBase = Math.max(0, total - years * 1000000 * 2); // 근속연수 × 200만 공제
+  const tax = Math.round(taxBase * 0.06); // 근사치
+  document.getElementById('db-total').textContent = fw(total);
+  document.getElementById('db-monthly').textContent = fw(monthly);
+  document.getElementById('db-tax').textContent = fw(tax) + ' (근사)';
+  document.getElementById('dbResult').style.display = 'block';
+}
+
+/* ── DC 계산 ── */
+let dcChart = null;
+function calcDC() {
+  const company  = parseFloat(document.getElementById('dc-company').value)||0;
+  const personal = parseFloat(document.getElementById('dc-personal').value)||0;
+  const rate     = parseFloat(document.getElementById('dc-rate').value)/100;
+  const years    = parseFloat(document.getElementById('dc-years').value)||20;
+  if (!company) { document.getElementById('dcResult').style.display='none'; return; }
+  const monthlyTotal = company/12 + personal;
+  const mr = rate/12;
+  const fv = Math.round(monthlyTotal * ((Math.pow(1+mr, years*12)-1)/mr));
+  const total_input = Math.round(monthlyTotal * years * 12);
+  const gain = fv - total_input;
+  const monthly = Math.round(fv/(20*12));
+  document.getElementById('dc-total').textContent   = fw(fv);
+  document.getElementById('dc-monthly').textContent = fw(monthly);
+  document.getElementById('dc-gain').textContent    = fw(gain) + ' (+'+ Math.round(gain/total_input*100) +'%)';
+  document.getElementById('dcResult').style.display = 'block';
+  // 차트
+  const yearArr = Array.from({length:Math.floor(years)+1},(_,i)=>i);
+  const dataFV = yearArr.map(y=>Math.round(monthlyTotal*((Math.pow(1+mr,y*12)-1)/mr)/10000));
+  const dataIN = yearArr.map(y=>Math.round(monthlyTotal*y*12/10000));
+  if(dcChart) dcChart.destroy();
+  dcChart = new Chart(document.getElementById('dcChart'),{
+    type:'line',
+    data:{labels:yearArr.map(y=>y+'년'),datasets:[
+      {label:'운용 후 적립액',data:dataFV,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.08)',fill:true,tension:.4,pointRadius:2},
+      {label:'총 납입액',data:dataIN,borderColor:'#94a3b8',borderDash:[5,5],fill:false,tension:.4,pointRadius:2}
+    ]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Noto Sans KR',size:11},boxWidth:12}}},scales:{
+      x:{grid:{display:false},ticks:{maxTicksLimit:8}},
+      y:{ticks:{callback:v=>v>=10000?Math.floor(v/10000)+'억':v.toLocaleString()+'만'}}
+    }}
+  });
+}
+
+/* ── 공적연금 ── */
+const PUBLIC_PENSIONS = {
+  national: {
+    title:'🏛️ 국민연금',
+    desc:'소득의 9% 납부 (근로자 4.5% + 사업주 4.5%). 40년 납부 기준 소득대체율 40%.',
+    fields:[
+      {id:'np-income',label:'현재 월 소득 (원)',placeholder:'3,000,000'},
+      {id:'np-years',label:'납부 예정 기간 (년)',placeholder:'30'},
+    ],
+    calc: () => {
+      const income = parseFloat(document.getElementById('np-income').value)||0;
+      const years  = parseFloat(document.getElementById('np-years').value)||0;
+      if(!income||!years) return null;
+      // 국민연금 연금액 근사 계산
+      // 기본연금액 = (A값 + B값) × 지급률 / 12
+      // 간단 근사: 평균소득 × 소득대체율(years/40 × 40%)
+      const A = 2900000; // 2024년 기준 A값 (전체 가입자 평균 소득)
+      const B = income;
+      const rate = Math.min(years/40, 1) * 0.40;
+      const monthly = Math.round((A*0.5 + B*0.5) * rate / 12);
+      const contribute = Math.round(income * 0.045 * years * 12);
+      return {
+        items:[
+          {label:'예상 월 연금액', val:fw(monthly), note:'(65세 수령 기준)'},
+          {label:'본인 납부 총액', val:fw(contribute), note:'('+years+'년 기준)'},
+          {label:'소득대체율', val:(rate*100).toFixed(0)+'%', note:'('+years+'년 기준)'},
+        ],
+        note:'※ 실제 연금액은 납부 이력, A값 변동에 따라 다릅니다. 국민연금공단 예상연금조회를 이용하세요.'
+      };
+    }
+  },
+  civil: {
+    title:'🎖️ 공무원연금',
+    desc:'기준소득월액의 18% 납부 (본인 9% + 정부 9%). 재직 기간에 따라 연금액 결정.',
+    fields:[
+      {id:'cv-salary',label:'기준소득월액 (원)',placeholder:'4,000,000'},
+      {id:'cv-years',label:'재직 기간 (년)',placeholder:'30'},
+    ],
+    calc: () => {
+      const salary = parseFloat(document.getElementById('cv-salary').value)||0;
+      const years  = parseFloat(document.getElementById('cv-years').value)||0;
+      if(!salary||!years) return null;
+      // 공무원연금 = 기준소득월액 × 재직기간 × 1.7% (2016년 이후 개혁)
+      const rate = Math.min(years * 0.017, 0.60); // 최대 60%
+      const monthly = Math.round(salary * rate);
+      const contribute = Math.round(salary * 0.09 * years * 12);
+      return {
+        items:[
+          {label:'예상 월 연금액', val:fw(monthly), note:'(퇴직 후 즉시 수령)'},
+          {label:'본인 납부 총액', val:fw(contribute), note:'('+years+'년 기준)'},
+          {label:'소득대체율', val:(rate*100).toFixed(1)+'%', note:'재직 '+years+'년 기준'},
+        ],
+        note:'※ 2016년 개혁 이후 기준. 실제 연금액은 공무원연금공단에서 확인하세요. 퇴직 즉시 수령 가능 (국민연금 65세 대비 유리).'
+      };
+    }
+  },
+  teacher: {
+    title:'📚 사학연금',
+    desc:'공무원연금과 동일한 구조. 기준소득월액의 18% 납부. 사립학교 교직원 대상.',
+    fields:[
+      {id:'th-salary',label:'기준소득월액 (원)',placeholder:'4,000,000'},
+      {id:'th-years',label:'재직 기간 (년)',placeholder:'30'},
+    ],
+    calc: () => {
+      const salary = parseFloat(document.getElementById('th-salary').value)||0;
+      const years  = parseFloat(document.getElementById('th-years').value)||0;
+      if(!salary||!years) return null;
+      const rate = Math.min(years * 0.017, 0.60);
+      const monthly = Math.round(salary * rate);
+      const contribute = Math.round(salary * 0.09 * years * 12);
+      return {
+        items:[
+          {label:'예상 월 연금액', val:fw(monthly), note:'(퇴직 후 즉시 수령)'},
+          {label:'본인 납부 총액', val:fw(contribute), note:'('+years+'년 기준)'},
+          {label:'소득대체율', val:(rate*100).toFixed(1)+'%', note:'재직 '+years+'년 기준'},
+        ],
+        note:'※ 공무원연금과 동일한 계산 방식 적용. 실제 금액은 사학연금공단에서 확인하세요.'
+      };
+    }
+  },
+  military: {
+    title:'⚔️ 군인연금',
+    desc:'기준소득월액의 14% 납부 (본인 7% + 정부 7%). 20년 이상 복무 시 수령 가능.',
+    fields:[
+      {id:'ml-salary',label:'기준소득월액 (원)',placeholder:'3,500,000'},
+      {id:'ml-years',label:'복무 기간 (년)',placeholder:'20'},
+    ],
+    calc: () => {
+      const salary = parseFloat(document.getElementById('ml-salary').value)||0;
+      const years  = parseFloat(document.getElementById('ml-years').value)||0;
+      if(!salary||!years) return null;
+      if(years < 20) return {
+        items:[{label:'⚠️ 수령 불가', val:'20년 미만', note:'군인연금은 20년 이상 복무해야 수령 가능'}],
+        note:'20년 미만 복무 시 퇴직일시금만 지급됩니다.'
+      };
+      const rate = Math.min(years * 0.017, 0.625); // 최대 62.5%
+      const monthly = Math.round(salary * rate);
+      const contribute = Math.round(salary * 0.07 * years * 12);
+      return {
+        items:[
+          {label:'예상 월 연금액', val:fw(monthly), note:'(퇴직 즉시 수령)'},
+          {label:'본인 납부 총액', val:fw(contribute), note:'('+years+'년 기준)'},
+          {label:'소득대체율', val:(rate*100).toFixed(1)+'%', note:'복무 '+years+'년 기준'},
+        ],
+        note:'※ 군인연금은 20년 이상 복무 시 퇴역 즉시 수령. 국민연금·공무원연금과 별개로 운영됩니다.'
+      };
+    }
+  }
+};
+
+function showPublicPension(type, btn) {
+  document.querySelectorAll('.pp-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const pp = PUBLIC_PENSIONS[type];
+  document.getElementById('publicPensionContent').innerHTML = `
+    <div style="padding:14px;background:var(--gray100);border-radius:var(--radius-sm);margin-bottom:16px;font-size:13px;color:var(--gray600);">
+      ${pp.desc}
+    </div>
+    <div class="form-grid form-row-3" style="margin-bottom:16px;">
+      ${pp.fields.map(f=>`
+        <div class="fg"><label>${f.label}</label>
+          <input type="number" id="${f.id}" placeholder="${f.placeholder}" oninput="calcPublicPension('${type}')">
+        </div>
+      `).join('')}
+      <div class="fg" style="display:flex;align-items:flex-end;">
+        <button class="btn btn-accent" onclick="calcPublicPension('${type}')" style="width:100%;padding:11px;">📊 계산하기</button>
+      </div>
+    </div>
+    <div id="ppResult" style="display:none;"></div>
+  `;
+}
+
+function calcPublicPension(type) {
+  const pp  = PUBLIC_PENSIONS[type];
+  const res = pp.calc();
+  if (!res) return;
+  document.getElementById('ppResult').style.display = 'block';
+  document.getElementById('ppResult').innerHTML = `
+    <div class="calc-result-box">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px;">${pp.title} 계산 결과</div>
+      <div class="calc-result-grid">
+        ${res.items.map(item=>`
+          <div class="calc-result-item">
+            <div class="calc-result-val">${item.val}</div>
+            <div class="calc-result-label">${item.label}</div>
+            ${item.note?`<div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;">${item.note}</div>`:''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:12px;background:#fffbeb;border-radius:var(--radius-sm);font-size:12px;color:#92400e;">
+      ${res.note}
+    </div>
+  `;
+}
+
+function saveRetirement() {
+  if(!client){alert('고객을 먼저 선택하세요');return;}
+  FS.saveSection(client.id,'retirement',{memo:document.getElementById('save-memo').value});
+  FS.markDone(client.id,'retirement');
+  alert('✅ 퇴직 설계가 저장되었습니다');
+}
+
+// 초기화
+showPublicPension('national', document.querySelector('.pp-tab'));
+</script>
+</body>
+</html>

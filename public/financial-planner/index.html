@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaRich Signal — 재무상담 시스템</title>
+<script src="common.js"></script>
+<style id="commonStyle"></style>
+<style>
+.hero{background:linear-gradient(135deg,var(--primary) 0%,#1e40af 60%,#0ea5e9 100%);
+  border-radius:var(--radius);padding:36px 40px;color:#fff;margin-bottom:28px;
+  position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;right:-60px;top:-60px;width:300px;height:300px;
+  border-radius:50%;background:rgba(255,255,255,.05);}
+.hero::after{content:'';position:absolute;right:40px;bottom:-80px;width:200px;height:200px;
+  border-radius:50%;background:rgba(255,255,255,.04);}
+.hero-title{font-family:'Montserrat',sans-serif;font-size:32px;font-weight:900;
+  margin-bottom:8px;position:relative;}
+.hero-sub{font-size:14px;color:rgba(255,255,255,.7);position:relative;}
+.hero-badges{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;position:relative;}
+.hero-badge{padding:5px 14px;border-radius:99px;background:rgba(255,255,255,.15);
+  font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.2);}
+
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px;}
+.type-card{border:2.5px solid var(--gray200);border-radius:var(--radius);padding:20px;
+  cursor:pointer;transition:.22s;text-align:center;}
+.type-card:hover,.type-card.active{border-color:var(--primary-mid);
+  box-shadow:0 8px 32px rgba(37,99,235,.15);transform:translateY(-2px);}
+.type-card.active{background:linear-gradient(135deg,#eff6ff,#dbeafe);}
+.type-icon{font-size:36px;margin-bottom:10px;}
+.type-name{font-size:15px;font-weight:700;color:var(--gray800);margin-bottom:6px;}
+.type-desc{font-size:12px;color:var(--gray400);line-height:1.5;}
+.type-worries{margin-top:10px;display:flex;flex-direction:column;gap:4px;}
+.type-worry{font-size:11px;color:var(--gray600);background:var(--gray100);
+  padding:4px 8px;border-radius:6px;text-align:left;}
+
+.nav-modules{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.module-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:22px;cursor:pointer;transition:.22s;border:1.5px solid transparent;
+  display:flex;flex-direction:column;}
+.module-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+.module-card.risk:hover{border-color:#ef4444;}
+.module-card.pension:hover{border-color:#f59e0b;}
+.module-card.tax:hover{border-color:#059669;}
+.module-card.realty:hover{border-color:#7c3aed;}
+.module-card.inherit:hover{border-color:#0d9488;}
+.module-card.report:hover{border-color:var(--primary-mid);}
+.module-icon{font-size:32px;margin-bottom:12px;}
+.module-name{font-size:15px;font-weight:700;color:var(--gray800);margin-bottom:6px;}
+.module-desc{font-size:12px;color:var(--gray400);line-height:1.6;flex:1;}
+.module-arrow{margin-top:14px;font-size:12px;font-weight:700;color:var(--primary-mid);}
+.module-done{display:inline-flex;align-items:center;gap:4px;font-size:11px;
+  font-weight:700;color:var(--mint);margin-top:8px;}
+
+.client-list-wrap{max-height:320px;overflow-y:auto;}
+.client-row{display:flex;align-items:center;gap:14px;padding:14px 16px;
+  border-radius:var(--radius-sm);transition:.18s;cursor:pointer;border:1.5px solid transparent;}
+.client-row:hover{background:var(--gray100);border-color:var(--gray200);}
+.client-row.active-client{background:#eff6ff;border-color:#93c5fd;}
+.client-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;
+  font-size:16px;flex-shrink:0;}
+.client-info strong{font-size:14px;font-weight:700;color:var(--gray800);}
+.client-info p{font-size:12px;color:var(--gray400);}
+.client-progress{margin-left:auto;display:flex;gap:4px;}
+.progress-dot{width:8px;height:8px;border-radius:50%;background:var(--gray200);}
+.progress-dot.done{background:var(--mint);}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);
+  padding:18px 20px;}
+.stat-val{font-family:'Montserrat',sans-serif;font-size:28px;font-weight:900;color:var(--primary);}
+.stat-label{font-size:12px;color:var(--gray400);margin-top:2px;}
+</style>
+</head>
+<body>
+<div id="navArea"></div>
+
+<main class="fs-main">
+  <div class="hero">
+    <div class="hero-title">재무상담 종합 솔루션</div>
+    <div class="hero-sub">고객 정보를 입력하고 맞춤 재무설계 포트폴리오를 제공하세요</div>
+    <div class="hero-badges">
+      <span class="hero-badge">🛡️ 위험관리</span>
+      <span class="hero-badge">🌅 연금설계</span>
+      <span class="hero-badge">💸 절세전략</span>
+      <span class="hero-badge">🏢 부동산</span>
+      <span class="hero-badge">📜 상속·증여</span>
+      <span class="hero-badge">📊 종합리포트</span>
+    </div>
+  </div>
+
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-label">총 고객 수</div></div>
+    <div class="stat-card"><div class="stat-val" id="statActive">-</div><div class="stat-label">현재 상담 고객</div></div>
+    <div class="stat-card"><div class="stat-val" id="statDone">0</div><div class="stat-label">완료 섹션</div></div>
+    <div class="stat-card"><div class="stat-val" id="statDate">-</div><div class="stat-label">마지막 업데이트</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:24px;">
+    <div>
+      <!-- 고객 등록 -->
+      <div class="card">
+        <div class="card-title">새 고객 등록 / 불러오기</div>
+
+        <!-- 고객 유형 선택 -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:12px;font-weight:600;color:var(--gray600);margin-bottom:10px;">고객 유형 선택</div>
+          <div class="type-grid">
+            <div class="type-card active" id="type-employee" onclick="selectType('employee')">
+              <div class="type-icon">👔</div>
+              <div class="type-name">직장인</div>
+              <div class="type-desc">급여 소득자 · 퇴직연금</div>
+              <div class="type-worries">
+                <div class="type-worry">😟 퇴직 후 소득 단절</div>
+                <div class="type-worry">😟 세금 환급 못 받음</div>
+                <div class="type-worry">😟 노후 국민연금 부족</div>
+              </div>
+            </div>
+            <div class="type-card" id="type-self" onclick="selectType('self')">
+              <div class="type-icon">🏪</div>
+              <div class="type-name">자영업자</div>
+              <div class="type-desc">사업소득자 · 폐업 리스크</div>
+              <div class="type-worries">
+                <div class="type-worry">😟 국민연금 공백</div>
+                <div class="type-worry">😟 목돈 마련 막막</div>
+                <div class="type-worry">😟 폐업·부채 위험</div>
+              </div>
+            </div>
+            <div class="type-card" id="type-freelance" onclick="selectType('freelance')">
+              <div class="type-icon">💻</div>
+              <div class="type-name">프리랜서</div>
+              <div class="type-desc">불규칙 소득 · 4대보험 공백</div>
+              <div class="type-worries">
+                <div class="type-worry">😟 소득 불규칙 불안</div>
+                <div class="type-worry">😟 4대보험 직접 납부</div>
+                <div class="type-worry">😟 노후 대비 전무</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 기본 정보 -->
+        <div class="form-grid form-row-3" style="margin-bottom:16px;">
+          <div class="fg"><label>고객명</label><input id="f-name" type="text" placeholder="홍길동"></div>
+          <div class="fg"><label>나이</label><input id="f-age" type="number" placeholder="35" min="20" max="80"></div>
+          <div class="fg"><label>성별</label>
+            <select id="f-gender"><option value="male">남성</option><option value="female">여성</option></select>
+          </div>
+        </div>
+        <div class="form-grid form-row-3" style="margin-bottom:16px;">
+          <div class="fg"><label>연소득 (원)</label><input id="f-income" type="number" placeholder="50000000"></div>
+          <div class="fg"><label>월 저축 가능액 (원)</label><input id="f-monthly" type="number" placeholder="500000"></div>
+          <div class="fg"><label>현재 자산 (원)</label><input id="f-asset" type="number" placeholder="50000000"></div>
+        </div>
+        <div class="form-grid form-row-2" style="margin-bottom:16px;">
+          <div class="fg"><label>부채 (원)</label><input id="f-debt" type="number" placeholder="0"></div>
+          <div class="fg"><label>가족 구성</label>
+            <select id="f-family">
+              <option value="single">미혼 (1인)</option>
+              <option value="couple">기혼 (부부)</option>
+              <option value="family3">기혼+자녀1</option>
+              <option value="family4">기혼+자녀2</option>
+              <option value="family5+">기혼+자녀3↑</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:20px;">
+          <label>고객 주요 고민 / 메모</label>
+          <textarea id="f-memo" placeholder="고객이 이야기한 주요 걱정이나 목표를 메모하세요..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button class="btn btn-primary" onclick="saveClient()">💾 고객 저장 · 상담 시작</button>
+          <button class="btn btn-ghost" onclick="clearForm()">🔄 초기화</button>
+        </div>
+      </div>
+
+      <!-- 상담 모듈 -->
+      <div class="card" id="moduleArea" style="display:none;">
+        <div class="card-title">상담 모듈 선택</div>
+        <div class="nav-modules">
+          <div class="module-card risk" onclick="goTo('01_risk.html')">
+            <div class="module-icon">🛡️</div>
+            <div class="module-name">위험관리 · 보험</div>
+            <div class="module-desc">보장성 vs 저축성 분리 설계<br>연령별 보험 포트폴리오<br>적정 보험료 산출</div>
+            <div class="module-arrow" id="done-risk">→ 시작하기</div>
+          </div>
+          <div class="module-card pension" onclick="goTo('02_pension.html')">
+            <div class="module-icon">🌅</div>
+            <div class="module-name">연금설계</div>
+            <div class="module-desc">세제적격 / 비적격 연금<br>역산 설계 (목표 수령액)<br>종신형 요건 + 비과세 한도</div>
+            <div class="module-arrow" id="done-pension">→ 시작하기</div>
+          </div>
+          <div class="module-card tax" onclick="goTo('03_tax.html')">
+            <div class="module-icon">💸</div>
+            <div class="module-name">절세전략</div>
+            <div class="module-desc">직장인·자영업자·프리랜서별<br>세액공제 최적화<br>IRP·연금저축·ISA 활용</div>
+            <div class="module-arrow" id="done-tax">→ 시작하기</div>
+          </div>
+          <div class="module-card realty" onclick="goTo('04_realestate.html')">
+            <div class="module-icon">🏢</div>
+            <div class="module-name">부동산</div>
+            <div class="module-desc">취득세·양도세 시뮬레이션<br>임대수익 분석<br>주택연금 설계</div>
+            <div class="module-arrow" id="done-realty">→ 시작하기</div>
+          </div>
+          <div class="module-card inherit" onclick="goTo('05_inheritance.html')">
+            <div class="module-icon">📜</div>
+            <div class="module-name">상속 · 증여</div>
+            <div class="module-desc">증여세 시뮬레이션<br>10년 공제 전략<br>보험을 활용한 상속 설계</div>
+            <div class="module-arrow" id="done-inherit">→ 시작하기</div>
+          </div>
+          <div class="module-card report" onclick="goTo('06_portfolio.html')">
+            <div class="module-icon">📊</div>
+            <div class="module-name">종합 포트폴리오</div>
+            <div class="module-desc">전 섹션 통합 리포트<br>월별 실행 계획<br>PDF 출력</div>
+            <div class="module-arrow" id="done-report">→ 시작하기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 고객 목록 -->
+    <div>
+      <div class="card" style="height:fit-content;">
+        <div class="card-title">고객 목록</div>
+        <!-- 내보내기 / 가져오기 -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px;" onclick="exportAllClients()">📤 전체 내보내기</button>
+          <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:8px;" onclick="document.getElementById('importFile').click()">📥 불러오기</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importClients(event)">
+        </div>
+        <div style="margin-bottom:12px;">
+          <input type="text" id="searchInput" placeholder="🔍 고객명 검색..."
+            style="width:100%;padding:9px 14px;border:1.5px solid var(--gray200);border-radius:var(--radius-sm);
+            font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;background:var(--gray100);"
+            oninput="renderClientList()">
+        </div>
+        <div class="client-list-wrap" id="clientList">
+          <div style="text-align:center;padding:32px;color:var(--gray400);font-size:13px;">
+            아직 등록된 고객이 없습니다
+          </div>
+        </div>
+      </div>
+
+      <!-- 현재 고객 요약 -->
+      <div class="card" id="activeClientCard" style="display:none;">
+        <div class="card-title">현재 상담 고객</div>
+        <div id="activeClientDetail"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+document.getElementById('navArea').innerHTML = renderNav('index');
+
+let selectedType = 'employee';
+
+function selectType(type) {
+  selectedType = type;
+  ['employee','self','freelance'].forEach(t =>
+    document.getElementById('type-'+t).classList.toggle('active', t === type));
+}
+
+function saveClient() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('고객명을 입력하세요'); return; }
+  const id = 'client_' + Date.now();
+  const data = {
+    id, name,
+    type: selectedType,
+    age: +document.getElementById('f-age').value || 0,
+    gender: document.getElementById('f-gender').value,
+    income: +document.getElementById('f-income').value || 0,
+    monthly: +document.getElementById('f-monthly').value || 0,
+    asset: +document.getElementById('f-asset').value || 0,
+    debt: +document.getElementById('f-debt').value || 0,
+    family: document.getElementById('f-family').value,
+    memo: document.getElementById('f-memo').value,
+    done: []
+  };
+  FS.saveClient(data);
+  FS.setActive(id);
+  renderClientList();
+  updateStats();
+  showModuleArea(data);
+  showActiveClient(data);
+}
+
+function showModuleArea(client) {
+  document.getElementById('moduleArea').style.display = 'block';
+  const sections = ['risk','pension','tax','realty','inherit','report'];
+  sections.forEach(s => {
+    const el = document.getElementById('done-'+s);
+    if (el && client.done && client.done.includes(s)) {
+      el.innerHTML = '✓ 완료됨';
+      el.style.color = 'var(--mint)';
+    }
+  });
+}
+
+function showActiveClient(client) {
+  const typeLabel = {employee:'직장인',self:'자영업자',freelance:'프리랜서'}[client.type];
+  document.getElementById('activeClientCard').style.display = 'block';
+  document.getElementById('activeClientDetail').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--primary);
+        display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;">
+        ${client.name[0]}
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:700;">${client.name}</div>
+        <div style="font-size:12px;color:var(--gray400);">${client.age}세 · ${typeLabel}</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      ${row('💰 연소득', won(client.income))}
+      ${row('📅 월 저축', won(client.monthly))}
+      ${row('🏦 현재 자산', won(client.asset))}
+      ${row('💳 부채', won(client.debt))}
+    </div>
+    ${client.memo ? `<div style="margin-top:14px;padding:12px;background:var(--gray100);
+      border-radius:var(--radius-sm);font-size:12px;color:var(--gray600);">📝 ${client.memo}</div>` : ''}
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;font-size:13px;padding:9px;" onclick="goTo('02_pension.html')">연금 설계</button>
+      <button class="btn btn-accent" style="flex:1;font-size:13px;padding:9px;" onclick="goTo('01_risk.html')">보험 분석</button>
+    </div>
+  `;
+}
+
+function row(label, val) {
+  return `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray100);">
+    <span style="color:var(--gray600);">${label}</span>
+    <span style="font-weight:600;">${val}</span>
+  </div>`;
+}
+function won(n) {
+  if (!n) return '-';
+  if (n >= 100000000) return Math.floor(n/100000000) + '억 ' + (Math.floor(n%100000000/10000)||'') + '만원';
+  if (n >= 10000) return Math.floor(n/10000) + '만원';
+  return n.toLocaleString() + '원';
+}
+
+function loadClient(id) {
+  const client = FS.getClient(id);
+  if (!client) return;
+  FS.setActive(id);
+  document.getElementById('f-name').value = client.name;
+  document.getElementById('f-age').value = client.age;
+  document.getElementById('f-gender').value = client.gender;
+  document.getElementById('f-income').value = client.income;
+  document.getElementById('f-monthly').value = client.monthly;
+  document.getElementById('f-asset').value = client.asset;
+  document.getElementById('f-debt').value = client.debt;
+  document.getElementById('f-family').value = client.family;
+  document.getElementById('f-memo').value = client.memo || '';
+  selectType(client.type || 'employee');
+  showModuleArea(client);
+  showActiveClient(client);
+  renderClientList();
+}
+
+function renderClientList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const all = FS.getAllClients();
+  const active = localStorage.getItem('fs_active');
+  const list = Object.values(all).filter(c => c.name.toLowerCase().includes(q))
+    .sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+  if (!list.length) {
+    document.getElementById('clientList').innerHTML =
+      '<div style="text-align:center;padding:32px;color:var(--gray400);font-size:13px;">등록된 고객이 없습니다</div>';
+    return;
+  }
+  const sections = ['risk','pension','tax','realty','inherit','report'];
+  document.getElementById('clientList').innerHTML = list.map(c => `
+    <div class="client-row ${c.id===active?'active-client':''}" onclick="loadClient('${c.id}')">
+      <div class="client-avatar">${c.name[0]}</div>
+      <div class="client-info">
+        <strong>${c.name}</strong>
+        <p>${c.age}세 · ${{employee:'직장인',self:'자영업자',freelance:'프리랜서'}[c.type]||''}</p>
+      </div>
+      <div class="client-progress">
+        ${sections.map(s => `<div class="progress-dot ${c.done&&c.done.includes(s)?'done':''}"></div>`).join('')}
+      </div>
+      <button onclick="event.stopPropagation();exportOneClient('${c.id}')"
+        style="margin-left:8px;padding:4px 8px;border-radius:6px;border:1px solid var(--gray200);
+        background:var(--gray100);font-size:11px;cursor:pointer;color:var(--gray600);flex-shrink:0;"
+        title="이 고객 데이터 저장">💾</button>
+      <button onclick="event.stopPropagation();deleteClient('${c.id}')"
+        style="margin-left:4px;padding:4px 8px;border-radius:6px;border:1px solid #fca5a5;
+        background:#fff7f7;font-size:11px;cursor:pointer;color:#dc2626;flex-shrink:0;"
+        title="고객 삭제">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  const all = Object.values(FS.getAllClients());
+  const active = FS.getActive();
+  document.getElementById('statTotal').textContent = all.length;
+  document.getElementById('statActive').textContent = active ? active.name : '-';
+  const done = all.reduce((s,c) => s + (c.done||[]).length, 0);
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statDate').textContent = new Date().toLocaleDateString('ko-KR',{month:'short',day:'numeric'});
+}
+
+function clearForm() {
+  ['f-name','f-age','f-income','f-monthly','f-asset','f-debt','f-memo'].forEach(id =>
+    document.getElementById(id).value = '');
+  selectType('employee');
+}
+
+/* ── JSON 내보내기 (전체) ── */
+function exportAllClients() {
+  const all = FS.getAllClients();
+  if (!Object.keys(all).length) { alert('저장된 고객이 없습니다'); return; }
+  const today = new Date().toLocaleDateString('ko-KR',{year:'2-digit',month:'2-digit',day:'2-digit'}).replace(/\. /g,'').replace('.','');
+  const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `메타리치_고객전체_${today}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ── JSON 내보내기 (개별) ── */
+function exportOneClient(id) {
+  const c = FS.getClient(id);
+  if (!c) return;
+  const today = new Date().toLocaleDateString('ko-KR',{year:'2-digit',month:'2-digit',day:'2-digit'}).replace(/\. /g,'').replace('.','');
+  const blob = new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${c.name}_${today}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ── JSON 가져오기 ── */
+function importClients(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      // 단일 고객 객체인지, 전체 맵인지 판별
+      const clients = data.id ? { [data.id]: data } : data;
+      let count = 0;
+      Object.values(clients).forEach(c => {
+        if (c.id && c.name) { FS.saveClient(c); count++; }
+      });
+      alert(`✅ ${count}명의 고객 데이터를 불러왔습니다`);
+      renderClientList();
+      updateStats();
+    } catch {
+      alert('❌ 파일 형식이 올바르지 않습니다. JSON 파일을 확인하세요.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // 같은 파일 재선택 가능하게
+}
+
+/* ── 고객 삭제 ── */
+function deleteClient(id) {
+  const c = FS.getClient(id);
+  if (!c) return;
+  if (!confirm(`'${c.name}' 고객 데이터를 삭제할까요?\n삭제 전 💾 버튼으로 저장을 권장합니다.`)) return;
+  FS.deleteClient(id);
+  if (localStorage.getItem('fs_active') === id) {
+    localStorage.removeItem('fs_active');
+    document.getElementById('activeClientCard').style.display = 'none';
+    document.getElementById('moduleArea').style.display = 'none';
+  }
+  renderClientList();
+  updateStats();
+}
+
+function goTo(page) {
+  if (!FS.getActive()) { alert('먼저 고객을 저장하거나 선택하세요'); return; }
+  location.href = page;
+}
+
+// 초기화
+const activeClient = FS.getActive();
+if (activeClient) { showModuleArea(activeClient); showActiveClient(activeClient); }
+renderClientList();
+updateStats();
+</script>
+</body>
+</html>

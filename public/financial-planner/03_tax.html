@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>절세전략 | MetaRich Signal</title>
+<script src="common.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style id="commonStyle"></style>
+<style>
+.type-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.type-sel-card{border:2px solid var(--gray200);border-radius:var(--radius);padding:18px;cursor:pointer;transition:.2s;text-align:center;}
+.type-sel-card:hover,.type-sel-card.active{border-color:var(--primary-mid);background:linear-gradient(135deg,#eff6ff,#dbeafe);}
+.type-sel-icon{font-size:30px;margin-bottom:8px;}
+.type-sel-name{font-size:14px;font-weight:700;}
+.type-sel-worry{font-size:11px;color:var(--gray400);margin-top:4px;line-height:1.5;}
+.strategy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
+.strategy-card{background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:18px;border-top:3px solid transparent;transition:.2s;}
+.strategy-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.strategy-card.s1{border-top-color:#2563eb;}.strategy-card.s2{border-top-color:#059669;}
+.strategy-card.s3{border-top-color:#f59e0b;}.strategy-card.s4{border-top-color:#7c3aed;}
+.strategy-card.s5{border-top-color:#ef4444;}.strategy-card.s6{border-top-color:#0d9488;}
+.s-icon{font-size:24px;margin-bottom:8px;}
+.s-name{font-size:14px;font-weight:700;color:var(--gray800);margin-bottom:4px;}
+.s-limit{font-size:11px;font-weight:700;color:var(--primary-mid);margin-bottom:6px;}
+.s-desc{font-size:12px;color:var(--gray600);line-height:1.6;}
+.s-benefit{margin-top:8px;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:600;background:#eff6ff;color:#1d4ed8;}
+.tax-result-box{background:linear-gradient(135deg,#1a3a6e,#1e40af);border-radius:var(--radius);padding:24px;color:#fff;margin-top:20px;}
+.tax-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px;}
+.tax-result-item{text-align:center;padding:14px;background:rgba(255,255,255,.1);border-radius:var(--radius-sm);}
+.tax-result-val{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:#fbbf24;}
+.tax-result-label{font-size:11px;color:rgba(255,255,255,.7);margin-top:3px;}
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;}
+.compare-table th{padding:11px 14px;font-weight:700;text-align:left;}
+.compare-table th:first-child{background:var(--gray100);color:var(--gray600);}
+.compare-table th.isa-h{background:#2563eb;color:#fff;}
+.compare-table th.irp-h{background:#7c3aed;color:#fff;}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--gray200);vertical-align:top;line-height:1.6;}
+.compare-table td:first-child{font-weight:600;color:var(--gray600);background:var(--gray100);}
+.compare-table tr:hover td{background:#f8faff;}
+.compare-table tr:hover td:first-child{background:#eef2f7;}
+.check{color:#059669;font-weight:700;}.cross{color:#dc2626;font-weight:700;}
+.portfolio-example{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.pf-card{border-radius:var(--radius);padding:20px;border:1.5px solid var(--gray200);transition:.2s;}
+.pf-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);}
+.pf-card.conservative{border-top:4px solid #10b981;}
+.pf-card.balanced{border-top:4px solid #2563eb;}
+.pf-card.aggressive{border-top:4px solid #f59e0b;}
+.pf-title{font-size:14px;font-weight:700;margin-bottom:14px;}
+.pf-item{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--gray100);font-size:12px;}
+.pf-item:last-child{border:none;}
+.pf-dot{width:8px;height:8px;border-radius:50%;margin-right:6px;flex-shrink:0;}
+.pf-label{display:flex;align-items:center;color:var(--gray600);}
+.pf-amount{font-weight:700;color:var(--gray800);}
+.pf-total{margin-top:12px;padding:10px;background:var(--gray100);border-radius:var(--radius-sm);display:flex;justify-content:space-between;font-size:13px;font-weight:700;}
+.pf-return{font-size:11px;color:var(--gray400);margin-top:6px;text-align:right;}
+</style>
+</head>
+<body>
+<div id="navArea"></div>
+<main class="fs-main">
+  <div class="page-header">
+    <div class="page-title">💸 절세 <span>전략</span></div>
+    <div class="page-sub" id="clientBadge">직업 유형별 맞춤 절세 플랜을 제공합니다</div>
+  </div>
+
+  <!-- ① 직업 유형 -->
+  <div class="card">
+    <div class="card-title">직업 유형 선택</div>
+    <div class="type-selector">
+      <div class="type-sel-card active" id="ts-employee" onclick="showTaxStrategy('employee',this)">
+        <div class="type-sel-icon">👔</div><div class="type-sel-name">직장인</div>
+        <div class="type-sel-worry">연말정산 최대화<br>세액공제 놓치지 않기</div>
+      </div>
+      <div class="type-sel-card" id="ts-self" onclick="showTaxStrategy('self',this)">
+        <div class="type-sel-icon">🏪</div><div class="type-sel-name">자영업자</div>
+        <div class="type-sel-worry">종합소득세 절감<br>노란우산 공제 활용</div>
+      </div>
+      <div class="type-sel-card" id="ts-freelance" onclick="showTaxStrategy('freelance',this)">
+        <div class="type-sel-icon">💻</div><div class="type-sel-name">프리랜서</div>
+        <div class="type-sel-worry">필요경비 최대화<br>종합소득세 절감</div>
+      </div>
+    </div>
+    <div id="strategyArea"></div>
+  </div>
+
+  <!-- ② ISA vs IRP 비교 -->
+  <div class="card">
+    <div class="card-title">ISA vs IRP — 핵심 절세계좌 완전 비교</div>
+    <div style="margin-bottom:14px;padding:12px 16px;background:#fffbeb;border-radius:var(--radius-sm);font-size:13px;color:#92400e;">
+      💡 두 계좌는 목적이 다릅니다. <strong>ISA는 단기·중기 목돈 마련용</strong>, <strong>IRP는 노후 퇴직연금용</strong>으로 함께 활용하는 것이 최적입니다.
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="min-width:110px;">구분</th>
+            <th class="isa-h">⭐ ISA<br><span style="font-size:11px;font-weight:400;">(개인종합자산관리계좌)</span></th>
+            <th class="irp-h">🏢 IRP<br><span style="font-size:11px;font-weight:400;">(개인형 퇴직연금)</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>목적</td><td>단기·중기 목돈 마련 + 절세</td><td>퇴직 이후 노후 소득 준비</td></tr>
+          <tr><td>연간 납입 한도</td><td><strong>2,000만원</strong> (5년간 최대 1억)</td><td><strong>1,800만원</strong> (연금저축 합산)</td></tr>
+          <tr><td>세액공제</td><td class="cross">✕ 없음</td><td class="check">✓ 납입액의 13.2~16.5%<br>연 최대 <strong>148만 5천원</strong> 환급</td></tr>
+          <tr><td>비과세 혜택</td><td>운용 수익 <strong>200~400만원 비과세</strong><br>초과분 9.9% 분리과세</td><td>수령 시 연금소득세 3.3~5.5%<br>(일반 세율 대비 대폭 절감)</td></tr>
+          <tr><td>투자 대상</td><td>예금, ETF, 펀드, 리츠 모두 가능</td><td>예금, ETF, 펀드<br>(주식 직접 투자 불가)</td></tr>
+          <tr><td>의무 기간</td><td><strong>5년</strong> (중도 해지 시 세제 혜택 반납)</td><td><strong>만 55세까지</strong> 유지 원칙</td></tr>
+          <tr><td>중도 인출</td><td class="check">✓ 가능 (납입원금 한도)</td><td class="cross">✕ 원칙적 불가<br>(법정 사유 한정)</td></tr>
+          <tr><td>예금자 보호</td><td>상품별 상이</td><td>1인당 <strong>1억원까지</strong> 별도 보호</td></tr>
+          <tr>
+            <td style="color:#2563eb;font-weight:700;">ISA→IRP<br>전환 꿀팁</td>
+            <td colspan="2" style="background:#eff6ff;color:#1d4ed8;font-weight:600;">
+              ISA 만기 후 IRP로 전환 시 전환금액의 10% (최대 300만원) 추가 세액공제!<br>
+              예) ISA 3,000만원 만기 → IRP 전환 → 300만원 × 16.5% = <strong>49만 5천원 추가 환급</strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ③ 세액공제 시뮬레이터 -->
+  <div class="card">
+    <div class="card-title">세액공제 시뮬레이터</div>
+    <div class="form-grid form-row-3" style="margin-bottom:16px;">
+      <div class="fg"><label>연소득 (원)</label><input type="number" id="t-income" placeholder="50,000,000" oninput="calcTax()"></div>
+      <div class="fg"><label>연금저축 연간 납입 (원)</label><input type="number" id="t-pension" placeholder="6,000,000" oninput="calcTax()"></div>
+      <div class="fg"><label>IRP 연간 납입 (원)</label><input type="number" id="t-irp" placeholder="3,000,000" oninput="calcTax()"></div>
+    </div>
+    <div id="taxResult" style="display:none;">
+      <div class="tax-result-box">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">💰 세액공제 시뮬레이션 결과</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.7);">매년 연말정산으로 돌려받는 금액</div>
+        <div class="tax-result-grid">
+          <div class="tax-result-item"><div class="tax-result-val" id="tr-credit">-</div><div class="tax-result-label">연간 세액공제액</div></div>
+          <div class="tax-result-item"><div class="tax-result-val" id="tr-rate">-</div><div class="tax-result-label">적용 세율</div></div>
+          <div class="tax-result-item"><div class="tax-result-val" id="tr-10y">-</div><div class="tax-result-label">10년 누적 환급</div></div>
+        </div>
+      </div>
+      <div id="taxAdvice" style="margin-top:14px;padding:14px;background:#fffbeb;border:1.5px solid #fde68a;border-radius:var(--radius-sm);font-size:13px;color:#92400e;line-height:1.8;"></div>
+    </div>
+  </div>
+
+  <!-- ④ 절세 포트폴리오 예시 -->
+  <div class="card">
+    <div class="card-title">절세 포트폴리오 예시</div>
+    <div style="margin-bottom:16px;">
+      <div class="fg">
+        <label style="font-size:12px;font-weight:600;color:var(--gray600);">월 저축 가능액 (원)</label>
+        <input type="number" id="pf-budget" placeholder="1,000,000" style="max-width:280px;padding:9px 14px;border:1.5px solid var(--gray200);border-radius:var(--radius-sm);font-family:'Noto Sans KR',sans-serif;font-size:14px;background:var(--gray100);outline:none;" oninput="buildPortfolio()">
+      </div>
+    </div>
+    <div class="portfolio-example" id="portfolioCards" style="display:none;"></div>
+    <div id="pfChart" style="display:none;margin-top:20px;">
+      <div class="card-title" style="margin-bottom:12px;">📈 포트폴리오별 20년 누적 시뮬레이션</div>
+      <canvas id="portfolioChart" height="90"></canvas>
+    </div>
+  </div>
+
+  <!-- ⑤ ISA 유형 -->
+  <div class="card">
+    <div class="card-title">ISA 계좌 유형 선택 가이드</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;">
+      <div style="border:1.5px solid #2563eb30;border-radius:var(--radius-sm);padding:16px;border-top:3px solid #2563eb;">
+        <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:4px;">일반형 ISA</div>
+        <div style="font-size:11px;font-weight:600;color:var(--gray400);margin-bottom:8px;">누구나 가입 · 5년 의무</div>
+        <div style="font-size:12px;color:var(--gray600);line-height:1.7;">수익 <strong>200만원</strong>까지 비과세<br>초과분 9.9% 분리과세<br>연간 2,000만원 납입 한도</div>
+      </div>
+      <div style="border:1.5px solid #05966930;border-radius:var(--radius-sm);padding:16px;border-top:3px solid #059669;background:#f0fdf4;">
+        <div style="font-size:14px;font-weight:700;color:#059669;margin-bottom:4px;">서민형 ISA ⭐추천</div>
+        <div style="font-size:11px;font-weight:600;color:var(--gray400);margin-bottom:8px;">소득 5,000만원 이하 · 5년 의무</div>
+        <div style="font-size:12px;color:var(--gray600);line-height:1.7;">수익 <strong>400만원</strong>까지 비과세<br>초과분 9.9% 분리과세<br>혜택이 일반형의 <strong>2배!</strong></div>
+      </div>
+      <div style="border:1.5px solid #f59e0b30;border-radius:var(--radius-sm);padding:16px;border-top:3px solid #f59e0b;">
+        <div style="font-size:14px;font-weight:700;color:#d97706;margin-bottom:4px;">농어민형 ISA</div>
+        <div style="font-size:11px;font-weight:600;color:var(--gray400);margin-bottom:8px;">농어민 대상 · 5년 의무</div>
+        <div style="font-size:12px;color:var(--gray600);line-height:1.7;">수익 <strong>400만원</strong>까지 비과세<br>농어민 소득 확인 필요<br>농업·어업 종사자 전용</div>
+      </div>
+    </div>
+    <div style="padding:14px;background:#eff6ff;border-radius:var(--radius-sm);font-size:12px;color:#1d4ed8;">
+      💡 <strong>ISA → IRP 전환 전략:</strong> ISA 만기 시 IRP로 전환하면 추가 세액공제 최대 <strong>300만원</strong> 가능 (전환금액의 10%, 한도 300만원)
+    </div>
+  </div>
+
+  <!-- ⑥ 저장 -->
+  <div class="card">
+    <div class="card-title">절세 전략 저장</div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label>절세 상담 메모</label>
+      <textarea id="save-memo" placeholder="세액공제 실행 계획, 연말정산 항목, 추가 전략..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-success" onclick="saveTax()">💾 절세 전략 저장</button>
+      <button class="btn btn-ghost" onclick="location.href='index.html'">← 대시보드</button>
+      <button class="btn btn-primary" onclick="location.href='04_realestate.html'">부동산으로 →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+document.getElementById('navArea').innerHTML = renderNav('tax');
+
+const client = FS.getActive();
+if (client) {
+  document.getElementById('clientBadge').textContent = `${client.name} 고객님 (${client.type==='employee'?'직장인':client.type==='self'?'자영업자':'프리랜서'})`;
+  document.getElementById('t-income').value = client.income;
+  document.getElementById('pf-budget').value = client.monthly;
+  showTaxStrategy(client.type || 'employee', document.getElementById('ts-'+(client.type||'employee')));
+  calcTax();
+  buildPortfolio();
+  const saved = FS.getSection(client.id, 'tax');
+  if (saved && saved.memo) document.getElementById('save-memo').value = saved.memo;
+}
+
+const TAX_STRATEGIES = {
+  employee: {
+    title:'직장인 절세 전략 — 연말정산 최대화', color:'#2563eb',
+    items:[
+      {cls:'s1',icon:'📋',name:'연금저축 세액공제',limit:'연 600만원 한도',desc:'13.2~16.5% 세액공제. 연금저축펀드 활용 시 ETF 투자로 수익+절세 동시 가능',benefit:'최대 99만원 환급'},
+      {cls:'s2',icon:'🏢',name:'IRP 추가 납입',limit:'연 300만원 추가',desc:'연금저축과 합산 900만원까지 세액공제. 퇴직금 수령 필수 계좌로도 활용',benefit:'최대 49만 5천원 추가'},
+      {cls:'s3',icon:'⭐',name:'ISA 계좌 개설',limit:'연 2,000만원 한도',desc:'5년 후 IRP 전환 시 추가 세액공제. 예금·ETF·펀드·리츠 모두 담을 수 있는 비과세 통장',benefit:'비과세 200~400만원'},
+      {cls:'s4',icon:'🏥',name:'의료비·교육비 공제',limit:'소득의 3% 초과분',desc:'부양가족 의료비, 자녀 교육비, 신용카드 등 빠짐없이 신고. 연말 3개월 전부터 체크',benefit:'실손 공제 가능'},
+      {cls:'s5',icon:'💰',name:'주택청약종합저축',limit:'연 300만원',desc:'무주택자: 납입액 40% 소득공제 최대 120만원. 청약 점수도 동시 적립',benefit:'최대 48만 4천원 절세'},
+      {cls:'s6',icon:'🎁',name:'기부금 공제',limit:'한도 없음',desc:'지정기부금 15~30% 세액공제. 연말 기부로 세금 절감 + 사회 환원 효과',benefit:'15~30% 공제'},
+    ]
+  },
+  self: {
+    title:'자영업자 절세 전략 — 종합소득세 절감', color:'#7c3aed',
+    items:[
+      {cls:'s1',icon:'🌂',name:'노란우산공제',limit:'연 500만원 (4천만 초과 300만원)',desc:'소득공제 + 폐업·사망 시 목돈 수령. 사업주 필수 가입. 연금처럼 적립되어 퇴직금 역할',benefit:'소득공제 최대 500만원'},
+      {cls:'s2',icon:'📋',name:'연금저축 세액공제',limit:'연 600만원',desc:'직장인과 동일 혜택. 종합소득세 신고 시 공제 적용. 사업소득자도 동일하게 적용',benefit:'최대 99만원 환급'},
+      {cls:'s3',icon:'📊',name:'필요경비 최대 처리',limit:'실제 발생 비용',desc:'사무용품·통신비·차량·접대비·임차료·교육비 등 사업 관련 비용 전액 경비 처리',benefit:'과세표준 직접 절감'},
+      {cls:'s4',icon:'💳',name:'카드 매출 세액공제',limit:'카드 매출의 1.3%',desc:'신용카드 매출 발생 시 세액공제. POS 연동 철저 관리. 현금영수증도 동일 적용',benefit:'매출액의 1.3%'},
+      {cls:'s5',icon:'🏢',name:'IRP 납입',limit:'연 900만원 (연금저축 포함)',desc:'사업 손실 연도에도 IRP 납입으로 절세. 노후 자금 마련과 절세 동시 해결',benefit:'최대 148만 5천원'},
+      {cls:'s6',icon:'🏥',name:'건강보험료 경비 처리',limit:'납부액 전액',desc:'사업주의 건강보험료·국민연금 납부액을 필요경비로 처리. 매년 수십~수백만원 절감',benefit:'납부액 전액 경비'},
+    ]
+  },
+  freelance: {
+    title:'프리랜서 절세 전략 — 불규칙 소득 대응', color:'#059669',
+    items:[
+      {cls:'s1',icon:'📊',name:'종합소득세 필요경비 신고',limit:'실제 발생 비용',desc:'장비·소프트웨어·통신·교육·사무·교통비 철저히 수집. 홈오피스 사용 공간 경비도 가능',benefit:'과세표준 직접 절감'},
+      {cls:'s2',icon:'📋',name:'연금저축 세액공제',limit:'연 600만원',desc:'소득 낮은 해에도 납입. 소득 높은 해에 추가 납입. 유연한 절세 도구로 활용',benefit:'최대 99만원 환급'},
+      {cls:'s3',icon:'🏢',name:'IRP 납입',limit:'연 300만원 추가',desc:'비정기 소득 중 일부를 IRP에 적립. 세액공제로 즉시 환급받고 노후 준비도 동시에',benefit:'최대 49만 5천원'},
+      {cls:'s4',icon:'⭐',name:'ISA 비과세 운용',limit:'연 2,000만원',desc:'수입 좋은 달 여유 자금을 ISA에 적립. 5년 후 비과세 환급 + IRP 전환 추가 공제',benefit:'비과세 200만원↑'},
+      {cls:'s5',icon:'💳',name:'사업용 카드 분리',limit:'사업 관련 전액',desc:'개인 카드와 사업용 카드 완전 분리. 홈택스 사업용 카드 등록 필수. 경비 누락 방지',benefit:'경비 누락 방지'},
+      {cls:'s6',icon:'🌂',name:'노란우산공제 (선택)',limit:'연 300~500만원',desc:'사업자등록증 있는 경우 가입 가능. 소득공제 + 폐업 시 일시금. 불규칙 소득 안전망',benefit:'최대 165만원 절세'},
+    ]
+  }
+};
+
+function showTaxStrategy(type, el) {
+  document.querySelectorAll('.type-sel-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const d = TAX_STRATEGIES[type];
+  document.getElementById('strategyArea').innerHTML = `
+    <div style="margin-bottom:16px;padding:14px;background:${d.color}12;border-radius:var(--radius-sm);border-left:4px solid ${d.color};">
+      <div style="font-size:15px;font-weight:700;color:${d.color};">${d.title}</div>
+    </div>
+    <div class="strategy-grid">
+      ${d.items.map(item=>`
+        <div class="strategy-card ${item.cls}">
+          <div class="s-icon">${item.icon}</div>
+          <div class="s-name">${item.name}</div>
+          <div class="s-limit">${item.limit}</div>
+          <div class="s-desc">${item.desc}</div>
+          <div class="s-benefit">✅ ${item.benefit}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function calcTax() {
+  const income  = parseFloat(document.getElementById('t-income').value) || 0;
+  const pension = Math.min(parseFloat(document.getElementById('t-pension').value)||0, 6000000);
+  const irp     = Math.min(parseFloat(document.getElementById('t-irp').value)||0, 3000000);
+  if (!income) { document.getElementById('taxResult').style.display='none'; return; }
+  const rate   = income <= 55000000 ? 0.165 : 0.132;
+  const total  = Math.min(pension+irp, 9000000);
+  const credit = Math.round(total * rate);
+  document.getElementById('tr-credit').textContent = Math.round(credit/10000).toLocaleString()+'만원';
+  document.getElementById('tr-rate').textContent   = (rate*100).toFixed(1)+'%';
+  document.getElementById('tr-10y').textContent    = Math.round(credit*10/10000).toLocaleString()+'만원';
+  document.getElementById('taxResult').style.display = 'block';
+  let advice = '';
+  if (pension < 6000000) advice += `📌 연금저축 <strong>${Math.round((6000000-pension)/10000).toLocaleString()}만원</strong> 추가 납입 시 <strong>${Math.round((6000000-pension)*rate/10000).toLocaleString()}만원</strong> 추가 환급 가능<br>`;
+  if (irp < 3000000) advice += `📌 IRP <strong>${Math.round((3000000-irp)/10000).toLocaleString()}만원</strong> 추가 납입 시 <strong>${Math.round((3000000-irp)*rate/10000).toLocaleString()}만원</strong> 추가 환급 가능<br>`;
+  if (total >= 9000000) advice = `✅ 세액공제 한도 <strong>900만원</strong> 완전 활용 중! 연 <strong>${Math.round(credit/10000).toLocaleString()}만원</strong> 환급 예정`;
+  document.getElementById('taxAdvice').innerHTML = advice || '납입 금액을 입력하면 추가 절세 가이드를 드립니다.';
+}
+
+let pfChart = null;
+function buildPortfolio() {
+  const budget = parseFloat(document.getElementById('pf-budget').value) || 0;
+  if (!budget) { document.getElementById('portfolioCards').style.display='none'; document.getElementById('pfChart').style.display='none'; return; }
+  const m = Math.round(budget/10000);
+
+  const portfolios = [
+    {
+      type:'conservative', label:'안정형', icon:'🛡️', color:'#10b981', desc:'원금 보존 + 세금 혜택 중심',
+      items:[{label:'연금저축 (IRP)',color:'#2563eb',ratio:.25},{label:'ISA (예금·채권)',color:'#0ea5e9',ratio:.30},{label:'비과세 연금보험',color:'#7c3aed',ratio:.25},{label:'CMA·비상금',color:'#10b981',ratio:.20}],
+      expectReturn:'연 3.5~4.5%', rate:0.04
+    },
+    {
+      type:'balanced', label:'균형형', icon:'⚖️', color:'#2563eb', desc:'절세 + 수익 균형',
+      items:[{label:'연금저축펀드',color:'#2563eb',ratio:.25},{label:'IRP (ETF)',color:'#7c3aed',ratio:.15},{label:'ISA (ETF·펀드)',color:'#0ea5e9',ratio:.30},{label:'비과세 연금',color:'#059669',ratio:.20},{label:'비상금',color:'#10b981',ratio:.10}],
+      expectReturn:'연 5~7%', rate:0.06
+    },
+    {
+      type:'aggressive', label:'성장형', icon:'🚀', color:'#f59e0b', desc:'수익 극대화 + 절세 병행',
+      items:[{label:'연금저축펀드 (주식ETF)',color:'#2563eb',ratio:.30},{label:'IRP (글로벌ETF)',color:'#7c3aed',ratio:.15},{label:'ISA (성장주펀드)',color:'#f59e0b',ratio:.35},{label:'비상금 (CMA)',color:'#10b981',ratio:.20}],
+      expectReturn:'연 7~10% (변동 있음)', rate:0.085
+    }
+  ];
+
+  document.getElementById('portfolioCards').style.display = 'grid';
+  document.getElementById('portfolioCards').innerHTML = portfolios.map(p=>`
+    <div class="pf-card ${p.type}">
+      <div class="pf-title" style="color:${p.color};">${p.icon} ${p.label} 포트폴리오<br>
+        <span style="font-size:11px;color:var(--gray400);font-weight:400;">${p.desc}</span></div>
+      ${p.items.map(item=>{
+        const amt = Math.round(m*item.ratio);
+        return `<div class="pf-item">
+          <div class="pf-label"><div class="pf-dot" style="background:${item.color};"></div>${item.label}</div>
+          <div class="pf-amount">${amt.toLocaleString()}만원</div>
+        </div>`;
+      }).join('')}
+      <div class="pf-total"><span>월 합계</span><span>${m.toLocaleString()}만원</span></div>
+      <div class="pf-return">기대수익률: ${p.expectReturn}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('pfChart').style.display = 'block';
+  const years = [1,3,5,10,15,20];
+  if (pfChart) pfChart.destroy();
+  pfChart = new Chart(document.getElementById('portfolioChart'), {
+    type:'line',
+    data:{
+      labels: years.map(y=>y+'년'),
+      datasets: portfolios.map(p=>({
+        label: p.label,
+        data: years.map(y=>{
+          const mr = p.rate/12;
+          return Math.round(budget*((Math.pow(1+mr,y*12)-1)/mr)/10000);
+        }),
+        borderColor: p.color,
+        backgroundColor: p.color+'18',
+        fill:false, tension:.4, pointRadius:4
+      }))
+    },
+    options:{
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Noto Sans KR',size:11},boxWidth:12}}},
+      scales:{
+        x:{grid:{display:false}},
+        y:{ticks:{callback:v=>v>=10000?Math.floor(v/10000).toLocaleString()+'억':v.toLocaleString()+'만'}}
+      }
+    }
+  });
+}
+
+function saveTax() {
+  if (!client) { alert('고객을 먼저 선택하세요'); return; }
+  FS.saveSection(client.id, 'tax', {memo: document.getElementById('save-memo').value});
+  FS.markDone(client.id, 'tax');
+  alert('✅ 절세 전략이 저장되었습니다');
+}
+
+showTaxStrategy('employee', document.getElementById('ts-employee'));
+</script>
+</body>
+</html>

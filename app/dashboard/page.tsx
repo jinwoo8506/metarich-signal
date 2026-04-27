@@ -14,25 +14,43 @@ import MasterView from "./components/MasterView"
 import LeaderView from "./components/LeaderView"
 import ManagerView from "./components/ManagerView"
 import FinancialCalc from "./components/FinancialCalc"
+import { CONSULTING_TOOLS, ConsultingTool, DEFAULT_MENU_STATUS } from "../../lib/consultingTools"
+import { normalizeRole, roleLabel, isApprovedUser } from "../../lib/roles"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1. [Box Component] Consulting 도구 카드 컴포넌트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function ConsultingBox({ menu, onClick }: { menu: any, onClick: (item: any) => void }) {
+function ConsultingBox({ 
+  menu, onClick, isEditMode, checked, onToggle 
+}: { 
+  menu: ConsultingTool, 
+  onClick: (item: ConsultingTool) => void,
+  isEditMode: boolean,
+  checked: boolean,
+  onToggle: (id: string) => void,
+}) {
   return (
-    <button 
-      onClick={() => onClick(menu)} 
-      className={`h-48 bg-white rounded-2xl flex flex-col p-6 shadow-sm border border-transparent hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1 transition-all group text-left`}
-    >
-      <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">{menu.icon}</div>
-      <div className="flex-1">
-        <h3 className="text-[15px] font-bold text-[#1e293b] mb-1">{menu.title}</h3>
-        <p className="text-[12px] text-[#94a3b8] leading-tight break-keep">{menu.desc}</p>
-      </div>
-      <div className="mt-4 text-[12px] font-bold text-[#2563eb] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        → 시작하기
-      </div>
-    </button>
+    <div className="relative">
+      <button 
+        onClick={() => !isEditMode && onClick(menu)} 
+        className={`h-48 w-full bg-white rounded-2xl flex flex-col p-6 shadow-sm border text-left transition-all group ${menu.cardColor} ${checked ? "hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1" : "opacity-35 grayscale"}`}
+      >
+        <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">{menu.icon}</div>
+        <div className="flex-1">
+          <h3 className="text-[15px] font-bold text-[#1e293b] mb-1">{menu.title}</h3>
+          <p className="text-[12px] text-[#94a3b8] leading-tight break-keep">{menu.desc}</p>
+        </div>
+        <div className="mt-4 text-[12px] font-bold text-[#2563eb] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          시작하기
+        </div>
+      </button>
+      {isEditMode && menu.staffOnly && (
+        <label className="absolute right-4 top-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[11px] font-bold text-slate-700 shadow-md">
+          <input type="checkbox" checked={checked} onChange={() => onToggle(menu.id)} className="h-4 w-4 accent-[#1a3a6e]" />
+          노출
+        </label>
+      )}
+    </div>
   );
 }
 
@@ -48,30 +66,7 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [menuStatus, setMenuStatus] = useState<any>({});
-
-  // ✅ [데이터 동기화] 사이드바의 ID 및 URL 체계와 완벽 일치 (과실 비율 조회 추가)
-  const allConsultingMenus = [
-    { id: "show_cafe", title: "보험의 기준", desc: "네이버 카페 바로가기", icon: "☕", url: "https://cafe.naver.com/signal1035", color: "border-[#2db400] text-[#2db400]", fixed: true },
-    { id: "show_cont", title: "숨은 보험금 찾기", desc: "미청구 보험금 조회", icon: "🔍", url: "https://cont.insure.or.kr/cont_web/intro.do", color: "border-emerald-500 text-emerald-600", fixed: true },
-    { id: "show_hira", title: "진료기록 확인", desc: "국가 검진 및 내역 확인", icon: "🏥", url: "https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000", color: "border-orange-500 text-orange-600", fixed: true },
-    
-    // ✅ 추가된 고정 링크: 과실 비율 조회
-    { id: "show_knia", title: "과실 비율 조회", desc: "자동차 사고 과실 비율 검색", icon: "⚖️", url: "https://accident.knia.or.kr", color: "border-blue-400 text-blue-500", fixed: true },
-    
-    { id: "show_gongsi", title: "보험사 공시실", desc: "각 보험사별 상품 약관 공시", icon: "📑", url: "/gongsi.html", color: "border-slate-400 text-slate-500", fixed: true },
-
-    { id: "show_calc", title: "영업용 금융계산기", desc: "대출 / 예적금 / 환율", icon: "🧮", url: "tab:finance", color: "border-blue-500 text-blue-600", staffOnly: true },
-    
-    // 🛠️ 내부 라우팅 도구들
-    { id: "show_surgery", title: "수술비 검색", desc: "종별 수술비 및 약관 조회", icon: "✂️", url: "/insurance-tools/surgery", color: "border-rose-400 text-rose-500", staffOnly: true },
-    { id: "show_disease", title: "질병코드 조회", desc: "KCD 질병사인분류 검색", icon: "🧬", url: "https://kcdcode.kr/browse/main", color: "border-indigo-400 text-indigo-500", staffOnly: true },
-    { id: "show_disability", title: "장해분류표", desc: "상해/질병 장해분류 가이드", icon: "♿", url: "/insurance-tools/disability", color: "border-amber-500 text-amber-600", staffOnly: true },
-    { id: "show_car_accident", title: "자동차사고 가이드", desc: "과실 비율 및 대처 가이드", icon: "🚗", url: "/insurance-tools/car-accident", color: "border-emerald-400 text-emerald-600", staffOnly: true },
-    
-    // 정적 HTML 도구
-    { id: "show_finance", title: "재무 분석 도구", desc: "종합 금융 플래닝 리포트", icon: "📊", url: "/financial_planner.html", color: "border-black text-black", staffOnly: true },
-    { id: "show_insu", title: "보장분석 PRO", desc: "정밀 보장분석 시스템", icon: "🛡️", url: "/insu.html", color: "border-blue-600 text-blue-600", staffOnly: true },
-  ];
+  const [isConsultEditMode, setIsConsultEditMode] = useState(false);
 
   const init = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -81,13 +76,13 @@ export default function DashboardPage() {
     if (!userInfo) return router.replace("/login");
 
     const { data: settings } = await supabase.from("team_settings").select("key, value");
-    const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), {}) || {};
+    const statusMap = settings?.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value === "true" }), { ...DEFAULT_MENU_STATUS }) || { ...DEFAULT_MENU_STATUS };
 
+    const effectiveRole = normalizeRole(userInfo);
     setMenuStatus(statusMap);
-    setUser(userInfo);
+    setUser({ ...userInfo, effectiveRole });
 
-    const role = (userInfo.role || "agent").toLowerCase().trim();
-    if (role === 'guest') {
+    if (effectiveRole === 'guest') {
       setViewMode('consulting');
     }
 
@@ -99,7 +94,14 @@ export default function DashboardPage() {
   }, [init]);
 
   // ✅ [네비게이션 통합 핸들러] 모든 도구는 새 창으로 열리도록 일치화
-  const handleNavigation = (item: any) => {
+  const toggleMenu = async (key: string) => {
+    if (!isMaster) return;
+    const nextStatus = { ...menuStatus, [key]: !menuStatus[key] };
+    setMenuStatus(nextStatus);
+    await supabase.from("team_settings").upsert({ key, value: String(nextStatus[key]) }, { onConflict: "key" });
+  };
+
+  const handleNavigation = (item: ConsultingTool) => {
     const { url } = item;
     if (!url) return;
 
@@ -120,19 +122,20 @@ export default function DashboardPage() {
 
   if (loading || !user) return <div className="min-h-screen flex items-center justify-center font-black uppercase text-slate-400 animate-pulse">Syncing System...</div>;
 
-  const userRole = (user.role || "agent").toLowerCase().trim();
+  const userRole = normalizeRole(user);
   const isMaster = userRole === 'master';
+  const isHeadquarters = userRole === 'headquarters';
   const isLeader = userRole === 'leader';
   const isManager = userRole === 'manager';
   const isGuest = userRole === 'guest';
   
-  const isApproved = !isGuest && (isMaster || isLeader || isManager || (userRole === 'agent' && (user.is_approved === true || user.is_approved === "true")));
+  const isApproved = !isGuest && isApprovedUser(user);
 
   const renderOfficeView = () => {
     if (isGuest) return <div className="text-center py-20 font-black">접근 권한이 없습니다.</div>;
     const props = { user, selectedDate, onTabChange: setActiveTab, currentUserRole: userRole };
     
-    if (isMaster) return <MasterView {...props} />;
+    if (isMaster || isHeadquarters) return <MasterView {...props} />;
     if (isLeader) return <LeaderView {...props} />;
     if (isManager) return <ManagerView {...props} />;
     return <AgentView {...props} />;
@@ -145,7 +148,7 @@ export default function DashboardPage() {
           <p className="text-[12px] text-[#2563eb] font-bold tracking-widest uppercase mb-2">Welcome Back</p>
           <h1 className="text-3xl md:text-5xl font-black text-[#1a3a6e] flex items-center justify-center gap-3">
             <span>{user.name}</span>
-            <span className="text-sm md:text-lg px-3 py-1 bg-[#1a3a6e]/5 text-[#1a3a6e]/60 rounded-full font-bold">{userRole}</span>
+            <span className="text-sm md:text-lg px-3 py-1 bg-[#1a3a6e]/5 text-[#1a3a6e]/60 rounded-full font-bold">{roleLabel(user)}</span>
           </h1>
         </div>
         
@@ -188,33 +191,48 @@ export default function DashboardPage() {
         onMenuStatusChange={setMenuStatus}
         isOpen={isSidebarOpen} 
         setIsOpen={setIsSidebarOpen}
-        onTabChange={(val: string) => handleNavigation({ url: val.startsWith('tab:') ? val : `tab:${val}` })} 
+        onTabChange={(val: string) => setActiveTab(val.startsWith('tab:') ? val.split(':')[1] : val)} 
         activeTab={activeTab} 
       />
 
-      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[240px]' : 'lg:ml-0'}`}>
+      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[300px]' : 'lg:ml-0'}`}>
         <div className="max-w-[1400px] mx-auto">
           {activeTab === 'finance' ? (
             <div className="animate-in fade-in duration-500">
-              <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
+              <HeaderBar title="금융계산기" icon="🧮" onBack={() => setActiveTab(null)} />
               <FinancialCalc />
             </div>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
               <div className="max-w-5xl mx-auto py-6 md:py-8">
-                <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb]">
-                  <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight">Professional Consulting</h1>
-                  <p className="text-[#94a3b8] font-bold text-sm mt-1 uppercase tracking-widest">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
+                <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb] flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight">고객 상담 도구</h1>
+                    <p className="text-[#94a3b8] font-bold text-sm mt-1 tracking-widest">{isApproved ? "승인된 상담 도구를 사용할 수 있습니다" : "게스트 모드로 이용 중입니다"}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => { setViewMode("select"); setActiveTab(null); }} className="rounded-xl bg-slate-100 px-4 py-3 text-xs font-black text-slate-600 hover:bg-slate-200">
+                      처음 화면
+                    </button>
+                    {isMaster && (
+                      <button onClick={() => setIsConsultEditMode(!isConsultEditMode)} className={`rounded-xl px-4 py-3 text-xs font-black ${isConsultEditMode ? "bg-[#1a3a6e] text-white" : "bg-black text-[#d4af37]"}`}>
+                        {isConsultEditMode ? "편집 완료" : "노출 편집"}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {allConsultingMenus
-                    .filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]))
+                  {CONSULTING_TOOLS
+                    .filter(m => m.fixed || (m.staffOnly && isApproved && (menuStatus[m.id] || isConsultEditMode)))
                     .map((menu) => (
                       <ConsultingBox 
                         key={menu.id} 
                         menu={menu} 
                         onClick={handleNavigation} 
+                        isEditMode={isConsultEditMode}
+                        checked={menu.fixed || menuStatus[menu.id] !== false}
+                        onToggle={toggleMenu}
                       />
                     ))
                   }
@@ -237,7 +255,7 @@ function HeaderBar({ title, icon, onBack }: any) {
         </div>
         <div>
           <h2 className="text-xl font-black text-[#1a3a6e] tracking-tight leading-none uppercase">{title}</h2>
-          <p className="text-[11px] text-[#94a3b8] font-bold uppercase mt-1 tracking-widest">Professional Support Tool</p>
+          <p className="text-[11px] text-[#94a3b8] font-bold mt-1 tracking-widest">상담 지원 도구</p>
         </div>
       </div>
       <button 

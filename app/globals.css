@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Montserrat:wght@400;700;900&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -19,7 +20,7 @@
   --gray400: #94a3b8;
   --gray600: #475569;
   --gray800: #1e293b;
-  --nav-w: 240px;
+  --nav-w: 300px;
   --shadow: 0 4px 24px rgba(26,58,110,.10);
   --shadow-lg: 0 8px 40px rgba(26,58,110,.18);
   --radius: 16px;
@@ -41,8 +42,6 @@
   }
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Montserrat:wght@400;700;900&display=swap');
-
 body {
   background: var(--bg);
   color: var(--gray800);
@@ -55,4 +54,10 @@ body {
 html, body {
   padding: 0;
   margin: 0;
+}
+
+[class*="text-[8px]"],
+[class*="text-[9px]"],
+[class*="text-[10px]"] {
+  font-size: 13px !important;
 }

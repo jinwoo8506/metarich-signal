@@ -5,6 +5,8 @@ import Calendar from "react-calendar"
 import 'react-calendar/dist/Calendar.css'
 import { supabase } from "../../../lib/supabase"
 import { useRouter } from "next/navigation"
+import { CONSULTING_TOOLS, DEFAULT_MENU_STATUS } from "../../../lib/consultingTools"
+import { normalizeRole, roleLabel, isApprovedUser } from "../../../lib/roles"
 
 export default function Sidebar({ 
   user, selectedDate, onDateChange, mode, onBack, 
@@ -18,38 +20,23 @@ export default function Sidebar({
   const [isConsultModalOpen, setIsConsultModalOpen] = useState(false); 
   const dateStr = selectedDate.toLocaleDateString('en-CA');
 
-  const userEmail = user?.email?.toLowerCase()?.trim();
-  
-  const isMaster = userEmail === 'qodbtjq@naver.com' || user?.role === 'master' || user?.role_level === 'master';
-  const isLeader = user?.role === 'leader' || user?.role_level === 'director';
-  const isManager = user?.role === 'manager';
-  const isAgent = user?.role === 'agent' || isManager || isLeader || isMaster;
+  const currentRole = normalizeRole(user);
+  const isMaster = currentRole === 'master';
+  const isLeader = currentRole === 'leader' || currentRole === 'headquarters';
+  const isManager = currentRole === 'manager';
+  const isAgent = currentRole === 'agent' || isManager || isLeader || isMaster;
   
   const isAdmin = isMaster; 
+  const canManageStaff = isMaster || currentRole === "headquarters";
   const isStaff = isAgent;
-  const isApproved = isMaster || isLeader || (isStaff && (user?.is_approved === true || user?.is_approved === "true"));
+  const isApproved = isApprovedUser(user);
 
   const getRankDisplay = (role: string) => {
     if (!isApproved) return '게스트(승인대기)';
-    if (userEmail === 'qodbtjq@naver.com') return '최고관리자';
-    switch(role) {
-      case 'master': return '사업부장';
-      case 'leader': return '사업부장'; 
-      case 'manager': return '지점장';
-      case 'agent': return '설계사';
-      case 'admin': return '시스템관리자';
-      default: return '사용자';
-    }
+    return roleLabel({ ...user, role });
   };
 
-  // ✅ [업데이트] show_underwriting 항목 포함 초기화
-  const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || {
-    show_finance: true, show_insu: true, show_cafe: true, show_hira: true, 
-    show_cont: true, show_gongsi: true, show_disease: true, show_surgery: true,
-    show_calc: true, show_disability: true, show_car_accident: true,
-    show_knia: true,
-    show_underwriting: true 
-  });
+  const [menuStatus, setMenuStatus] = useState<any>(externalMenuStatus || DEFAULT_MENU_STATUS);
   const [isEditMode, setIsEditMode] = useState(false); 
   const [staffList, setStaffList] = useState<any[]>([]);
   const [showStaffManager, setShowStaffManager] = useState(false);
@@ -73,7 +60,8 @@ export default function Sidebar({
   }
 
   async function updateStaffRole(staffId: string, newRole: string) {
-    const { error } = await supabase.from("users").update({ role: newRole }).eq("id", staffId);
+    const roleLevel = newRole === "leader" ? "director" : newRole;
+    const { error } = await supabase.from("users").update({ role: newRole, role_level: roleLevel, rank: newRole }).eq("id", staffId);
     if (!error) { alert("직급 권한이 변경되었습니다."); fetchStaffList(); }
   }
 
@@ -129,27 +117,7 @@ export default function Sidebar({
     await supabase.from("team_settings").upsert({ key: `daily_instruction_${dateStr}`, value: val }, { onConflict: 'key' });
   };
 
-  const fixedLinks = [
-    { id: 'show_cafe', label: '보험의 기준 (카페)', icon: '☕', url: 'https://cafe.naver.com/signal1035', color: 'border-[#2db400]' },
-    { id: 'show_cont', label: '숨은 보험금 찾기', icon: '🔍', url: 'https://cont.insure.or.kr/cont_web/intro.do', color: 'border-emerald-500' },
-    { id: 'show_hira', label: '진료기록 확인', icon: '🏥', url: 'https://www.hira.or.kr/dummy.do?pgmid=HIRAA030009200000', color: 'border-orange-500' },
-    { id: 'show_gongsi', label: '보험사 공시실', icon: '📑', url: '/gongsi.html', color: 'border-slate-400' },
-    { id: 'show_knia', label: '과실 비율 조회', icon: '⚖️', url: 'https://accident.knia.or.kr', color: 'border-blue-400' },
-  ];
-
-  const consultTools = [
-    { id: 'show_calc', label: '금융계산기', icon: '🧮', url: 'tab:finance', color: 'border-blue-500' },
-    { id: 'show_surgery', label: '수술비 검색', icon: '✂️', url: '/insurance-tools/surgery', color: 'border-rose-400' }, 
-    { id: 'show_disability', label: '장해분류표', icon: '♿', url: '/insurance-tools/disability', color: 'border-amber-500' }, 
-    
-    // ✅ 경로 재확인: public/underwriting/index.html 기준
-    { id: 'show_underwriting', label: '회사별 간편 인수 확인(참고)', icon: '📝', url: '/underwriting/index.html', color: 'border-cyan-500' },
-
-    { id: 'show_car_accident', label: '자동차사고 가이드', icon: '🚗', url: '/insurance-tools/car-accident', color: 'border-emerald-400' }, 
-    { id: 'show_disease', label: '질병코드 조회', icon: '🧬', url: 'https://kcdcode.kr/browse/main', color: 'border-indigo-400' }, 
-    { id: 'show_finance', label: '재무 분석 도구', icon: '📊', url: '/financial_planner.html', color: 'border-black' }, 
-    { id: 'show_insu', label: '보장분석 PRO', icon: '🛡️', url: '/insu.html', color: 'border-blue-600' }, 
-  ];
+  const consultTools = CONSULTING_TOOLS.filter((tool) => tool.staffOnly);
 
   const handleLinkClick = (item: any) => {
     if (isEditMode) return; 
@@ -190,7 +158,7 @@ export default function Sidebar({
         {isOpen ? 'CLOSE' : 'MENU'}
       </button>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#1a3a6e] flex flex-col shadow-xl transition-all duration-300 ${isOpen ? 'w-[240px] translate-x-0' : 'w-0 -translate-x-full lg:w-[240px] lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#1a3a6e] flex flex-col shadow-xl transition-all duration-300 ${isOpen ? 'w-[300px] translate-x-0' : 'w-0 -translate-x-full lg:w-[300px] lg:translate-x-0'}`}>
         <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
           {/* Brand Logo Section */}
           <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-1 mt-4">
@@ -217,7 +185,16 @@ export default function Sidebar({
 
             {/* Navigation List */}
             <nav className="space-y-1">
-              <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest px-2 mb-2">Main Navigation</p>
+              <p className="text-[10px] text-white/30 font-bold tracking-widest px-2 mb-2">주요 메뉴</p>
+
+              {onBack && (
+                <NavItem 
+                  icon="⌂" 
+                  label="처음 화면" 
+                  active={false} 
+                  onClick={() => { onBack(); setIsOpen(false); }} 
+                />
+              )}
               
               <NavItem 
                 icon="🏠" 
@@ -233,7 +210,7 @@ export default function Sidebar({
                 onClick={() => setIsConsultModalOpen(true)} 
               />
 
-              {isMaster && (
+              {canManageStaff && (
                 <NavItem 
                   icon="👥" 
                   label="조직 관리" 
@@ -243,24 +220,28 @@ export default function Sidebar({
               )}
             </nav>
 
-            {isMaster && showStaffManager && (
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
-                <p className="text-[10px] font-bold text-white/50 uppercase">Staff Permissions</p>
+            {canManageStaff && showStaffManager && (
+              <div className="bg-white p-4 rounded-2xl border border-white/20 space-y-3 shadow-lg">
+                <p className="text-[14px] font-black text-[#1a3a6e]">조직 관리</p>
+                <p className="text-[13px] leading-relaxed text-slate-500">
+                  본부, 사업부, 지점 편집은 대시보드의 조직 관리에서 진행해주세요. 이곳에서는 빠른 승인과 직급만 조정합니다.
+                </p>
                 <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                   {staffList.map((staff) => (
-                    <div key={staff.id} className="bg-black/20 p-3 rounded-xl border border-white/5">
+                    <div key={staff.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-[11px] font-bold text-white/80">{staff.name || staff.email}</span>
+                        <span className="text-[14px] font-black text-slate-900">{staff.name || staff.email}</span>
                         <button onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
-                          className={`text-[8px] px-2 py-1 rounded-lg font-bold ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                          className={`text-[13px] px-2 py-1 rounded-lg font-black ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                           {(staff.is_approved === true || staff.is_approved === "true") ? '승인' : '미승인'}
                         </button>
                       </div>
-                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-bold p-2 bg-white/5 text-white/80 rounded-lg outline-none">
+                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[13px] font-bold p-2 bg-white text-slate-900 rounded-lg outline-none">
                         <option value="agent">설계사</option>
                         <option value="manager">지점장</option>
                         <option value="leader">사업부장</option>
-                        <option value="master">최고관리자</option>
+                        <option value="headquarters">본부장</option>
+                        {isMaster && <option value="master">마스터</option>}
                       </select>
                     </div>
                   ))}
@@ -283,14 +264,14 @@ export default function Sidebar({
 
                 {/* Performance Card */}
                 <div className="bg-gradient-to-br from-[#1e40af] to-[#0ea5e9] p-5 rounded-2xl shadow-lg text-white">
-                  <p className="text-[9px] text-white/60 uppercase font-bold tracking-widest mb-3 text-center">3-Month Performance</p>
+                  <p className="text-[9px] text-white/60 font-bold tracking-widest mb-3 text-center">최근 3개월 평균</p>
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="border-r border-white/10">
-                      <p className="text-[8px] opacity-60 font-bold uppercase">Avg Amt</p>
+                      <p className="text-[8px] opacity-60 font-bold">월평균 금액</p>
                       <p className="text-lg font-montserrat font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
                     </div>
                     <div>
-                      <p className="text-[8px] opacity-60 font-bold uppercase">Avg Cnt</p>
+                      <p className="text-[8px] opacity-60 font-bold">월평균 건수</p>
                       <p className="text-lg font-montserrat font-black">{threeMonthAvg.cnt}건</p>
                     </div>
                   </div>
@@ -298,7 +279,7 @@ export default function Sidebar({
 
                 {/* Instruction Box */}
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col gap-2">
-                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Instruction</p>
+                  <p className="text-[10px] font-bold text-white/40 tracking-widest">전달사항</p>
                   <textarea 
                     value={dailyAdminNotice} 
                     onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
@@ -313,7 +294,7 @@ export default function Sidebar({
           {/* Sidebar Footer */}
           <div className="p-4 flex-shrink-0 space-y-2">
             <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-white/5 text-white/40 py-3 rounded-xl font-bold text-[10px] uppercase hover:bg-white/10 transition-colors">
-              Logout System
+              로그아웃
             </button>
             <div className="text-[10px] text-white/20 text-center font-light">
               배진우 팀장 AFPK<br/>메타리치 시그널그룹
@@ -326,11 +307,11 @@ export default function Sidebar({
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <div className="bg-white w-full max-w-sm rounded-[3rem] border-4 border-black overflow-hidden shadow-2xl">
             <div className="bg-black p-6 flex justify-between items-center">
-              <h3 className="text-[#d4af37] font-black italic text-xl uppercase tracking-tighter">Consult Tools</h3>
+              <h3 className="text-[#d4af37] font-black text-xl tracking-tighter">상담 도구</h3>
               <div className="flex items-center gap-3">
                 {isMaster && (
                   <button onClick={() => setIsEditMode(!isEditMode)} className={`text-[10px] px-3 py-1 rounded-full font-black ${isEditMode ? 'bg-[#d4af37] text-black' : 'bg-white/10 text-white/50 border border-white/20'}`}>
-                    {isEditMode ? "FINISH" : "EDIT"}
+                    {isEditMode ? "완료" : "편집"}
                   </button>
                 )}
                 <button onClick={() => setIsConsultModalOpen(false)} className="text-[#d4af37] text-2xl font-black">×</button>

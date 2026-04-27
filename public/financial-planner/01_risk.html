@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>위험관리·보험 | MetaRich Signal</title>
+<script src="common.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style id="commonStyle"></style>
+<style>
+/* 보장성 vs 저축성 */
+.ins-type-split{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;}
+.ins-type-box{border-radius:var(--radius);padding:24px;border:2px solid transparent;}
+.ins-type-box.protection{background:linear-gradient(135deg,#fff7f7,#fee2e2);border-color:#fca5a5;}
+.ins-type-box.saving{background:linear-gradient(135deg,#f0fdf4,#d1fae5);border-color:#6ee7b7;}
+.ins-type-title{font-size:16px;font-weight:700;margin-bottom:4px;}
+.protection .ins-type-title{color:#dc2626;}
+.saving .ins-type-title{color:#059669;}
+.ins-type-sub{font-size:12px;color:var(--gray600);margin-bottom:14px;}
+.ins-items{display:flex;flex-direction:column;gap:8px;}
+.ins-item{background:rgba(255,255,255,.7);border-radius:var(--radius-sm);
+  padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
+.ins-item-icon{font-size:18px;flex-shrink:0;}
+.ins-item-name{font-size:13px;font-weight:700;color:var(--gray800);}
+.ins-item-desc{font-size:11px;color:var(--gray600);margin-top:2px;line-height:1.5;}
+
+/* 연령별 설계 */
+.age-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.age-tab{padding:8px 18px;border-radius:99px;border:2px solid var(--gray200);
+  font-size:13px;font-weight:600;cursor:pointer;transition:.18s;background:var(--white);color:var(--gray600);}
+.age-tab:hover,.age-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+/* 보험료 계산기 */
+.premium-calc{background:var(--gray100);border-radius:var(--radius);padding:24px;margin-bottom:20px;}
+.premium-result{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px;}
+.premium-box{background:var(--white);border-radius:var(--radius-sm);padding:16px;text-align:center;}
+.premium-box-val{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;}
+.premium-box-label{font-size:11px;color:var(--gray400);margin-top:4px;}
+.protection-val{color:#dc2626;}
+.saving-val{color:#059669;}
+.total-val{color:var(--primary);}
+
+/* 체크리스트 */
+.checklist{display:flex;flex-direction:column;gap:8px;}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-radius:var(--radius-sm);border:1.5px solid var(--gray200);transition:.18s;}
+.check-item:hover{border-color:var(--primary-mid);}
+.check-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);cursor:pointer;}
+.check-item.checked{background:#eff6ff;border-color:#93c5fd;}
+.check-label{font-size:13px;font-weight:500;color:var(--gray800);}
+.check-desc{font-size:11px;color:var(--gray400);margin-top:2px;}
+.check-priority{margin-left:auto;flex-shrink:0;}
+
+/* 갭 분석 */
+.gap-bar{margin-bottom:12px;}
+.gap-bar-header{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;}
+.gap-track{height:12px;background:var(--gray200);border-radius:99px;overflow:hidden;position:relative;}
+.gap-have{height:100%;background:linear-gradient(90deg,var(--mint),#059669);border-radius:99px;}
+.gap-need{position:absolute;top:0;right:0;bottom:0;background:rgba(239,68,68,.2);border-radius:99px;}
+</style>
+</head>
+<body>
+<div id="navArea"></div>
+<main class="fs-main">
+  <div class="page-header">
+    <div class="page-title">🛡️ 위험관리 · <span>보험 설계</span></div>
+    <div class="page-sub" id="clientBadge">고객을 선택하면 맞춤 분석이 시작됩니다</div>
+  </div>
+
+  <!-- 보장성 vs 저축성 분리 안내 -->
+  <div class="card">
+    <div class="card-title">보험의 두 가지 역할 이해</div>
+    <div class="ins-type-split">
+      <div class="ins-type-box protection">
+        <div class="ins-type-title">🛡️ 보장성 보험</div>
+        <div class="ins-type-sub">위험 차단 · 만기환급 없거나 적음 · 보험료 저렴</div>
+        <div class="ins-items">
+          <div class="ins-item">
+            <div class="ins-item-icon">🏥</div>
+            <div><div class="ins-item-name">실손의료보험</div><div class="ins-item-desc">실제 의료비 80~90% 보상. 전 연령 필수</div></div>
+          </div>
+          <div class="ins-item">
+            <div class="ins-item-icon">❤️</div>
+            <div><div class="ins-item-name">3대 질병 (암·뇌·심장)</div><div class="ins-item-desc">진단금 3천~1억. 치료비+생활비 충당</div></div>
+          </div>
+          <div class="ins-item">
+            <div class="ins-item-icon">🦽</div>
+            <div><div class="ins-item-name">상해·후유장해</div><div class="ins-item-desc">사고로 인한 장해 시 소득 대체</div></div>
+          </div>
+          <div class="ins-item">
+            <div class="ins-item-icon">💼</div>
+            <div><div class="ins-item-name">소득보장보험</div><div class="ins-item-desc">질병·사고로 일 못할 때 월급 대체</div></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:rgba(220,38,38,.1);border-radius:8px;
+          font-size:12px;color:#991b1b;font-weight:600;">
+          💡 재무 안전장치 — 먼저 확보해야 할 기본
+        </div>
+      </div>
+      <div class="ins-type-box saving">
+        <div class="ins-type-title">💰 저축성 보험</div>
+        <div class="ins-type-sub">자산 형성 · 세금 혜택 · 노후 준비 · 중장기 목적</div>
+        <div class="ins-items">
+          <div class="ins-item">
+            <div class="ins-item-icon">🌅</div>
+            <div><div class="ins-item-name">연금보험 (비적격)</div><div class="ins-item-desc">월 150만원 이하 · 10년 후 이자 비과세</div></div>
+          </div>
+          <div class="ins-item">
+            <div class="ins-item-icon">👨‍👩‍👧</div>
+            <div><div class="ins-item-name">종신보험 (저축형)</div><div class="ins-item-desc">사망 보장 + 해지환급금 활용 가능</div></div>
+          </div>
+          <div class="ins-item">
+            <div class="ins-item-icon">🦷</div>
+            <div><div class="ins-item-name">치아·간병보험</div><div class="ins-item-desc">장기요양·치매·치아 치료비 준비</div></div>
+          </div>
+          <div class="ins-item">
+            <div class="ins-item-icon">📦</div>
+            <div><div class="ins-item-name">변액유니버셜</div><div class="ins-item-desc">투자+보장 결합. 유연한 납입 조정</div></div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:rgba(5,150,105,.1);border-radius:8px;
+          font-size:12px;color:#065f46;font-weight:600;">
+          💡 보장성 완료 후 추가하는 자산 형성 수단
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 연령별 설계 -->
+  <div class="card">
+    <div class="card-title">연령별 맞춤 보험 설계</div>
+    <div class="age-tabs">
+      <div class="age-tab active" onclick="showAge('20s',this)">20대</div>
+      <div class="age-tab" onclick="showAge('30s',this)">30대</div>
+      <div class="age-tab" onclick="showAge('40s',this)">40대</div>
+      <div class="age-tab" onclick="showAge('50s',this)">50대</div>
+      <div class="age-tab" onclick="showAge('60s',this)">60대↑</div>
+    </div>
+    <div id="age-content"></div>
+  </div>
+
+  <!-- 보험료 적정 수준 계산 -->
+  <div class="card">
+    <div class="card-title">적정 보험료 산출</div>
+    <div class="premium-calc">
+      <div class="form-grid form-row-3" style="margin-bottom:12px;">
+        <div class="fg">
+          <label>월 소득 (원)</label>
+          <input type="number" id="p-income" placeholder="4,000,000" oninput="calcPremium()">
+        </div>
+        <div class="fg">
+          <label>현재 납입 보험료 (원)</label>
+          <input type="number" id="p-current" placeholder="0" oninput="calcPremium()">
+        </div>
+        <div class="fg">
+          <label>나이대</label>
+          <select id="p-age" onchange="calcPremium()">
+            <option value="20">20대 (보험료 최저)</option>
+            <option value="30" selected>30대 (가족 형성기)</option>
+            <option value="40">40대 (보장 강화기)</option>
+            <option value="50">50대 (은퇴 준비기)</option>
+            <option value="60">60대↑ (유지 중심)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid form-row-3">
+        <div class="fg">
+          <label>결혼 여부</label>
+          <select id="p-marital" onchange="calcPremium()">
+            <option value="single">미혼</option>
+            <option value="married">기혼 (자녀 없음)</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>자녀 수</label>
+          <select id="p-children" onchange="calcPremium()">
+            <option value="0">없음</option>
+            <option value="1">1명</option>
+            <option value="2">2명</option>
+            <option value="3">3명↑</option>
+          </select>
+        </div>
+        <div class="fg" style="display:flex;align-items:flex-end;">
+          <button class="btn btn-primary" onclick="calcPremium()" style="width:100%;padding:11px;">📊 산출하기</button>
+        </div>
+      </div>
+      <div class="premium-result" id="premiumResult" style="display:none;">
+        <div class="premium-box">
+          <div class="premium-box-val protection-val" id="pr-protection">-</div>
+          <div class="premium-box-label">보장성 권장액 (70%)</div>
+        </div>
+        <div class="premium-box">
+          <div class="premium-box-val saving-val" id="pr-saving">-</div>
+          <div class="premium-box-label">저축성 권장액 (30%)</div>
+        </div>
+        <div class="premium-box">
+          <div class="premium-box-val total-val" id="pr-total">-</div>
+          <div class="premium-box-label">총 적정 보험료</div>
+        </div>
+      </div>
+      <!-- 3단계 권장 기준표 -->
+      <div id="premiumLevels" style="display:none;margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--gray600);margin-bottom:10px;">📊 상황별 3단계 권장 보험료</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;" id="levelCards"></div>
+        <div style="margin-top:10px;padding:10px 14px;background:#fffbeb;border-radius:var(--radius-sm);font-size:12px;color:#92400e;" id="levelNote"></div>
+      </div>
+    </div>
+    <div id="premiumGap" style="display:none;">
+      <div class="card-title" style="margin-bottom:14px;">현재 vs 적정 보험료 갭 분석</div>
+      <div id="gapBars"></div>
+    </div>
+  </div>
+
+  <!-- 보장 체크리스트 -->
+  <div class="card">
+    <div class="card-title">보장 체크리스트</div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--gray600);">
+      현재 가입된 보험에 체크하세요. 미체크 항목이 보장 공백입니다.
+    </div>
+    <div class="checklist" id="checklistArea"></div>
+    <div id="checkResult" style="margin-top:16px;display:none;"></div>
+  </div>
+
+  <!-- 저장 -->
+  <div class="card">
+    <div class="card-title">보험 설계안 저장</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="fg"><label>보장성 월 보험료 (원)</label><input type="number" id="save-p" placeholder="300000"></div>
+      <div class="fg"><label>저축성 월 보험료 (원)</label><input type="number" id="save-s" placeholder="200000"></div>
+    </div>
+    <div class="fg" style="margin-bottom:16px;">
+      <label>보험 상담 메모</label>
+      <textarea id="save-memo" placeholder="가입 보험, 공백 보장, 추천 내용..."></textarea>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-success" onclick="saveRisk()">💾 보험 설계안 저장</button>
+      <button class="btn btn-ghost" onclick="location.href='index.html'">← 대시보드</button>
+      <button class="btn btn-primary" onclick="location.href='02_pension.html'">연금 설계로 →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+document.getElementById('commonStyle').textContent = COMMON_CSS;
+document.getElementById('navArea').innerHTML = renderNav('risk');
+
+const client = FS.getActive();
+if (client) {
+  document.getElementById('clientBadge').textContent =
+    `${client.name} 고객님 (${client.age}세) · ${client.monthly.toLocaleString()}원/월`;
+  document.getElementById('p-income').value = Math.round(client.income / 12);
+  calcPremium();
+  const saved = FS.getSection(client.id, 'risk');
+  if (saved) {
+    if (saved.protection) document.getElementById('save-p').value = saved.protection;
+    if (saved.saving) document.getElementById('save-s').value = saved.saving;
+    if (saved.memo) document.getElementById('save-memo').value = saved.memo;
+  }
+}
+
+/* ─── 연령별 콘텐츠 ─── */
+const AGE_DATA = {
+  '20s': {
+    title: '20대 — 저렴하게 큰 보장 확보', color: '#2563eb',
+    strategy: '젊을수록 보험료가 저렴합니다. 지금이 가장 싸게 큰 보장을 받을 수 있는 시기입니다.',
+    must: [
+      { name: '실손의료보험 (4세대)', badge: '필수', desc: '월 2~3만원대. 전 의료비 80% 보상. 없으면 가장 먼저 가입' },
+      { name: '암보험', badge: '핵심', desc: '진단금 3천~5천만원. 20대 월 2~5만원 수준으로 가능' },
+      { name: '상해보험', badge: '추천', desc: '사고·후유장해 대비. 직업 특성상 위험도 높은 경우 필수' },
+    ],
+    optional: ['소득보장보험 (직장인의 경우)', '치아보험 (치과 치료 잦은 경우)'],
+    budget: '월 소득의 7~8% 수준이 적정'
+  },
+  '30s': {
+    title: '30대 — 가족 보장 + 노후 준비 시작', color: '#7c3aed',
+    strategy: '결혼·출산으로 보장 필요도가 급격히 높아집니다. 종신보험과 연금을 이 시기에 시작하세요.',
+    must: [
+      { name: '종신보험 (단기납)', badge: '필수', desc: '사망 시 가족 생활비·대출 상환. 30대 시작이 가장 효율적' },
+      { name: '3대 질병 (암·뇌·심장)', badge: '핵심', desc: '통합형으로 설계. 보험료 대비 보장이 우수한 시기' },
+      { name: '연금보험 시작', badge: '추천', desc: '비적격 연금. 월 50~100만원부터. 10년 후 비과세' },
+    ],
+    optional: ['자녀 보험', '운전자보험', '간병보험 (선택)'],
+    budget: '월 소득의 10% 수준'
+  },
+  '40s': {
+    title: '40대 — 보장 강화 + 연금 본격 준비', color: '#059669',
+    strategy: '암 발생률이 높아집니다. 기존 보험을 점검하고 부족한 보장을 보완하세요. 연금은 지금 시작해도 충분합니다.',
+    must: [
+      { name: '보장 리모델링', badge: '우선', desc: '기존 보험 점검. 특약 정리 + 보장 강화. 보험료 절감 효과' },
+      { name: 'CI보험 (중대질병)', badge: '핵심', desc: '중증 질환 시 사망 보험금 선지급. 치료 전념 자금 확보' },
+      { name: 'IRP + 연금저축 최대 납입', badge: '필수', desc: '세액공제 최대화. 연 900만원 납입으로 최대 148만원 환급' },
+    ],
+    optional: ['치매보험', '간병보험', '변액연금 (적극형)'],
+    budget: '월 소득의 10~12%. 저축성 비중 확대'
+  },
+  '50s': {
+    title: '50대 — 은퇴 준비 완성', color: '#f59e0b',
+    strategy: '은퇴까지 10~15년. 연금 수령 설계를 구체화하고 보장을 유지하면서 노후 현금흐름을 설계하세요.',
+    must: [
+      { name: '연금 수령 방식 확정', badge: '우선', desc: '종신형 vs 확정형 선택. 세제 혜택 및 비과세 요건 최종 확인' },
+      { name: '보험 유지 전략', badge: '필수', desc: '해지하면 재가입 불가. 보험료 조정으로 유지가 핵심' },
+      { name: '주택연금 검토', badge: '추천', desc: '55세 이상 가입 가능. 평생 거주 + 월 수령. 노후 소득 보완' },
+    ],
+    optional: ['즉시연금 (목돈 → 연금 전환)', '치아·간병 보강', '상속 설계용 종신보험'],
+    budget: '기존 보험 유지 중심. 연금 수령 준비'
+  },
+  '60s': {
+    title: '60대 이상 — 유지·수령·리모델링', color: '#ef4444',
+    strategy: '새 보험 가입보다 기존 보험 유지가 최우선입니다. 연금 수령과 상속 설계에 집중하세요.',
+    must: [
+      { name: '실손·질병보험 유지', badge: '최우선', desc: '어떤 경우에도 해지 금지. 재가입 불가능. 보험료 낮추는 방식으로 유지' },
+      { name: '연금 수령 시작', badge: '실행', desc: '세제적격 연금 수령세 확인. 비적격 비과세 조건 최종 체크' },
+      { name: '상속·증여 설계', badge: '중요', desc: '보험을 활용한 상속세 납부 재원 마련. 증여 공제 활용' },
+    ],
+    optional: ['치매·간병보험 강화', '유병자 보험 (건강 상태 확인)'],
+    budget: '고정 보험료 유지. 연금 수령으로 현금흐름 확보'
+  }
+};
+
+function showAge(key, btn) {
+  document.querySelectorAll('.age-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const d = AGE_DATA[key];
+  document.getElementById('age-content').innerHTML = `
+    <div style="background:linear-gradient(135deg,${d.color}18,${d.color}08);border-radius:var(--radius);padding:20px;margin-bottom:16px;border-left:4px solid ${d.color};">
+      <div style="font-size:16px;font-weight:700;color:${d.color};margin-bottom:6px;">${d.title}</div>
+      <div style="font-size:13px;color:var(--gray600);">${d.strategy}</div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--gray600);margin-bottom:10px;">핵심 가입 순서</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${d.must.map((m,i) => `
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;
+            background:var(--white);border-radius:var(--radius-sm);border:1.5px solid var(--gray200);">
+            <div style="width:24px;height:24px;border-radius:50%;background:${d.color};
+              color:#fff;display:flex;align-items:center;justify-content:center;
+              font-size:12px;font-weight:700;flex-shrink:0;">${i+1}</div>
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                <span style="font-size:14px;font-weight:700;">${m.name}</span>
+                <span style="padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;
+                  background:${d.color}20;color:${d.color};">${m.badge}</span>
+              </div>
+              <div style="font-size:12px;color:var(--gray600);">${m.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      ${d.optional.map(o => `<span style="padding:5px 12px;border-radius:99px;font-size:12px;
+        background:var(--gray100);color:var(--gray600);">+ ${o}</span>`).join('')}
+    </div>
+    <div style="padding:10px 14px;background:${d.color}12;border-radius:var(--radius-sm);
+      font-size:12px;font-weight:600;color:${d.color};">💰 ${d.budget}</div>
+  `;
+}
+
+/* ─── 체크리스트 ─── */
+const CHECKLIST = [
+  { id:'c1', name:'실손의료보험', priority:'필수', desc:'의료비 실비 보상', type:'protection' },
+  { id:'c2', name:'암보험', priority:'핵심', desc:'암 진단금 3천만원↑', type:'protection' },
+  { id:'c3', name:'뇌혈관질환 보험', priority:'핵심', desc:'뇌졸중·뇌출혈 진단금', type:'protection' },
+  { id:'c4', name:'심장질환 보험', priority:'핵심', desc:'급성심근경색 진단금', type:'protection' },
+  { id:'c5', name:'종신/정기보험', priority:'권장', desc:'사망 시 가족 보장', type:'protection' },
+  { id:'c6', name:'상해/후유장해', priority:'권장', desc:'사고로 인한 장해', type:'protection' },
+  { id:'c7', name:'연금보험 (비적격)', priority:'추천', desc:'노후 비과세 현금흐름', type:'saving' },
+  { id:'c8', name:'연금저축/IRP', priority:'추천', desc:'세액공제 노후 준비', type:'saving' },
+  { id:'c9', name:'간병/치매보험', priority:'권장', desc:'장기 요양 대비', type:'protection' },
+  { id:'c10', name:'치아보험', priority:'선택', desc:'치과 치료비 보상', type:'protection' },
+];
+const priorityColor = {필수:'#dc2626',핵심:'#d97706',권장:'#2563eb',추천:'#059669',선택:'#94a3b8'};
+document.getElementById('checklistArea').innerHTML = CHECKLIST.map(c => `
+  <div class="check-item" id="ci-${c.id}">
+    <input type="checkbox" id="${c.id}" onchange="updateCheck('${c.id}')">
+    <div style="flex:1;">
+      <div class="check-label">${c.name}</div>
+      <div class="check-desc">${c.desc}</div>
+    </div>
+    <div class="check-priority">
+      <span style="padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;
+        background:${priorityColor[c.priority]}18;color:${priorityColor[c.priority]};">${c.priority}</span>
+    </div>
+  </div>
+`).join('');
+
+function updateCheck(id) {
+  const el = document.getElementById(id);
+  document.getElementById('ci-'+id).classList.toggle('checked', el.checked);
+  const checked = CHECKLIST.filter(c => document.getElementById(c.id).checked);
+  const missing = CHECKLIST.filter(c => !document.getElementById(c.id).checked && c.priority !== '선택');
+  const resultEl = document.getElementById('checkResult');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="padding:14px;background:#f0fdf4;border-radius:var(--radius-sm);border:1.5px solid #6ee7b7;">
+        <div style="font-size:24px;font-weight:900;color:#059669;font-family:'Montserrat',sans-serif;">${checked.length}/${CHECKLIST.length}</div>
+        <div style="font-size:12px;color:#065f46;margin-top:2px;">보장 보유 현황</div>
+      </div>
+      <div style="padding:14px;background:${missing.length>0?'#fff7f7':'#f0fdf4'};border-radius:var(--radius-sm);
+        border:1.5px solid ${missing.length>0?'#fca5a5':'#6ee7b7'};">
+        <div style="font-size:24px;font-weight:900;color:${missing.length>0?'#dc2626':'#059669'};font-family:'Montserrat',sans-serif;">${missing.length}</div>
+        <div style="font-size:12px;color:${missing.length>0?'#991b1b':'#065f46'};margin-top:2px;">
+          ${missing.length>0?'보장 공백 항목':'완벽한 보장 구성!'}
+        </div>
+      </div>
+    </div>
+    ${missing.length > 0 ? `
+      <div style="margin-top:12px;padding:12px;background:#fff7ed;border-radius:var(--radius-sm);">
+        <div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:6px;">⚠️ 보완 필요 항목</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${missing.map(m => `<span style="padding:4px 10px;border-radius:99px;font-size:11px;
+            background:#fee2e2;color:#dc2626;font-weight:600;">${m.name}</span>`).join('')}
+        </div>
+      </div>
+    ` : ''}
+  `;
+}
+
+/* ─── 보험료 계산 (미혼/기혼/자녀수/나이대 차등) ─── */
+function calcPremium() {
+  const income   = parseFloat(document.getElementById('p-income').value) || 0;
+  const current  = parseFloat(document.getElementById('p-current').value) || 0;
+  const ageGroup = parseInt(document.getElementById('p-age').value) || 30;
+  const marital  = document.getElementById('p-marital').value;
+  const children = parseInt(document.getElementById('p-children').value) || 0;
+  if (!income) return;
+
+  // 기본 비율 계산 (미혼 기준)
+  // 미혼: 최소권장 7%, 적정 10%, 충분 12%
+  // 기혼: 최소권장 12%, 적정 15%, 충분 18%
+  // 자녀 1명당 +3%
+  let baseMin, baseOpt, baseSuf;
+  if (marital === 'single') {
+    baseMin = 0.07; baseOpt = 0.10; baseSuf = 0.12;
+  } else {
+    baseMin = 0.12; baseOpt = 0.15; baseSuf = 0.18;
+  }
+  const childAdd = children * 0.03;
+  // 나이대별 가중치
+  const ageAdj = {20:-0.01, 30:0, 40:0.02, 50:0.01, 60:-0.02}[ageGroup] || 0;
+
+  const ratioMin = Math.min(baseMin + childAdd + ageAdj, 0.30);
+  const ratioOpt = Math.min(baseOpt + childAdd + ageAdj, 0.35);
+  const ratioSuf = Math.min(baseSuf + childAdd + ageAdj, 0.40);
+
+  const totalOpt = Math.round(income * ratioOpt);
+  const protection = Math.round(totalOpt * 0.7);
+  const saving     = Math.round(totalOpt * 0.3);
+
+  document.getElementById('pr-protection').textContent = Math.round(protection/10000).toLocaleString() + '만원';
+  document.getElementById('pr-saving').textContent     = Math.round(saving/10000).toLocaleString() + '만원';
+  document.getElementById('pr-total').textContent      = Math.round(totalOpt/10000).toLocaleString() + '만원';
+  document.getElementById('premiumResult').style.display = 'grid';
+
+  // 3단계 권장 기준 카드
+  document.getElementById('premiumLevels').style.display = 'block';
+  const levels = [
+    { label:'최소 권장', ratio:ratioMin, color:'#10b981', icon:'🟢',
+      desc:'이것만큼은 꼭 유지해야 합니다' },
+    { label:'적정 수준', ratio:ratioOpt, color:'#2563eb', icon:'🔵',
+      desc:'재무 안정성을 위한 적정 기준' },
+    { label:'충분한 보장', ratio:ratioSuf, color:'#7c3aed', icon:'🟣',
+      desc:'가족 보호 완성도가 높은 수준' },
+  ];
+  document.getElementById('levelCards').innerHTML = levels.map(lv=>`
+    <div style="padding:14px;border-radius:var(--radius-sm);background:${lv.color}12;border:1.5px solid ${lv.color}30;text-align:center;">
+      <div style="font-size:18px;margin-bottom:4px;">${lv.icon}</div>
+      <div style="font-size:12px;font-weight:700;color:${lv.color};margin-bottom:2px;">${lv.label}</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:900;color:var(--primary);">
+        ${Math.round(income*lv.ratio/10000).toLocaleString()}만원
+      </div>
+      <div style="font-size:10px;color:var(--gray400);margin-top:2px;">월 소득의 ${(lv.ratio*100).toFixed(0)}%</div>
+      <div style="font-size:11px;color:var(--gray600);margin-top:6px;">${lv.desc}</div>
+    </div>
+  `).join('');
+
+  const maritalLabel = marital==='single' ? '미혼' : `기혼+자녀${children}명`;
+  const ageLabel = {20:'20대',30:'30대',40:'40대',50:'50대',60:'60대↑'}[ageGroup];
+  document.getElementById('levelNote').innerHTML =
+    `📌 <strong>${ageLabel} · ${maritalLabel}</strong> 기준 산출 결과입니다.
+    ${children > 0 ? `자녀 ${children}명으로 기본 대비 +${children*3}%p 추가 적용되었습니다.` : ''}
+    ${marital==='married' ? '기혼의 경우 배우자·자녀 생활비 보장을 위해 미혼보다 높은 기준이 권장됩니다.' : ''}`;
+
+  if (current > 0) {
+    const gap = totalOpt - current;
+    document.getElementById('premiumGap').style.display = 'block';
+    const pct = Math.min(100, current / totalOpt * 100);
+    const pctMin = Math.min(100, current / (income*ratioMin) * 100);
+    document.getElementById('gapBars').innerHTML = `
+      <div class="gap-bar">
+        <div class="gap-bar-header">
+          <span style="font-size:13px;font-weight:600;">현재 납입 vs 적정 보험료</span>
+          <span style="font-size:13px;">${Math.round(current/10000).toLocaleString()}만원 / ${Math.round(totalOpt/10000).toLocaleString()}만원</span>
+        </div>
+        <div class="gap-track"><div class="gap-have" style="width:${pct}%;"></div></div>
+        <div style="margin-top:6px;font-size:12px;font-weight:600;color:${gap>0?'#d97706':'#059669'};">
+          ${gap>0 ? `⚠️ 월 ${Math.round(Math.abs(gap)/10000).toLocaleString()}만원 부족 (적정 기준 대비)` : `✅ 적정 수준 유지 중`}
+        </div>
+      </div>
+      <div class="gap-bar" style="margin-top:10px;">
+        <div class="gap-bar-header">
+          <span style="font-size:13px;font-weight:600;">최소 권장 기준 충족 여부</span>
+          <span style="font-size:13px;">최소 ${Math.round(income*ratioMin/10000).toLocaleString()}만원</span>
+        </div>
+        <div class="gap-track"><div class="gap-have" style="width:${pctMin}%;background:${pctMin>=100?'#10b981':'#ef4444'};"></div></div>
+        <div style="margin-top:6px;font-size:12px;font-weight:600;color:${pctMin>=100?'#059669':'#dc2626'};">
+          ${pctMin>=100?'✅ 최소 기준 충족':'❌ 최소 기준 미달 — 즉시 보완 필요'}
+        </div>
+      </div>
+    `;
+  }
+}
+
+function saveRisk() {
+  if (!client) { alert('고객을 먼저 선택하세요'); return; }
+  FS.saveSection(client.id, 'risk', {
+    protection: document.getElementById('save-p').value,
+    saving: document.getElementById('save-s').value,
+    memo: document.getElementById('save-memo').value
+  });
+  FS.markDone(client.id, 'risk');
+  alert('✅ 보험 설계안이 저장되었습니다');
+}
+
+// 초기화
+showAge('20s', document.querySelector('.age-tab'));
+if (client) {
+  const age = client.age;
+  const ageKey = age < 30 ? '20s' : age < 40 ? '30s' : age < 50 ? '40s' : age < 60 ? '50s' : '60s';
+  const tabs = document.querySelectorAll('.age-tab');
+  const idx = {'20s':0,'30s':1,'40s':2,'50s':3,'60s':4}[ageKey];
+  showAge(ageKey, tabs[idx]);
+  tabs.forEach(t => t.classList.remove('active'));
+  tabs[idx].classList.add('active');
+}
+</script>
+</body>
+</html>
