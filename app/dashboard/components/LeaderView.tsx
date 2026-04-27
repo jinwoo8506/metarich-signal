@@ -8,6 +8,7 @@ import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
 import FinancialCalc from "./FinancialCalc"
+import AgentView from "./AgentView"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import { exportExcel } from "./exportExcel"
@@ -99,7 +100,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     setShowExportOpt(false);
   };
 
-  // 영업도구(계산기) 실행 시 렌더링
+  // 금융계산기 실행 시 렌더링
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -122,13 +123,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         </div>
       </div>
 
-      {/* 퀵링크 섹션 (영업도구 포함 5개 유지) */}
+      {/* 퀵링크 섹션 */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
-        <button onClick={() => setActiveTab('finance')} className="bg-[#1a3a6e] text-white border border-[#1a3a6e] p-4 rounded-2xl text-[13px] text-center hover:bg-[#2563eb] transition-all shadow-sm font-black">
-          영업도구
-        </button>
+        <QuickLink href="/customer-crm/index.html" label="고객관리" />
         <div className="relative col-span-2">
           <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full h-full bg-emerald-600 text-white p-4 rounded-2xl text-[13px] shadow-lg font-black">
             실적 리포트 출력
@@ -153,12 +152,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       )}
 
       {/* 탭 메뉴 */}
-      <div className="grid grid-cols-5 gap-2 font-black">
+      <div className="grid grid-cols-4 gap-2 font-black">
         {[
           { id: 'perf', label: '실적 관리' },
           { id: 'act', label: '활동 관리' },
-          { id: 'edu', label: '교육 관리' },
-          { id: 'sys', label: '시스템 설정' },
+          { id: 'edu', label: '교육 관리' },
           { id: 'users', label: '조직 관리' }
         ].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -200,6 +198,11 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       </section>
 
       {/* 팝업 모듈 통합 */}
+      <section className="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 className="text-lg mb-6 border-l-[6px] border-[#2563eb] pl-4 font-black text-[#1a3a6e]">내 실적 입력</h2>
+        <AgentView user={user} selectedDate={selectedDate} />
+      </section>
+
       {activeTab && !['finance'].includes(activeTab) && (
         <AdminPopups
           type={activeTab}
@@ -207,6 +210,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
           selectedAgent={selectedAgent}
           teamMeta={teamMeta}
           viewer={user}
+          canEditSystem={false}
           onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchTeamData(); }}
         />
       )}

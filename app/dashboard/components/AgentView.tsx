@@ -29,8 +29,10 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
   const LINKS = { 
     metaon: "https://meta-on.kr/#/login", 
     insu: "https://xn--on3bi2e18htop.com/", 
-    archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" 
+    archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm",
+    customerCrm: "/customer-crm/index.html",
   };
+  const canUseCustomerCrm = user?.email?.toLowerCase?.().trim() === "jinwoo8506@gmail.com";
 
   const handleGoogleSync = async (customers: any[]) => {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
@@ -169,7 +171,12 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="보험사" url={LINKS.insu} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="자료실" url={LINKS.archive} color="bg-[#f8fafc] text-[#475569]" />
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-[#1a3a6e] text-white" />
-          <QuickBtn label="고객관리" onClick={() => setIsCustOpen(true)} color="bg-[#10b981] text-white" />
+          <QuickBtn
+            label="고객관리"
+            url={canUseCustomerCrm ? LINKS.customerCrm : undefined}
+            onClick={canUseCustomerCrm ? undefined : () => setIsCustOpen(true)}
+            color="bg-[#10b981] text-white"
+          />
         </div>
       </div>
 

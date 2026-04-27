@@ -7,7 +7,8 @@ import FinancialCalc from "./FinancialCalc"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import { exportExcel } from "./exportExcel"
-import { getBranch } from "../../../lib/roles"
+import AgentView from "./AgentView"
+import { canSeeUser, getBranch } from "../../../lib/roles"
 
 export default function ManagerView({ user, selectedDate }: { user: any, selectedDate: Date }) {
   const [agents, setAgents] = useState<any[]>([]);
@@ -34,7 +35,7 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
     const branchTarget = Number(settings?.find(s => s.key === branchKey)?.value) || 2000;
 
     const { data: allUsers } = await supabase.from("users").select("*");
-    const users = allUsers?.filter((u) => getBranch(u) === branchName) || [];
+    const users = allUsers?.filter((u) => getBranch(u) === branchName && canSeeUser(user, u)) || [];
     const { data: allPerfs } = await supabase.from("daily_perf").select("*");
 
     if (users) {
@@ -148,8 +149,13 @@ export default function ManagerView({ user, selectedDate }: { user: any, selecte
         </div>
       </section>
 
+      <section className="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 className="text-lg mb-6 border-l-[6px] border-[#2563eb] pl-4 font-black text-[#1a3a6e]">내 실적 입력</h2>
+        <AgentView user={user} selectedDate={selectedDate} />
+      </section>
+
       {activeTab && !['finance'].includes(activeTab) && (
-        <AdminPopups type={activeTab} agents={agents} selectedAgent={selectedAgent} onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchBranchData(); }} />
+        <AdminPopups type={activeTab} agents={agents} selectedAgent={selectedAgent} viewer={user} onClose={() => { setActiveTab(null); setSelectedAgent(null); fetchBranchData(); }} />
       )}
     </div>
   )

@@ -77,6 +77,10 @@ export function getHeadquarter(user: any): string {
   return user?.headquarter || user?.headquarter_name || user?.hq || "";
 }
 
+export function isHeadquarterAccount(user: any): boolean {
+  return userIdentifier(user).includes(HEADQUARTER_ACCOUNT);
+}
+
 export function isApprovedUser(user: any): boolean {
   const role = normalizeRole(user);
   return role === "master" || role === "headquarters" || role === "leader" || role === "manager" || user?.is_approved === true || user?.is_approved === "true";
@@ -84,12 +88,19 @@ export function isApprovedUser(user: any): boolean {
 
 export function canSeeUser(viewer: any, target: any): boolean {
   const viewerRole = normalizeRole(viewer);
+  const targetRole = normalizeRole(target);
+  const viewerPriority = ROLE_PRIORITY[viewerRole];
+  const targetPriority = ROLE_PRIORITY[targetRole];
+
+  if (!viewer?.id || !target?.id) return false;
+  if (viewer.id === target.id) return false;
+  if (targetPriority >= viewerPriority) return false;
+
   if (viewerRole === "master") return true;
-  if (userIdentifier(viewer).includes(HEADQUARTER_ACCOUNT)) return true;
+  if (isHeadquarterAccount(viewer)) return targetRole !== "master";
   if (viewerRole === "headquarters") return getHeadquarter(viewer) === getHeadquarter(target);
   if (viewerRole === "leader") return getDepartment(viewer) === getDepartment(target);
   if (viewerRole === "manager") return getBranch(viewer) === getBranch(target);
-  if (viewerRole === "agent") return viewer?.id && viewer.id === target?.id;
   return false;
 }
 

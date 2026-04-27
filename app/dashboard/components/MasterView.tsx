@@ -1,15 +1,16 @@
 "use client"
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// AdminView.tsx (Updated: 조직 관리 & 영업도구 통합)
+// AdminView.tsx (Updated: 조직 관리 & 고객관리 연결)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import React, { useEffect, useState } from "react"
 import { supabase } from "../../../lib/supabase"
 import AdminPopups from "./AdminPopups"
-import FinancialCalc from "./FinancialCalc" // 영업도구(계산기) 컴포넌트
+import FinancialCalc from "./FinancialCalc"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
+import AgentView from "./AgentView"
 import { exportExcel } from "./exportExcel"
 import { canSeeUser, getBranch, getDepartment, getHeadquarter, normalizeRole, roleLabel } from "../../../lib/roles"
 
@@ -132,7 +133,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
     { id: 'users', label: '조직 관리' },
   ];
 
-  // 🟠 영업도구(계산기) 활성화 시 화면 전환
+  // 금융계산기 활성화 시 화면 전환
   if (activeTab === 'finance') {
     return (
       <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 font-black">
@@ -161,9 +162,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://xn--on3bi2e18htop.com/" label="보험사" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
-        <button onClick={() => setActiveTab('finance')} className="bg-[#1a3a6e] text-white border border-[#1a3a6e] p-4 rounded-2xl text-[13px] text-center hover:bg-[#2563eb] transition-all shadow-sm font-black">
-          영업도구
-        </button>
+        <QuickLink href="/customer-crm/index.html" label="고객관리" />
         <div className="relative">
           <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full h-full bg-emerald-600 text-white p-4 rounded-2xl text-[13px] shadow-lg font-black border border-emerald-700">
             리포트 출력
@@ -262,6 +261,13 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
       </section>
 
       {/* ⚪ 팝업 모듈 (AdminPopups.tsx 사용) */}
+      {currentRole !== "master" && (
+        <section className="bg-white p-5 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h2 className="text-lg mb-6 border-l-[6px] border-[#2563eb] pl-4 font-black text-[#1a3a6e]">내 실적 입력</h2>
+          <AgentView user={user} selectedDate={selectedDate} />
+        </section>
+      )}
+
       {activeTab && !['finance'].includes(activeTab) && (
         <AdminPopups
           type={activeTab}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { supabase } from "../../../lib/supabase"
-import { HEADQUARTER_OPTIONS, canManageRole, getBranch, getDepartment, getHeadquarter, normalizeRole, roleLabel } from "../../../lib/roles"
+import { HEADQUARTER_OPTIONS, canManageRole, canSeeUser, getBranch, getDepartment, getHeadquarter, normalizeRole, roleLabel } from "../../../lib/roles"
 
 export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onClose, viewer, canEditSystem = true }: any) {
   // --- 상태 관리 ---
@@ -90,10 +90,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
 
         if (uData) {
           const filteredUsers = uData.filter(u => {
-            const userRankValue = rankPriority[normalizeRole(u)] || 999;
-            if (myRankValue === 1) return true; // 마스터는 전체 노출
-            if (normalizeRole(viewer) === "headquarters") return canManageRole(viewer, u);
-            return userRankValue > myRankValue; // 본인보다 하위 직급만 노출
+            if (!viewer) return false;
+            if (normalizeRole(viewer) === "master") return canManageRole(viewer, u);
+            return canSeeUser(viewer, u);
           });
 
           setAllUsers(filteredUsers.map(u => ({ 
