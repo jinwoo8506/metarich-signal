@@ -22,12 +22,15 @@ function ConsultingBox({ menu, onClick }: { menu: any, onClick: (item: any) => v
   return (
     <button 
       onClick={() => onClick(menu)} 
-      className={`h-64 border-4 ${menu.color} rounded-[2rem] bg-white flex flex-col items-center justify-center gap-4 shadow-xl hover:-translate-y-2 transition-all active:scale-95 group`}
+      className={`h-48 bg-white rounded-2xl flex flex-col p-6 shadow-sm border border-transparent hover:border-[#2563eb] hover:shadow-lg hover:-translate-y-1 transition-all group text-left`}
     >
-      <span className="text-6xl group-hover:rotate-12 transition-transform">{menu.icon}</span>
-      <div className="text-center px-4">
-        <h3 className="text-2xl font-black mb-1">{menu.title}</h3>
-        <p className="text-[11px] opacity-60 font-bold uppercase">{menu.desc}</p>
+      <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">{menu.icon}</div>
+      <div className="flex-1">
+        <h3 className="text-[15px] font-bold text-[#1e293b] mb-1">{menu.title}</h3>
+        <p className="text-[12px] text-[#94a3b8] leading-tight break-keep">{menu.desc}</p>
+      </div>
+      <div className="mt-4 text-[12px] font-bold text-[#2563eb] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        → 시작하기
       </div>
     </button>
   );
@@ -137,19 +140,36 @@ export default function DashboardPage() {
 
   if (viewMode === 'select' && !isGuest) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f8fafc] font-black p-6 text-center">
-        <h1 className="text-3xl md:text-5xl mb-12 md:mb-16 italic tracking-tighter">
-          <span className="text-blue-600">{user.name}</span>
-          <span className="ml-2 text-xl md:text-2xl text-slate-400 uppercase">[{userRole}]</span>
-        </h1>
-        <div className="flex flex-col md:flex-row gap-6 md:gap-10 w-full max-w-5xl">
-          <button onClick={() => setViewMode('office')} className="flex-1 h-64 md:h-[400px] bg-white border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group">
-            <span className="text-6xl md:text-8xl group-hover:scale-110 transition-transform">🏢</span>
-            <h2 className="text-2xl md:text-4xl font-black uppercase">사무실 업무</h2>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#f0f4ff] p-6 text-center">
+        <div className="mb-12">
+          <p className="text-[12px] text-[#2563eb] font-bold tracking-widest uppercase mb-2">Welcome Back</p>
+          <h1 className="text-3xl md:text-5xl font-black text-[#1a3a6e] flex items-center justify-center gap-3">
+            <span>{user.name}</span>
+            <span className="text-sm md:text-lg px-3 py-1 bg-[#1a3a6e]/5 text-[#1a3a6e]/60 rounded-full font-bold">{userRole}</span>
+          </h1>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl">
+          <button 
+            onClick={() => setViewMode('office')} 
+            className="flex-1 h-64 md:h-[320px] bg-white rounded-3xl flex flex-col items-center justify-center gap-6 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all group border border-white"
+          >
+            <div className="w-20 h-20 bg-[#eff6ff] rounded-2xl flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">🏢</div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-[#1e293b]">사무실 업무</h2>
+              <p className="text-sm text-[#94a3b8] mt-1 font-medium">실적 관리 및 내근 업무</p>
+            </div>
           </button>
-          <button onClick={() => setViewMode('consulting')} className="flex-1 h-64 md:h-[400px] bg-blue-600 border-[4px] border-black rounded-[2.5rem] flex flex-col items-center justify-center gap-4 md:gap-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group text-white">
-            <span className="text-6xl md:text-8xl group-hover:scale-110 transition-transform">🤝</span>
-            <h2 className="text-2xl md:text-4xl font-black uppercase">고객 상담</h2>
+          
+          <button 
+            onClick={() => setViewMode('consulting')} 
+            className="flex-1 h-64 md:h-[320px] bg-gradient-to-br from-[#1a3a6e] to-[#2563eb] rounded-3xl flex flex-col items-center justify-center gap-6 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all group text-white border border-white/10"
+          >
+            <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center text-5xl group-hover:scale-110 transition-transform">🤝</div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold">고객 상담</h2>
+              <p className="text-sm text-white/60 mt-1 font-medium">영업 지원 및 상담 도구</p>
+            </div>
           </button>
         </div>
       </div>
@@ -157,7 +177,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row font-black overflow-x-hidden">
+    <div className="min-h-screen bg-[#f0f4ff] flex flex-col lg:flex-row overflow-x-hidden">
       <Sidebar 
         user={user} 
         selectedDate={selectedDate} 
@@ -172,21 +192,22 @@ export default function DashboardPage() {
         activeTab={activeTab} 
       />
 
-      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-80' : 'lg:ml-0'}`}>
-        <div className="max-w-[1600px] mx-auto">
+      <main className={`flex-1 p-4 lg:p-10 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[240px]' : 'lg:ml-0'}`}>
+        <div className="max-w-[1400px] mx-auto">
           {activeTab === 'finance' ? (
-            <>
+            <div className="animate-in fade-in duration-500">
               <HeaderBar title="Financial Calculator" icon="🧮" onBack={() => setActiveTab(null)} />
               <FinancialCalc />
-            </>
+            </div>
           ) : (
             viewMode === 'office' ? renderOfficeView() : (
-              <div className="max-w-6xl mx-auto py-6 md:py-10 font-black">
-                <div className="mb-8 md:mb-12 border-l-8 border-blue-600 pl-4 md:pl-6">
-                  <h1 className="text-3xl md:text-4xl italic tracking-tighter uppercase">Professional Consulting</h1>
-                  <p className="text-slate-400 font-bold uppercase text-xs md:text-base">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
+              <div className="max-w-5xl mx-auto py-6 md:py-8">
+                <div className="mb-10 bg-white p-8 rounded-3xl shadow-sm border-l-[6px] border-[#2563eb]">
+                  <h1 className="text-3xl font-black text-[#1a3a6e] tracking-tight">Professional Consulting</h1>
+                  <p className="text-[#94a3b8] font-bold text-sm mt-1 uppercase tracking-widest">{isApproved ? "System Fully Activated" : "Guest Mode Enabled"}</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {allConsultingMenus
                     .filter(m => m.fixed || (m.staffOnly && isApproved && menuStatus[m.id]))
                     .map((menu) => (
@@ -209,15 +230,22 @@ export default function DashboardPage() {
 
 function HeaderBar({ title, icon, onBack }: any) {
   return (
-    <div className="mb-6 flex justify-between items-center bg-white p-3 md:p-4 rounded-[2rem] border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-      <div className="flex items-center gap-3 md:gap-4 ml-2 md:ml-4">
-        <span className="text-2xl md:text-3xl">{icon}</span>
+    <div className="mb-8 flex justify-between items-center bg-white p-5 rounded-3xl shadow-sm border border-white">
+      <div className="flex items-center gap-4 ml-2">
+        <div className="w-12 h-12 bg-[#eff6ff] rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+          {icon}
+        </div>
         <div>
-          <h2 className="text-lg md:text-xl font-black italic uppercase leading-none">{title}</h2>
-          <p className="text-[9px] md:text-[10px] text-slate-400 font-bold uppercase mt-1">Professional Support Tool</p>
+          <h2 className="text-xl font-black text-[#1a3a6e] tracking-tight leading-none uppercase">{title}</h2>
+          <p className="text-[11px] text-[#94a3b8] font-bold uppercase mt-1 tracking-widest">Professional Support Tool</p>
         </div>
       </div>
-      <button onClick={onBack} className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center bg-black text-[#d4af37] rounded-full hover:scale-110 active:scale-95 transition-all text-xl md:text-2xl font-black">×</button>
+      <button 
+        onClick={onBack} 
+        className="w-10 h-10 flex items-center justify-center bg-[#f1f5f9] text-[#475569] rounded-full hover:bg-[#e2e8f0] active:scale-95 transition-all text-xl font-bold"
+      >
+        ×
+      </button>
     </div>
   );
 }

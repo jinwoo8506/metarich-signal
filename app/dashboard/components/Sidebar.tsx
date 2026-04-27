@@ -183,63 +183,84 @@ export default function Sidebar({
 
   return (
     <>
-      <button onClick={() => setIsOpen(!isOpen)} className="fixed top-5 left-5 z-[60] bg-black text-[#d4af37] p-3 rounded-2xl shadow-lg font-black italic text-[10px] transition-transform active:scale-90">
-        {isOpen ? 'CLOSE MENU' : 'OPEN MENU'}
+      <button 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="fixed top-5 left-5 z-[60] bg-[#1a3a6e] text-white p-3 rounded-2xl shadow-lg font-bold text-[10px] transition-all active:scale-90 lg:hidden"
+      >
+        {isOpen ? 'CLOSE' : 'MENU'}
       </button>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-white border-r flex flex-col shadow-sm transition-all duration-300 ${isOpen ? 'w-[85%] sm:w-[300px] lg:w-80 translate-x-0' : 'w-0 -translate-x-full'}`}>
-        <div className={`flex flex-col h-full ${!isOpen && 'hidden'}`}>
-          <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-4 mt-14">
-            <div className="flex gap-2">
-              <button onClick={() => { router.push('/dashboard'); setIsOpen(false); }} className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-[10px] font-black italic uppercase tracking-tighter hover:bg-black transition-colors">
-                Go Dashboard
-              </button>
-              {onBack && (
-                <button onClick={() => { onBack(); setIsOpen(false); }} className="px-4 bg-slate-100 text-slate-600 py-3 rounded-xl text-[10px] font-black uppercase">
-                  Back
-                </button>
-              )}
+      <aside className={`fixed inset-y-0 left-0 z-50 bg-[#1a3a6e] flex flex-col shadow-xl transition-all duration-300 ${isOpen ? 'w-[240px] translate-x-0' : 'w-0 -translate-x-full lg:w-[240px] lg:translate-x-0'}`}>
+        <div className={`flex flex-col h-full ${!isOpen && 'hidden lg:flex'}`}>
+          {/* Brand Logo Section */}
+          <div className="p-6 pb-2 flex-shrink-0 flex flex-col gap-1 mt-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-montserrat font-black text-2xl bg-gradient-to-br from-white to-[#0ea5e9] bg-clip-text text-transparent">MR<span className="text-[#0ea5e9]">SG</span></span>
             </div>
-
-            <div className="flex justify-between items-center border-b-4 border-black pb-1">
-              <h2 className="text-2xl italic font-black uppercase tracking-tighter">
-                {isApproved ? (mode === 'office' ? 'History' : 'Consult') : 'Guest'}
-              </h2>
-              {isMaster && (
-                <button onClick={() => setShowStaffManager(!showStaffManager)} className={`text-[9px] px-2 py-1 rounded-full font-black ${showStaffManager ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {showStaffManager ? "CLOSE STAFF" : "MANAGE STAFF"}
-                </button>
-              )}
-            </div>
-
-            <div className={`p-5 rounded-[2rem] border-2 shadow-lg ${isApproved ? 'bg-black text-white border-[#d4af37]' : 'bg-slate-100 text-slate-400'}`}>
-              <p className="text-[9px] uppercase font-black tracking-widest mb-1 opacity-80">{isApproved ? 'Logged in as' : 'Access Restricted'}</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl italic font-black">{user?.name || "사용자"}</span>
-                <span className={`text-sm font-black italic ${isApproved ? 'text-[#d4af37]' : 'text-slate-400'}`}>{getRankDisplay(user?.role)}</span>
-              </div>
-            </div>
+            <p className="text-[10px] text-white/50 font-light tracking-widest uppercase">MetaRich Signal Group</p>
+            <div className="h-[1px] bg-white/10 w-full mt-4"></div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6 no-scrollbar">
+          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6 no-scrollbar">
+            {/* User Profile Section */}
+            <div className="bg-white/5 p-4 rounded-2xl flex flex-col gap-2 transition-all hover:bg-white/10 cursor-pointer" onClick={() => { router.push('/dashboard'); setIsOpen(false); }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#2563eb] flex items-center justify-center text-white font-bold text-lg">
+                  {user?.name?.[0] || 'U'}
+                </div>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-white font-bold text-sm truncate">{user?.name || "사용자"}</span>
+                  <span className="text-white/50 text-[10px] truncate">{getRankDisplay(user?.role)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation List */}
+            <nav className="space-y-1">
+              <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest px-2 mb-2">Main Navigation</p>
+              
+              <NavItem 
+                icon="🏠" 
+                label="대시보드" 
+                active={mode === 'office'} 
+                onClick={() => { router.push('/dashboard'); setIsOpen(false); }} 
+              />
+              
+              <NavItem 
+                icon="🤝" 
+                label="상담 도구" 
+                active={mode === 'consulting'} 
+                onClick={() => setIsConsultModalOpen(true)} 
+              />
+
+              {isMaster && (
+                <NavItem 
+                  icon="👥" 
+                  label="조직 관리" 
+                  active={showStaffManager} 
+                  onClick={() => setShowStaffManager(!showStaffManager)} 
+                />
+              )}
+            </nav>
+
             {isMaster && showStaffManager && (
-              <div className="bg-indigo-50 p-4 rounded-[2.5rem] border-2 border-indigo-200">
-                <p className="text-[10px] font-black text-indigo-600 uppercase mb-3 px-1">Staff Permissions</p>
-                <div className="space-y-3 max-h-60 overflow-y-auto no-scrollbar">
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-3">
+                <p className="text-[10px] font-bold text-white/50 uppercase">Staff Permissions</p>
+                <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
                   {staffList.map((staff) => (
-                    <div key={staff.id} className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                    <div key={staff.id} className="bg-black/20 p-3 rounded-xl border border-white/5">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-[11px] font-black">{staff.name || staff.email}</span>
+                        <span className="text-[11px] font-bold text-white/80">{staff.name || staff.email}</span>
                         <button onClick={() => toggleStaffApproval(staff.id, staff.is_approved)}
-                          className={`text-[8px] px-2 py-1 rounded-lg font-black ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                          {(staff.is_approved === true || staff.is_approved === "true") ? '승인됨' : '미승인'}
+                          className={`text-[8px] px-2 py-1 rounded-lg font-bold ${(staff.is_approved === true || staff.is_approved === "true") ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                          {(staff.is_approved === true || staff.is_approved === "true") ? '승인' : '미승인'}
                         </button>
                       </div>
-                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-black p-2 bg-slate-50 rounded-lg">
-                        <option value="agent">설계사 (Agent)</option>
-                        <option value="manager">지점장 (Manager)</option>
-                        <option value="leader">사업부장 (Leader)</option>
-                        <option value="master">최고관리자 (Master)</option>
+                      <select value={staff.role || 'agent'} onChange={(e) => updateStaffRole(staff.id, e.target.value)} className="w-full text-[10px] font-bold p-2 bg-white/5 text-white/80 rounded-lg outline-none">
+                        <option value="agent">설계사</option>
+                        <option value="manager">지점장</option>
+                        <option value="leader">사업부장</option>
+                        <option value="master">최고관리자</option>
                       </select>
                     </div>
                   ))}
@@ -248,66 +269,55 @@ export default function Sidebar({
             )}
 
             {isApproved && mode === 'office' && (
-              <>
-                <div className="border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm bg-white p-2">
+              <div className="space-y-4">
+                {/* Calendar Card */}
+                <div className="bg-white rounded-2xl p-2 shadow-lg">
                   <Calendar 
                     onChange={(d: any) => onDateChange(d)} 
                     value={selectedDate} 
                     calendarType="gregory"
                     formatDay={(_, date) => date.getDate().toString()} 
-                    className="border-0 w-full font-black text-xs" 
+                    className="border-0 w-full text-[11px] font-bold sidebar-calendar" 
                   />
                 </div>
-                <div className="bg-slate-900 p-5 rounded-[2rem] shadow-xl text-white">
-                  <p className="text-[9px] text-[#d4af37] opacity-60 uppercase italic mb-3 text-center font-black">Performance Summary</p>
+
+                {/* Performance Card */}
+                <div className="bg-gradient-to-br from-[#1e40af] to-[#0ea5e9] p-5 rounded-2xl shadow-lg text-white">
+                  <p className="text-[9px] text-white/60 uppercase font-bold tracking-widest mb-3 text-center">3-Month Performance</p>
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <div className="border-r border-white/10">
-                      <p className="text-[8px] opacity-40 font-black uppercase">Avg Amt</p>
-                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
+                      <p className="text-[8px] opacity-60 font-bold uppercase">Avg Amt</p>
+                      <p className="text-lg font-montserrat font-black">{threeMonthAvg.amt.toLocaleString()}만</p>
                     </div>
                     <div>
-                      <p className="text-[8px] opacity-40 font-black uppercase">Avg Cnt</p>
-                      <p className="text-lg text-[#d4af37] italic font-black">{threeMonthAvg.cnt}건</p>
+                      <p className="text-[8px] opacity-60 font-bold uppercase">Avg Cnt</p>
+                      <p className="text-lg font-montserrat font-black">{threeMonthAvg.cnt}건</p>
                     </div>
                   </div>
                 </div>
-              </>
-            )}
 
-            <div className="space-y-3">
-              <p className="text-[9px] text-slate-400 uppercase italic font-black">Quick Tools</p>
-              <div className="grid grid-cols-1 gap-2">
-                {fixedLinks.map(item => (
-                  <button key={item.id} onClick={() => handleLinkClick(item)} className={`w-full flex items-center gap-3 px-5 py-4 border-2 ${item.color} rounded-2xl bg-white hover:bg-slate-50 active:scale-95 transition-all`}>
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-[11px] font-black">{item.label}</span>
-                  </button>
-                ))}
-              </div>
-              
-              <button onClick={() => setIsConsultModalOpen(true)} className="w-full flex flex-col items-center justify-center gap-1 py-6 bg-black border-4 border-black rounded-[2rem] text-[#d4af37] hover:bg-slate-800 shadow-xl transition-all active:scale-95 group">
-                <span className="text-2xl group-hover:scale-110 transition-transform">💼</span>
-                <span className="text-[13px] font-black italic uppercase">Open Consult Tools</span>
-              </button>
-            </div>
-
-            {isApproved && mode === 'office' && (
-              <div className="bg-blue-50 p-5 rounded-[2.5rem] border border-blue-100 min-h-[120px] flex flex-col">
-                <p className="text-[9px] font-black text-blue-600 uppercase italic mb-2">Instruction</p>
-                <textarea 
-                  value={dailyAdminNotice} 
-                  onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
-                  readOnly={!isAdmin} 
-                  className="w-full flex-1 bg-transparent text-[11px] font-black outline-none resize-none leading-relaxed text-blue-900" 
-                />
+                {/* Instruction Box */}
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col gap-2">
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Instruction</p>
+                  <textarea 
+                    value={dailyAdminNotice} 
+                    onChange={(e) => isAdmin && saveDailyNotice(e.target.value)} 
+                    readOnly={!isAdmin} 
+                    className="w-full bg-transparent text-[11px] font-medium outline-none resize-none leading-relaxed text-white/80 min-h-[80px]" 
+                  />
+                </div>
               </div>
             )}
           </div>
 
-          <div className="p-6 pt-2 flex-shrink-0">
-            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-slate-100 text-slate-400 py-4 rounded-2xl font-black text-[10px] uppercase italic">
+          {/* Sidebar Footer */}
+          <div className="p-4 flex-shrink-0 space-y-2">
+            <button onClick={async () => { await supabase.auth.signOut(); router.replace("/login") }} className="w-full bg-white/5 text-white/40 py-3 rounded-xl font-bold text-[10px] uppercase hover:bg-white/10 transition-colors">
               Logout System
             </button>
+            <div className="text-[10px] text-white/20 text-center font-light">
+              배진우 팀장 AFPK<br/>메타리치 시그널그룹
+            </div>
           </div>
         </div>
       </aside>
@@ -350,5 +360,18 @@ export default function Sidebar({
 
       {isOpen && <div onClick={() => setIsOpen(false)} className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" />}
     </>
+  );
+}
+
+function NavItem({ icon, label, active, onClick }: { icon: string, label: string, active?: boolean, onClick: () => void }) {
+  return (
+    <button 
+      onClick={onClick} 
+      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${active ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+    >
+      <span className={`text-lg transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>{icon}</span>
+      <span className="text-[13px] font-medium">{label}</span>
+      {active && <div className="ml-auto w-1 h-4 bg-[#0ea5e9] rounded-full"></div>}
+    </button>
   );
 }
