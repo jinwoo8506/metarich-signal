@@ -118,13 +118,13 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       const updated = { ...u };
       if (field === 'headquarter') {
         if (value === 'CUSTOM_INPUT') { updated.headquarter = ''; updated.isCustomHeadquarter = true; }
-        else { updated.headquarter = value; updated.isCustomHeadquarter = false; }
+        else { updated.headquarter = value; updated.isCustomHeadquarter = !!updated.isCustomHeadquarter; }
       } else if (field === 'department') {
         if (value === 'CUSTOM_INPUT') { updated.department = ''; updated.isCustomDept = true; }
-        else { updated.department = value; updated.isCustomDept = false; }
+        else { updated.department = value; updated.isCustomDept = !!updated.isCustomDept; }
       } else if (field === 'team') {
         if (value === 'CUSTOM_INPUT') { updated.team = ''; updated.isCustomTeam = true; }
-        else { updated.team = value; updated.isCustomTeam = false; }
+        else { updated.team = value; updated.isCustomTeam = !!updated.isCustomTeam; }
       } else {
         updated[field] = value;
       }

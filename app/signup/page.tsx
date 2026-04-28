@@ -99,10 +99,10 @@ export default function SignupPage() {
             rank: "agent",
             headquarter: formData.headquarter,
             headquarter_name: formData.headquarter,
-            department: formData.department,
-            department_name: formData.department,
-            team: formData.branch,
-            branch_name: formData.branch,
+            department: formData.department || "",
+            department_name: formData.department || "",
+            team: formData.branch || "",
+            branch_name: formData.branch || "",
             is_approved: false,
           },
         ])
@@ -182,29 +182,27 @@ export default function SignupPage() {
             </label>
 
             <label>
-              <span className="mb-2 block text-xs font-bold text-slate-500">사업부</span>
+              <span className="mb-2 block text-xs font-bold text-slate-500">사업부 <span className="font-medium text-slate-400">(선택)</span></span>
               <select
-                required
                 disabled={!formData.headquarter}
                 className={selectClass}
                 value={formData.department}
                 onChange={(e) => setFormData({ ...formData, department: e.target.value, branch: "" })}
               >
-                <option value="">사업부 선택</option>
+                <option value="">나중에 배정</option>
                 {filteredDepts.map((dept) => <option key={dept.id || dept.name} value={dept.name}>{dept.name}</option>)}
               </select>
             </label>
 
             <label>
-              <span className="mb-2 block text-xs font-bold text-slate-500">지점</span>
+              <span className="mb-2 block text-xs font-bold text-slate-500">지점 <span className="font-medium text-slate-400">(선택)</span></span>
               <select
-                required
                 disabled={!formData.department}
                 className={selectClass}
                 value={formData.branch}
                 onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
               >
-                <option value="">지점 선택</option>
+                <option value="">나중에 배정</option>
                 {filteredBranches.map((branch) => <option key={branch.id || branch.name} value={branch.name}>{branch.name}</option>)}
               </select>
             </label>
