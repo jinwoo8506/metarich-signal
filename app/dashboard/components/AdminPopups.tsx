@@ -140,6 +140,38 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
   };
 
   // 유저 정보(사업부/지점) DB 저장
+  const syncOrganizationOptions = async (user: any) => {
+    const companyName = "시그널그룹";
+
+    const { error: deptError } = await supabase
+      .from("departments")
+      .upsert(
+        {
+          name: user.department,
+          hq_name: companyName,
+          headquarter: user.headquarter,
+        },
+        { onConflict: "name" }
+      );
+
+    if (deptError) throw deptError;
+
+    const { error: branchError } = await supabase
+      .from("branches")
+      .upsert(
+        {
+          name: user.team,
+          dept_name: user.department,
+          department: user.department,
+          hq_name: companyName,
+          headquarter: user.headquarter,
+        },
+        { onConflict: "dept_name,name" }
+      );
+
+    if (branchError) throw branchError;
+  };
+
   const handleUserSave = async (user: any) => {
     if(!user.headquarter || !user.department || !user.team) {
       alert("본부, 사업부, 지점을 모두 입력해주세요.");
@@ -161,9 +193,15 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
     if (error) { 
       console.error(error);
       alert("저장 중 오류 발생: " + error.message); 
-    } 
-    else { 
-      alert(`${user.name}님의 정보가 업데이트 되었습니다.`); 
+    }
+    else {
+      try {
+        await syncOrganizationOptions(user);
+        alert(`${user.name}님의 정보가 저장되었고, 조직 선택지도 업데이트되었습니다.`);
+      } catch (orgError: any) {
+        console.error(orgError);
+        alert(`${user.name}님의 정보는 저장되었지만, 회원가입 선택지 등록 중 오류가 발생했습니다: ${orgError?.message || "조직 테이블 권한 또는 컬럼을 확인해주세요."}`);
+      }
       setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_approved: true } : u));
     }
   };
