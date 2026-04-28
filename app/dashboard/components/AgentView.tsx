@@ -32,7 +32,6 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm",
     customerCrm: "/customer-crm/index.html",
   };
-  const canUseCustomerCrm = user?.email?.toLowerCase?.().trim() === "jinwoo8506@gmail.com";
 
   const handleGoogleSync = async (customers: any[]) => {
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxQVSM9jB0lubHWSEBNUcRT_OFwU4QS9AOjNOzQwPjW9FOif3izSVWxOwuXpUXhGZ0IEQ/exec";
@@ -173,8 +172,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
           <QuickBtn label="영업도구" onClick={() => setIsToolOpen(true)} color="bg-[#1a3a6e] text-white" />
           <QuickBtn
             label="고객관리"
-            url={canUseCustomerCrm ? LINKS.customerCrm : undefined}
-            onClick={canUseCustomerCrm ? undefined : () => setIsCustOpen(true)}
+            url={LINKS.customerCrm}
             color="bg-[#10b981] text-white"
           />
         </div>
