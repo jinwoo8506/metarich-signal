@@ -44,11 +44,12 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.replace('/login'); return }
       const { data: userData } = await supabase
-        .from('users').select('name, role, crm_access, phone').eq('id', session.user.id).single()
+        .from('users').select('name, role, crm_access, is_approved, phone').eq('id', session.user.id).single()
       const role = userData?.role || ''
       const isMaster = role === 'master'
       const hasCrm = userData?.crm_access === true || userData?.crm_access === 'true'
-      if (!isMaster && !hasCrm) { router.replace('/dashboard'); return }
+      const isApproved = userData?.is_approved === true || userData?.is_approved === 'true'
+      if (!isMaster && !hasCrm && !isApproved) { router.replace('/dashboard'); return }
       setUser({ ...session.user, ...userData })
       setChecking(false)
     })

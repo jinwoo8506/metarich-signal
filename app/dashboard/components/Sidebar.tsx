@@ -219,7 +219,7 @@ export default function Sidebar({
                 onClick={() => setIsConsultModalOpen(true)} 
               />
 
-              {(user?.crm_access === true || user?.crm_access === "true" || isMaster) && (
+              {((user?.crm_access === true || user?.crm_access === "true") || (user?.is_approved === true || user?.is_approved === "true") || isMaster) && (
                 <NavItem
                   icon="📋"
                   label="고객관리"
