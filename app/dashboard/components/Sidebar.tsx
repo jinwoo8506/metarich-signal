@@ -222,7 +222,7 @@ export default function Sidebar({
               {(user?.crm_access === true || user?.crm_access === "true" || isMaster) && (
                 <NavItem
                   icon="📋"
-                  label="고객 CRM"
+                  label="고객관리"
                   active={false}
                   onClick={() => { router.push('/crm'); setIsOpen(false); }}
                 />

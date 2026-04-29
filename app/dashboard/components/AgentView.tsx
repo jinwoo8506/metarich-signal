@@ -30,7 +30,7 @@ export default function AgentView({ user, selectedDate }: { user: any, selectedD
     metaon: "https://meta-on.kr/#/login", 
     insu: "https://xn--on3bi2e18htop.com/", 
     archive: "https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm",
-    customerCrm: "/customer-crm/index.html",
+    customerCrm: "/crm",
   };
 
   const handleGoogleSync = async (customers: any[]) => {

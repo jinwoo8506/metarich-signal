@@ -75,8 +75,8 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
         <div className="sb-logo">
           <div className="sb-logo-icon">M</div>
           <div>
-            <div className="sb-logo-text">METARICH CRM</div>
-            <div className="sb-logo-sub">보험 고객관리 시스템</div>
+            <div className="sb-logo-text">시그널 고객관리</div>
+            <div className="sb-logo-sub">상담 고객 및 보장관리</div>
           </div>
         </div>
 
@@ -111,10 +111,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
           <button
-            onClick={async () => { await supabase.auth.signOut(); window.close() }}
-            style={{ marginTop: 8, width: '100%', background: 'rgba(255,255,255,.06)', border: 'none', borderRadius: 8, color: '#64748b', fontSize: 11, padding: '6px 0', cursor: 'pointer' }}
+            onClick={() => router.push('/dashboard')}
+            style={{ marginTop: 8, width: '100%', background: 'rgba(255,255,255,.06)', border: 'none', borderRadius: 8, color: '#94a3b8', fontSize: 11, padding: '7px 0', cursor: 'pointer' }}
           >
-            로그아웃
+            대시보드로 돌아가기
           </button>
         </div>
       </aside>

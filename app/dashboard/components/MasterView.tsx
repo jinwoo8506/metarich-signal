@@ -162,7 +162,7 @@ export default function AdminView({ user, selectedDate }: { user: any, selectedD
         <QuickLink href="https://meta-on.kr/#/login" label="메타온" />
         <QuickLink href="https://xn--on3bi2e18htop.com/" label="보험사" />
         <QuickLink href="https://drive.google.com/drive/u/2/folders/1-JlU3eS70VN-Q65QmD0JlqV-8lhx6Nbm" label="자료실" />
-        <QuickLink href="/customer-crm/index.html" label="고객관리" />
+        <QuickLink href="/crm" label="고객관리" />
         <div className="relative">
           <button onClick={() => setShowExportOpt(!showExportOpt)} className="w-full h-full bg-emerald-600 text-white p-4 rounded-2xl text-[13px] shadow-lg font-black border border-emerald-700">
             리포트 출력
