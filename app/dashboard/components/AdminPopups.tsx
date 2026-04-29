@@ -177,7 +177,7 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       alert("본부, 사업부, 지점을 모두 입력해주세요.");
       return;
     }
-    const { error } = await supabase.from("users").update({ 
+    const updatePayload: any = {
       is_approved: true,
       role: user.rank,
       role_level: user.rank === "headquarters" ? "headquarters" : user.rank === "leader" ? "director" : user.rank,
@@ -187,8 +187,12 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
       department: user.department,
       team: user.team,
       department_name: user.department,
-      branch_name: user.team 
-    }).eq("id", user.id);
+      branch_name: user.team,
+    };
+    if (normalizeRole(viewer) === 'master') {
+      updatePayload.crm_access = user.crm_access === true || user.crm_access === 'true';
+    }
+    const { error } = await supabase.from("users").update(updatePayload).eq("id", user.id);
 
     if (error) { 
       console.error(error);
@@ -243,6 +247,9 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                   <tr>
                     <th className="p-4 md:p-5">직원 정보</th>
                     <th className="p-4 md:p-5 text-center">직급 / 본부 / 사업부 / 지점</th>
+                    {normalizeRole(viewer) === 'master' && (
+                      <th className="p-4 md:p-5 text-center">CRM</th>
+                    )}
                     <th className="p-4 md:p-5 text-center">처리</th>
                   </tr>
                 </thead>
@@ -296,6 +303,21 @@ export default function AdminPopups({ type, agents, selectedAgent, teamMeta, onC
                           )}
                         </div>
                       </td>
+                      {normalizeRole(viewer) === 'master' && (
+                        <td className="p-4 md:p-6 text-center">
+                          <label className="flex flex-col items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={u.crm_access === true || u.crm_access === 'true'}
+                              onChange={() => updateUserInfo(u.id, 'crm_access', String(!(u.crm_access === true || u.crm_access === 'true')))}
+                              className="w-5 h-5 accent-[#1a3a6e] cursor-pointer"
+                            />
+                            <span className="text-[11px] font-bold text-slate-500">
+                              {(u.crm_access === true || u.crm_access === 'true') ? '허용' : '비허용'}
+                            </span>
+                          </label>
+                        </td>
+                      )}
                       <td className="p-4 md:p-6 text-center">
                         <button onClick={() => handleUserSave(u)} className={`px-4 md:px-6 py-2 rounded-full text-[13px] font-black border border-[#1a3a6e] transition-all ${u.is_approved ? 'bg-white text-[#1a3a6e]' : 'bg-[#1a3a6e] text-white'}`}>
                           {u.is_approved ? '정보 저장' : '승인'}

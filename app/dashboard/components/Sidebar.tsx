@@ -71,6 +71,7 @@ export default function Sidebar({
     if (!error) { alert(nextStatus ? "승인 완료되었습니다." : "승인이 취소되었습니다."); fetchStaffList(); }
   }
 
+
   async function fetchMenuSettings() {
     const { data } = await supabase.from("team_settings").select("key, value");
     if (data) {
@@ -218,12 +219,21 @@ export default function Sidebar({
                 onClick={() => setIsConsultModalOpen(true)} 
               />
 
+              {(user?.crm_access === true || user?.crm_access === "true" || isMaster) && (
+                <NavItem
+                  icon="📋"
+                  label="고객 CRM"
+                  active={false}
+                  onClick={() => { router.push('/crm'); setIsOpen(false); }}
+                />
+              )}
+
               {canManageStaff && (
-                <NavItem 
-                  icon="👥" 
-                  label="조직 관리" 
-                  active={showStaffManager} 
-                  onClick={() => setShowStaffManager(!showStaffManager)} 
+                <NavItem
+                  icon="👥"
+                  label="조직 관리"
+                  active={showStaffManager}
+                  onClick={() => setShowStaffManager(!showStaffManager)}
                 />
               )}
             </nav>
