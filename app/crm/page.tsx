@@ -1,33 +1,67 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts'
 
 const statusLabels: Record<string, string> = {
-  new: '신규', analysis: '분석', consulting: '상담', proposal: '제안',
-  hold: '보류', contracted: '계약', managing: '관리',
+  new: '신규',
+  analysis: '분석',
+  consulting: '상담',
+  proposal: '제안',
+  hold: '보류',
+  contracted: '계약',
+  managing: '관리',
 }
-const statusColors: Record<string, string> = {
-  new: 'bg-gray-100 text-gray-600', analysis: 'bg-blue-50 text-blue-700',
-  consulting: 'bg-yellow-50 text-yellow-700', proposal: 'bg-purple-50 text-purple-700',
-  hold: 'bg-red-50 text-red-600', contracted: 'bg-green-50 text-green-700',
-  managing: 'bg-emerald-50 text-emerald-700',
+
+const statusBadges: Record<string, string> = {
+  new: 'badge-gray',
+  analysis: 'badge-blue',
+  consulting: 'badge-yellow',
+  proposal: 'badge-purple',
+  hold: 'badge-red',
+  contracted: 'badge-green',
+  managing: 'badge-cyan',
 }
+
 const notifTypeLabels: Record<string, string> = {
-  birthday: '생일', indemnity_end: '면책 종료', reduction_end: '감액 종료',
-  car_renewal_d60: '자동차 D-60', car_renewal_d30: '자동차 D-30',
-  indemnity_renewal: '실손 재가입', join_30: '가입 30일', join_90: '가입 90일',
-  join_180: '가입 180일', join_365: '가입 1년', consulting: '상담 예정',
+  birthday: '생일',
+  indemnity_end: '면책 종료',
+  reduction_end: '감액 종료',
+  car_renewal_d60: '자동차 D-60',
+  car_renewal_d30: '자동차 D-30',
+  indemnity_renewal: '실손 재가입',
+  join_30: '가입 30일',
+  join_90: '가입 90일',
+  join_180: '가입 180일',
+  join_365: '가입 1년',
+  consulting: '상담 예정',
 }
-const notifTypeColors: Record<string, string> = {
-  birthday: 'bg-pink-100 text-pink-700', indemnity_end: 'bg-orange-100 text-orange-700',
-  reduction_end: 'bg-orange-100 text-orange-700', car_renewal_d60: 'bg-purple-100 text-purple-700',
-  car_renewal_d30: 'bg-purple-100 text-purple-700', indemnity_renewal: 'bg-cyan-100 text-cyan-700',
-  join_30: 'bg-blue-100 text-blue-700', join_90: 'bg-blue-100 text-blue-700',
-  join_180: 'bg-blue-100 text-blue-700', join_365: 'bg-blue-100 text-blue-700',
-  consulting: 'bg-green-100 text-green-700',
+
+const notifBadges: Record<string, string> = {
+  birthday: 'badge-pink',
+  indemnity_end: 'badge-orange',
+  reduction_end: 'badge-orange',
+  car_renewal_d60: 'badge-purple',
+  car_renewal_d30: 'badge-purple',
+  indemnity_renewal: 'badge-cyan',
+  join_30: 'badge-blue',
+  join_90: 'badge-blue',
+  join_180: 'badge-blue',
+  join_365: 'badge-blue',
+  consulting: 'badge-green',
+}
+
+const categoryNames: Record<string, string> = {
+  cancer: '암',
+  brain: '뇌혈관',
+  heart: '심장',
+  surgery: '수술',
+  hospitalization: '입원',
+  nursing: '간병',
+  driver: '운전자',
+  fire: '화재',
 }
 
 export default function CrmDashboard() {
@@ -35,7 +69,6 @@ export default function CrmDashboard() {
   const [advisorName, setAdvisorName] = useState('담당자')
   const [customers, setCustomers] = useState<any[]>([])
   const [notifications, setNotifications] = useState<any[]>([])
-  const [stats, setStats] = useState({ total: 0, thisMonth: 0, totalPremium: 0, pendingNotif: 0 })
   const [radarData, setRadarData] = useState<{ category: string; value: number; recommended: number }[]>([])
 
   useEffect(() => {
@@ -44,156 +77,144 @@ export default function CrmDashboard() {
       if (!session) return
 
       const { data: userData } = await supabase
-        .from('users').select('name').eq('id', session.user.id).single()
+        .from('users')
+        .select('name')
+        .eq('id', session.user.id)
+        .single()
+
       setAdvisorName(userData?.name || session.user.email?.split('@')[0] || '담당자')
 
       const { data: custs } = await supabase
-        .from('customers').select('*').eq('advisor_id', session.user.id)
+        .from('customers')
+        .select('*')
+        .eq('advisor_id', session.user.id)
         .order('join_date', { ascending: false })
+
       const custList = custs || []
       setCustomers(custList)
 
       const custIds = custList.map((c: any) => c.id)
       const { data: notifs } = custIds.length > 0
-        ? await supabase.from('notifications').select('*')
-            .in('customer_id', custIds).eq('is_done', false)
-            .order('due_date', { ascending: true }).limit(10)
+        ? await supabase
+          .from('notifications')
+          .select('*')
+          .in('customer_id', custIds)
+          .eq('is_done', false)
+          .order('due_date', { ascending: true })
+          .limit(10)
         : { data: [] }
-      setNotifications(notifs || [])
 
-      const now = new Date()
-      const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-      setStats({
-        total: custList.length,
-        thisMonth: custList.filter((c: any) => c.join_date?.startsWith(thisMonth)).length,
-        totalPremium: custList.reduce((s: number, c: any) => s + (c.monthly_premium || 0), 0),
-        pendingNotif: (notifs || []).length,
-      })
+      setNotifications(notifs || [])
 
       if (custIds.length > 0) {
         const { data: coverages } = await supabase
-          .from('coverages').select('category, amount').in('customer_id', custIds)
-        const catTotals: Record<string, number> = {}
-        ;(coverages || []).forEach((cv: any) => {
-          catTotals[cv.category] = (catTotals[cv.category] || 0) + (cv.amount || 0)
+          .from('coverages')
+          .select('category, amount')
+          .in('customer_id', custIds)
+
+        const categoryTotals: Record<string, number> = {}
+        ;(coverages || []).forEach((coverage: any) => {
+          categoryTotals[coverage.category] = (categoryTotals[coverage.category] || 0) + (coverage.amount || 0)
         })
-        const maxAmt = Math.max(...Object.values(catTotals), 1)
-        const catNames: Record<string, string> = {
-          cancer: '암', brain: '뇌혈관', heart: '심장', surgery: '수술',
-          hospitalization: '입원', nursing: '간병', driver: '운전자', fire: '화재',
-        }
-        setRadarData(Object.entries(catNames).map(([key, label]) => ({
+
+        const maxAmount = Math.max(...Object.values(categoryTotals), 1)
+        setRadarData(Object.entries(categoryNames).map(([key, label]) => ({
           category: label,
-          value: Math.round(((catTotals[key] || 0) / maxAmt) * 100),
+          value: Math.round(((categoryTotals[key] || 0) / maxAmount) * 100),
           recommended: 100,
         })))
       }
+
       setLoading(false)
     }
+
     load()
   }, [])
 
+  const stats = useMemo(() => {
+    const now = new Date()
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const totalPremium = customers.reduce((sum, customer) => sum + (customer.monthly_premium || 0), 0)
+
+    return {
+      total: customers.length,
+      thisMonth: customers.filter((customer) => customer.join_date?.startsWith(thisMonth)).length,
+      totalPremium,
+      pendingNotif: notifications.length,
+      birthday: notifications.filter((item) => item.type === 'birthday').length,
+      renewal: notifications.filter((item) => String(item.type).includes('renewal')).length,
+    }
+  }, [customers, notifications])
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="card card-p" style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 28, height: 28, border: '3px solid #3b82f6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">안녕하세요, {advisorName}님!</h1>
-        <p className="text-sm text-gray-500 mt-0.5">고객 관리 현황을 확인하세요.</p>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: '전체 고객', value: stats.total, unit: '명', color: 'text-blue-600' },
-          { label: '이번달 신규', value: stats.thisMonth, unit: '명', color: 'text-emerald-600' },
-          { label: '월 총 보험료', value: `${Math.round(stats.totalPremium / 10000)}만`, unit: '원', color: 'text-purple-600' },
-          { label: '미처리 알림', value: stats.pendingNotif, unit: '건', color: 'text-orange-500' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className={`text-2xl font-black ${s.color}`}>{s.value}<span className="text-xs font-normal text-gray-400 ml-0.5">{s.unit}</span></div>
-            <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
+    <>
+      <div className="page-header">
+        <div>
+          <div className="page-title">안녕하세요, {advisorName}님!</div>
+          <div className="page-subtitle">오늘의 고객 관리 현황을 한눈에 확인하세요.</div>
+        </div>
+        <div className="header-right">
+          <div className="date-chip">
+            <CalendarIcon />
+            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' })}
           </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div className="xl:col-span-2 space-y-5">
-          {/* 최근 알림 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800 text-sm">미처리 알림</h3>
-              <Link href="/crm/alerts" className="text-xs text-blue-600 hover:underline">전체보기 →</Link>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {notifications.slice(0, 6).map((n: any) => (
-                <div key={n.id} className="px-5 py-3 flex items-center gap-3">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${notifTypeColors[n.type] || 'bg-gray-100 text-gray-600'}`}>
-                    {notifTypeLabels[n.type] || n.type}
-                  </span>
-                  <span className="text-sm text-gray-700 font-medium truncate">{n.customer_name}</span>
-                  <span className="ml-auto text-xs text-gray-400 shrink-0">{n.due_date}</span>
-                </div>
-              ))}
-              {notifications.length === 0 && (
-                <div className="px-5 py-8 text-center text-gray-400 text-sm">미처리 알림이 없습니다.</div>
-              )}
-            </div>
-          </div>
-
-          {/* 최근 고객 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-800 text-sm">최근 등록 고객</h3>
-              <Link href="/crm/customers" className="text-xs text-blue-600 hover:underline">전체보기 →</Link>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    {['고객명', '연락처', '월 보험료', '상태', '등록일'].map(h => (
-                      <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {customers.slice(0, 5).map((c: any) => (
-                    <tr key={c.id} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="px-4 py-2.5">
-                        <Link href={`/crm/customers/${c.id}`} className="font-medium text-gray-800 hover:text-blue-600 text-sm">{c.name}</Link>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-gray-500">{c.phone}</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-700 font-medium">{c.monthly_premium?.toLocaleString()}원</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[c.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {statusLabels[c.status] || c.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400">{c.join_date}</td>
-                    </tr>
-                  ))}
-                  {customers.length === 0 && (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">고객을 등록하면 여기에 표시됩니다.</td></tr>
-                  )}
-                </tbody>
-              </table>
+          <Link href="/crm/alerts" className="btn-notif" aria-label="알림">
+            <BellIcon />
+            {stats.pendingNotif > 0 && <div className="badge-red">{stats.pendingNotif}</div>}
+          </Link>
+          <div className="profile-chip">
+            <div className="profile-avatar">{advisorName.slice(0, 1)}</div>
+            <div>
+              <div className="profile-name">{advisorName}</div>
+              <div className="profile-role">보험 담당자</div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* 오른쪽 사이드 */}
-        <div className="space-y-5">
-          {/* 레이더 차트 */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-semibold text-gray-800 text-sm mb-4">전체 보장 현황</h3>
-            {radarData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={240}>
+      <div className="grid-6" style={{ marginBottom: 16 }}>
+        <StatCard icon="🎂" iconBg="#fdf2f8" label="생일 고객" value={stats.birthday} unit="명" sub="이번 주" color="#be185d" />
+        <StatCard icon="⏳" iconBg="#fff7ed" label="면책/감액 알림" value={notifications.filter((n) => n.type === 'indemnity_end' || n.type === 'reduction_end').length} unit="건" sub="처리 필요" color="#ea580c" />
+        <StatCard icon="🔔" iconBg="#eff6ff" label="갱신 알림" value={stats.renewal} unit="건" sub="D-60 / D-30" color="#2563eb" />
+        <StatCard icon="👥" iconBg="#ecfeff" label="전체 고객" value={stats.total} unit="명" sub={`신규 ${stats.thisMonth}명`} color="#0891b2" />
+        <StatCard icon="💬" iconBg="#f0fdf4" label="미처리 알림" value={stats.pendingNotif} unit="건" sub="오늘 확인" color="#16a34a" />
+        <StatCard icon="₩" iconBg="#faf5ff" label="월 보험료" value={Math.round(stats.totalPremium / 10000)} unit="만" sub="전체 합계" color="#7c3aed" />
+      </div>
+
+      <div className="grid-3" style={{ marginBottom: 16 }}>
+        <div className="card card-p" style={{ gridColumn: 'span 2' }}>
+          <div className="flex justify-between items-center mb-16">
+            <div className="card-title" style={{ marginBottom: 0 }}>미처리 알림</div>
+            <Link href="/crm/alerts" className="link">전체보기</Link>
+          </div>
+          {notifications.slice(0, 6).map((item) => (
+            <div key={item.id} className={`alert-item ${!item.is_read ? 'unread' : ''}`} style={{ marginLeft: -20, marginRight: -20 }}>
+              {!item.is_read && <div className="alert-unread-dot" />}
+              <span className={`badge ${notifBadges[item.type] || 'badge-gray'}`}>{notifTypeLabels[item.type] || item.type}</span>
+              <div className="alert-info">
+                <div className="alert-name">{item.customer_name}</div>
+                {item.message && <div className="alert-msg">{item.message}</div>}
+              </div>
+              <div className="alert-date">{item.due_date}</div>
+            </div>
+          ))}
+          {notifications.length === 0 && <EmptyState text="현재 처리할 알림이 없습니다." />}
+        </div>
+
+        <div className="card card-p">
+          <div className="card-title">전체 보장 현황</div>
+          {radarData.length > 0 ? (
+            <div className="radar-wrap" style={{ height: 250 }}>
+              <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData}>
                   <PolarGrid />
                   <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} />
@@ -201,36 +222,98 @@ export default function CrmDashboard() {
                   <Radar name="권장" dataKey="recommended" stroke="#E2E8F0" fill="none" strokeDasharray="4 2" />
                 </RadarChart>
               </ResponsiveContainer>
-            ) : (
-              <p className="text-center text-xs text-gray-400 py-16">고객 등록 후 표시됩니다</p>
-            )}
-          </div>
-
-          {/* 상태별 고객 */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-            <h3 className="font-semibold text-gray-800 text-sm mb-3">상태별 고객</h3>
-            <div className="space-y-2">
-              {Object.entries(statusLabels).map(([key, label]) => {
-                const count = customers.filter((c: any) => c.status === key).length
-                if (count === 0) return null
-                const pct = Math.round((count / customers.length) * 100)
-                return (
-                  <div key={key}>
-                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                      <span>{label}</span>
-                      <span className="font-medium">{count}명 ({pct}%)</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-              {customers.length === 0 && <p className="text-xs text-gray-400 text-center py-4">데이터 없음</p>}
             </div>
-          </div>
+          ) : (
+            <EmptyState text="보장 데이터가 등록되면 표시됩니다." />
+          )}
         </div>
       </div>
+
+      <div className="card">
+        <div className="card-p flex justify-between items-center">
+          <div className="card-title" style={{ marginBottom: 0 }}>최근 등록 고객</div>
+          <Link href="/crm/customers" className="link">전체보기</Link>
+        </div>
+        <div className="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>고객명</th>
+                <th>연락처</th>
+                <th>월 보험료</th>
+                <th>상태</th>
+                <th>등록일</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.slice(0, 6).map((customer) => (
+                <tr key={customer.id}>
+                  <td>
+                    <Link href={`/crm/customers/${customer.id}`} className="fw-700 text-blue">
+                      {customer.name}
+                    </Link>
+                  </td>
+                  <td>{customer.phone || '-'}</td>
+                  <td>{(customer.monthly_premium || 0).toLocaleString()}원</td>
+                  <td><span className={`badge ${statusBadges[customer.status] || 'badge-gray'}`}>{statusLabels[customer.status] || customer.status || '-'}</span></td>
+                  <td>{customer.join_date || '-'}</td>
+                  <td><Link href={`/crm/customers/${customer.id}`} className="btn btn-secondary btn-xs">상세</Link></td>
+                </tr>
+              ))}
+              {customers.length === 0 && (
+                <tr>
+                  <td colSpan={6}><EmptyState text="등록된 고객이 없습니다." /></td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function StatCard({ icon, iconBg, label, value, unit, sub, color }: {
+  icon: string
+  iconBg: string
+  label: string
+  value: number
+  unit: string
+  sub: string
+  color: string
+}) {
+  return (
+    <div className="card stat-card">
+      <div className="stat-icon" style={{ background: iconBg }}>{icon}</div>
+      <div className="stat-label">{label}</div>
+      <div className="stat-value" style={{ color }}>
+        {value}<span style={{ fontSize: 14, fontWeight: 400, color: '#94a3b8' }}>{unit}</span>
+      </div>
+      <div className="stat-sub">{sub}</div>
     </div>
+  )
+}
+
+function EmptyState({ text }: { text: string }) {
+  return <div style={{ padding: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{text}</div>
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" />
+      <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
+      <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
+      <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
+    </svg>
+  )
+}
+
+function BellIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
   )
 }

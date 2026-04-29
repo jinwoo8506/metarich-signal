@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '../../../../lib/supabase'
 
 const STATUS_OPTIONS = [
-  { value: 'new', label: '신규' }, { value: 'analysis', label: '분석' },
-  { value: 'consulting', label: '상담' }, { value: 'proposal', label: '제안' },
-  { value: 'hold', label: '보류' }, { value: 'contracted', label: '계약' },
+  { value: 'new', label: '신규' },
+  { value: 'analysis', label: '분석' },
+  { value: 'consulting', label: '상담' },
+  { value: 'proposal', label: '제안' },
+  { value: 'hold', label: '보류' },
+  { value: 'contracted', label: '계약' },
   { value: 'managing', label: '관리' },
 ]
+
 const TAGS = ['#암부족', '#뇌심장부족', '#갱신형주의', '#실손점검', '#운전자없음', '#화재점검필요']
 
 export default function NewCustomerPage() {
@@ -17,27 +21,43 @@ export default function NewCustomerPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
-    name: '', phone: '', birth_date: '', gender: 'male',
-    address: '', occupation: '', join_date: new Date().toISOString().slice(0, 10),
-    status: 'new', monthly_premium: '', policy_count: '',
-    indemnity_generation: '', family_count: '',
-    consulting_summary: '', tags: [] as string[],
+    name: '',
+    phone: '',
+    birth_date: '',
+    gender: 'male',
+    address: '',
+    occupation: '',
+    join_date: new Date().toISOString().slice(0, 10),
+    status: 'new',
+    monthly_premium: '',
+    policy_count: '',
+    indemnity_generation: '',
+    family_count: '',
+    consulting_summary: '',
+    tags: [] as string[],
   })
 
-  const set = (key: string, val: any) => setForm(prev => ({ ...prev, [key]: val }))
+  const set = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }))
 
   const toggleTag = (tag: string) => {
-    set('tags', form.tags.includes(tag) ? form.tags.filter(t => t !== tag) : [...form.tags, tag])
+    set('tags', form.tags.includes(tag) ? form.tags.filter((item) => item !== tag) : [...form.tags, tag])
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.name || !form.phone) { setError('이름과 연락처는 필수입니다.'); return }
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!form.name || !form.phone) {
+      setError('이름과 연락처는 필수입니다.')
+      return
+    }
+
     setSaving(true)
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setSaving(false); return }
+    if (!session) {
+      setSaving(false)
+      return
+    }
 
-    const { error: dbErr } = await supabase.from('customers').insert({
+    const { error: dbError } = await supabase.from('customers').insert({
       advisor_id: session.user.id,
       name: form.name,
       phone: form.phone,
@@ -55,114 +75,114 @@ export default function NewCustomerPage() {
       tags: form.tags,
     })
 
-    if (dbErr) { setError(dbErr.message); setSaving(false); return }
+    if (dbError) {
+      setError(dbError.message)
+      setSaving(false)
+      return
+    }
+
     router.push('/crm/customers')
   }
 
-  const labelClass = 'block text-xs font-semibold text-gray-600 mb-1'
-  const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-400 transition-colors'
-
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-5">
-        <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-700 mb-2">← 뒤로</button>
-        <h1 className="text-xl font-bold text-gray-900">고객 등록</h1>
+    <>
+      <div className="page-header">
+        <div>
+          <button type="button" className="link" style={{ marginBottom: 8 }} onClick={() => router.back()}>← 뒤로</button>
+          <div className="page-title">고객 등록</div>
+          <div className="page-subtitle">상담과 보장분석에 필요한 기본 정보를 입력합니다.</div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="card card-p" style={{ maxWidth: 860 }}>
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
+          <div className="badge badge-red" style={{ marginBottom: 16, borderRadius: 10, padding: '10px 12px' }}>{error}</div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>이름 *</label>
-            <input className={inputClass} value={form.name} onChange={e => set('name', e.target.value)} placeholder="홍길동" required />
-          </div>
-          <div>
-            <label className={labelClass}>연락처 *</label>
-            <input className={inputClass} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="010-0000-0000" required />
-          </div>
-          <div>
-            <label className={labelClass}>생년월일</label>
-            <input type="date" className={inputClass} value={form.birth_date} onChange={e => set('birth_date', e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>성별</label>
-            <select className={inputClass} value={form.gender} onChange={e => set('gender', e.target.value)}>
+        <div className="grid-2">
+          <Field label="이름 *">
+            <input className="form-input" value={form.name} onChange={(event) => set('name', event.target.value)} placeholder="고객명" required />
+          </Field>
+          <Field label="연락처 *">
+            <input className="form-input" value={form.phone} onChange={(event) => set('phone', event.target.value)} placeholder="010-0000-0000" required />
+          </Field>
+          <Field label="생년월일">
+            <input type="date" className="form-input" value={form.birth_date} onChange={(event) => set('birth_date', event.target.value)} />
+          </Field>
+          <Field label="성별">
+            <select className="form-input" value={form.gender} onChange={(event) => set('gender', event.target.value)}>
               <option value="male">남성</option>
               <option value="female">여성</option>
             </select>
-          </div>
-          <div>
-            <label className={labelClass}>직업</label>
-            <input className={inputClass} value={form.occupation} onChange={e => set('occupation', e.target.value)} placeholder="직업 입력" />
-          </div>
-          <div>
-            <label className={labelClass}>등록일</label>
-            <input type="date" className={inputClass} value={form.join_date} onChange={e => set('join_date', e.target.value)} />
-          </div>
-          <div>
-            <label className={labelClass}>월 보험료 (원)</label>
-            <input type="number" className={inputClass} value={form.monthly_premium} onChange={e => set('monthly_premium', e.target.value)} placeholder="0" />
-          </div>
-          <div>
-            <label className={labelClass}>보험 건수</label>
-            <input type="number" className={inputClass} value={form.policy_count} onChange={e => set('policy_count', e.target.value)} placeholder="0" />
-          </div>
-          <div>
-            <label className={labelClass}>실손 세대</label>
-            <input type="number" className={inputClass} value={form.indemnity_generation} onChange={e => set('indemnity_generation', e.target.value)} placeholder="1~4" />
-          </div>
-          <div>
-            <label className={labelClass}>세대 인원수</label>
-            <input type="number" className={inputClass} value={form.family_count} onChange={e => set('family_count', e.target.value)} placeholder="명" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>상태</label>
-            <div className="flex gap-2 flex-wrap">
-              {STATUS_OPTIONS.map(opt => (
-                <button key={opt.value} type="button"
-                  onClick={() => set('status', opt.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${form.status === opt.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>주소</label>
-            <input className={inputClass} value={form.address} onChange={e => set('address', e.target.value)} placeholder="주소 입력" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>상담 요약</label>
-            <textarea rows={3} className={`${inputClass} resize-none`} value={form.consulting_summary} onChange={e => set('consulting_summary', e.target.value)} placeholder="상담 내용 요약" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelClass}>태그</label>
-            <div className="flex gap-2 flex-wrap">
-              {TAGS.map(tag => (
-                <button key={tag} type="button"
-                  onClick={() => toggleTag(tag)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${form.tags.includes(tag) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
-                  {tag}
-                </button>
-              ))}
-            </div>
+          </Field>
+          <Field label="직업">
+            <input className="form-input" value={form.occupation} onChange={(event) => set('occupation', event.target.value)} placeholder="직업 입력" />
+          </Field>
+          <Field label="등록일">
+            <input type="date" className="form-input" value={form.join_date} onChange={(event) => set('join_date', event.target.value)} />
+          </Field>
+          <Field label="월 보험료">
+            <input type="number" className="form-input" value={form.monthly_premium} onChange={(event) => set('monthly_premium', event.target.value)} placeholder="0" />
+          </Field>
+          <Field label="보험 건수">
+            <input type="number" className="form-input" value={form.policy_count} onChange={(event) => set('policy_count', event.target.value)} placeholder="0" />
+          </Field>
+          <Field label="실손 세대">
+            <input type="number" className="form-input" value={form.indemnity_generation} onChange={(event) => set('indemnity_generation', event.target.value)} placeholder="1~4" />
+          </Field>
+          <Field label="가족 인원">
+            <input type="number" className="form-input" value={form.family_count} onChange={(event) => set('family_count', event.target.value)} placeholder="명" />
+          </Field>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">상태</label>
+          <div className="tab-bar">
+            {STATUS_OPTIONS.map((option) => (
+              <button key={option.value} type="button" className={`tab-btn${form.status === option.value ? ' active' : ''}`} onClick={() => set('status', option.value)}>
+                {option.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="flex gap-3 pt-2">
-          <button type="button" onClick={() => router.back()}
-            className="flex-1 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+        <Field label="주소">
+          <input className="form-input" value={form.address} onChange={(event) => set('address', event.target.value)} placeholder="주소 입력" />
+        </Field>
+
+        <Field label="상담 요약">
+          <textarea rows={3} className="form-input" value={form.consulting_summary} onChange={(event) => set('consulting_summary', event.target.value)} placeholder="상담 내용 요약" />
+        </Field>
+
+        <div className="form-group">
+          <label className="form-label">태그</label>
+          <div>
+            {TAGS.map((tag) => (
+              <button key={tag} type="button" className={`tag ${form.tags.includes(tag) ? 'tag-cyan' : 'tag-yellow'}`} onClick={() => toggleTag(tag)}>
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-12" style={{ paddingTop: 12 }}>
+          <button type="button" onClick={() => router.back()} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
             취소
           </button>
-          <button type="submit" disabled={saving}
-            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors">
+          <button type="submit" disabled={saving} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center', opacity: saving ? 0.5 : 1 }}>
             {saving ? '저장 중...' : '고객 등록'}
           </button>
         </div>
       </form>
+    </>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="form-group">
+      <label className="form-label">{label}</label>
+      {children}
     </div>
   )
 }

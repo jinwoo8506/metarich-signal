@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 
 export default function DmPage() {
@@ -18,43 +18,50 @@ export default function DmPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setLoading(false); return }
+    if (!session) {
+      setLoading(false)
+      return
+    }
 
-    const [{ data: userData }, { data: tmplData }, { data: custData }, { data: logData }] = await Promise.all([
+    const [{ data: userData }, { data: templateData }, { data: customerData }, { data: logData }] = await Promise.all([
       supabase.from('users').select('name, phone').eq('id', session.user.id).single(),
       supabase.from('dm_templates').select('*').order('created_at', { ascending: true }),
-      supabase.from('customers').select('id, name, phone, monthly_premium, policy_count')
-        .eq('advisor_id', session.user.id).order('name', { ascending: true }),
-      supabase.from('dm_logs').select('content, sent_at, dm_templates(title), customers(name)')
-        .order('sent_at', { ascending: false }).limit(5),
+      supabase.from('customers').select('id, name, phone, monthly_premium, policy_count').eq('advisor_id', session.user.id).order('name', { ascending: true }),
+      supabase.from('dm_logs').select('content, sent_at, dm_templates(title), customers(name)').order('sent_at', { ascending: false }).limit(5),
     ])
 
+    const templateList = templateData || []
+    const customerList = customerData || []
     setAdvisorName(userData?.name || session.user.email?.split('@')[0] || '담당자')
     setAdvisorPhone(userData?.phone || '')
-
-    const tmplList = tmplData || []
-    const custList = custData || []
-    setTemplates(tmplList)
-    setCustomers(custList)
-    if (tmplList.length) setSelectedTemplate(tmplList[0])
-    if (custList.length) setSelectedCustomer(custList[0])
-    setDmLogs(
-      (logData || []).map((l: any) => ({
-        name: l.customers?.name || '', title: l.dm_templates?.title || '',
-        date: l.sent_at?.slice(5, 10) || '',
-      }))
-    )
+    setTemplates(templateList)
+    setCustomers(customerList)
+    setSelectedTemplate(templateList[0] || null)
+    setSelectedCustomer(customerList[0] || null)
+    setDmLogs((logData || []).map((log: any) => ({
+      name: log.customers?.name || '',
+      title: log.dm_templates?.title || '',
+      date: log.sent_at?.slice(5, 10) || '',
+    })))
     setLoading(false)
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  const preview = selectedTemplate && selectedCustomer
-    ? (selectedTemplate.content || '')
-        .replace(/\{\{customer_name\}\}/g, selectedCustomer.name)
-        .replace(/\{\{advisor_name\}\}/g, advisorName)
-        .replace(/\{\{advisor_phone\}\}/g, advisorPhone)
-    : ''
+  const preview = useMemo(() => {
+    if (!selectedTemplate || !selectedCustomer) return ''
+    return String(selectedTemplate.content || '')
+      .replace(/\{\{customer_name\}\}/g, selectedCustomer.name)
+      .replace(/\{\{advisor_name\}\}/g, advisorName)
+      .replace(/\{\{advisor_phone\}\}/g, advisorPhone)
+  }, [advisorName, advisorPhone, selectedCustomer, selectedTemplate])
+
+  const filteredCustomers = useMemo(() => {
+    const keyword = search.trim()
+    return customers.filter((customer) =>
+      !keyword || String(customer.name || '').includes(keyword) || String(customer.phone || '').includes(keyword)
+    )
+  }, [customers, search])
 
   const handleCopy = async () => {
     if (!preview || !selectedCustomer || !selectedTemplate) return
@@ -67,116 +74,100 @@ export default function DmPage() {
       content: preview,
       sent_by: advisorName,
     })
-    setDmLogs(prev => [
+    setDmLogs((prev) => [
       { name: selectedCustomer.name, title: selectedTemplate.title, date: new Date().toISOString().slice(5, 10) },
       ...prev.slice(0, 4),
     ])
   }
 
-  const filteredCustomers = customers.filter(c =>
-    !search || c.name.includes(search) || c.phone.includes(search)
-  )
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
-  }
-
   return (
-    <div>
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">DM 메시지</h1>
-        <p className="text-sm text-gray-500 mt-0.5">고객별 맞춤 DM 메시지를 작성하고 복사합니다.</p>
+    <>
+      <div className="page-header">
+        <div>
+          <div className="page-title">DM 메시지</div>
+          <div className="page-subtitle">고객별 맞춤 메시지를 작성하고 복사합니다.</div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* 템플릿 선택 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3">메시지 템플릿</h2>
-          {templates.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">등록된 템플릿이 없습니다.</p>
-          ) : (
-            <div className="space-y-2">
-              {templates.map(tmpl => (
-                <button key={tmpl.id} onClick={() => setSelectedTemplate(tmpl)}
-                  className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                    selectedTemplate?.id === tmpl.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="font-medium text-sm text-gray-800">{tmpl.title}</div>
-                  <div className="text-xs text-gray-500 mt-0.5 truncate">{tmpl.content?.slice(0, 40)}...</div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* 고객 선택 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3">고객 선택</h2>
-          <input
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400 mb-3"
-            placeholder="고객 검색..." value={search} onChange={e => setSearch(e.target.value)}
-          />
-          <div className="space-y-1.5 max-h-72 overflow-y-auto">
-            {filteredCustomers.map(c => (
-              <button key={c.id} onClick={() => setSelectedCustomer(c)}
-                className={`w-full text-left p-2.5 rounded-lg border transition-colors flex items-center gap-2 ${
-                  selectedCustomer?.id === c.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:bg-gray-50'
-                }`}
-              >
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold shrink-0">
-                  {c.name[0]}
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-gray-800">{c.name}</div>
-                  <div className="text-xs text-gray-400">{c.phone}</div>
-                </div>
-              </button>
-            ))}
-            {filteredCustomers.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-6">고객이 없습니다.</p>
-            )}
-          </div>
-        </div>
-
-        {/* 미리보기 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-800">미리보기</h2>
-            <button onClick={handleCopy} disabled={!preview}
-              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40 ${
-                copied ? 'bg-green-100 text-green-700' : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {copied ? '✓ 복사됨!' : '📋 복사'}
-            </button>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-4 min-h-48">
-            {selectedCustomer && (
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-                <span className="text-xs text-gray-500">수신자:</span>
-                <span className="text-xs font-medium text-gray-800">{selectedCustomer.name} ({selectedCustomer.phone})</span>
+      {loading ? (
+        <div className="card card-p" style={{ padding: 80, textAlign: 'center', color: '#94a3b8' }}>불러오는 중...</div>
+      ) : (
+        <div className="grid-3">
+          <div className="card card-p">
+            <div className="card-title">메시지 템플릿</div>
+            {templates.length === 0 ? (
+              <div style={{ padding: 34, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>등록된 템플릿이 없습니다.</div>
+            ) : (
+              <div className="flex-col gap-8">
+                {templates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template)}
+                    className={`dm-card${selectedTemplate?.id === template.id ? ' active' : ''}`}
+                    style={{ textAlign: 'left', background: selectedTemplate?.id === template.id ? '#eff6ff' : '#fff' }}
+                  >
+                    <div className="fw-700" style={{ fontSize: 13 }}>{template.title}</div>
+                    <div className="text-muted" style={{ fontSize: 12, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {template.content?.slice(0, 45)}...
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
-            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
-              {preview || <span className="text-gray-400">템플릿과 고객을 선택하세요.</span>}
-            </pre>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-gray-100">
-            <h3 className="text-xs font-semibold text-gray-600 mb-2">최근 발송 이력</h3>
+          <div className="card card-p">
+            <div className="card-title">고객 선택</div>
+            <div className="search-wrap" style={{ marginBottom: 12 }}>
+              <span className="search-icon">⌕</span>
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="고객 검색" style={{ width: '100%' }} />
+            </div>
+            <div className="flex-col gap-8" style={{ maxHeight: 320, overflowY: 'auto' }}>
+              {filteredCustomers.map((customer) => (
+                <button
+                  key={customer.id}
+                  onClick={() => setSelectedCustomer(customer)}
+                  className={`dm-card${selectedCustomer?.id === customer.id ? ' active' : ''}`}
+                  style={{ textAlign: 'left', padding: 12, background: selectedCustomer?.id === customer.id ? '#eff6ff' : '#fff' }}
+                >
+                  <div className="flex items-center gap-8">
+                    <div className="profile-avatar">{customer.name?.slice(0, 1)}</div>
+                    <div>
+                      <div className="fw-700" style={{ fontSize: 13 }}>{customer.name}</div>
+                      <div className="text-muted" style={{ fontSize: 11 }}>{customer.phone}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+              {filteredCustomers.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>고객이 없습니다.</div>}
+            </div>
+          </div>
+
+          <div className="card card-p">
+            <div className="flex justify-between items-center mb-16">
+              <div className="card-title" style={{ marginBottom: 0 }}>미리보기</div>
+              <button onClick={handleCopy} disabled={!preview} className={`copy-btn${copied ? ' copied' : ''}`} style={{ opacity: preview ? 1 : 0.4 }}>
+                {copied ? '복사됨' : '복사'}
+              </button>
+            </div>
+
+            {selectedCustomer && (
+              <div className="bg-gray rounded p-12 mb-16">
+                <span className="text-muted" style={{ fontSize: 12 }}>수신자 </span>
+                <span className="fw-700" style={{ fontSize: 12 }}>{selectedCustomer.name} ({selectedCustomer.phone})</span>
+              </div>
+            )}
+
+            <pre className="dm-preview">{preview || '템플릿과 고객을 선택하세요.'}</pre>
+
+            <div className="divider" />
+            <div className="card-title">최근 발송 이력</div>
             {dmLogs.length === 0 ? (
-              <p className="text-xs text-gray-400">발송 이력이 없습니다.</p>
+              <div className="text-muted" style={{ fontSize: 12 }}>발송 이력이 없습니다.</div>
             ) : (
-              <div className="space-y-1.5">
-                {dmLogs.map((log, i) => (
-                  <div key={i} className="text-xs text-gray-500 flex items-center gap-2">
-                    <div className="w-1 h-1 bg-gray-400 rounded-full" />
+              <div className="flex-col gap-8">
+                {dmLogs.map((log, index) => (
+                  <div key={`${log.name}-${log.title}-${index}`} className="text-muted" style={{ fontSize: 12 }}>
                     {log.date} {log.name} · {log.title}
                   </div>
                 ))}
@@ -184,7 +175,7 @@ export default function DmPage() {
             )}
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   )
 }
