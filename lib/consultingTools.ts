@@ -9,6 +9,7 @@ export type ConsultingTool = {
   cardColor: string;
   fixed?: boolean;
   staffOnly?: boolean;
+  chromeRecommended?: boolean;
 };
 
 export const CONSULTING_TOOLS: ConsultingTool[] = [
@@ -33,6 +34,7 @@ export const CONSULTING_TOOLS: ConsultingTool[] = [
     color: "border-emerald-500",
     cardColor: "border-emerald-500 text-emerald-600",
     fixed: true,
+    chromeRecommended: true,
   },
   {
     id: "show_hira",

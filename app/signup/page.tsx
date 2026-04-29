@@ -112,9 +112,13 @@ export default function SignupPage() {
         router.push("/login")
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : ""
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === "object" && error && "message" in error
+          ? String((error as { message?: unknown }).message || "")
+          : ""
       if (message.toLowerCase().includes("already registered")) {
-        alert("이미 가입된 이메일입니다. 로그인하거나 비밀번호 재설정을 이용해주세요.")
+        alert("이미 인증 계정이 있는 이메일입니다. 조직관리 목록에 없다면 마스터가 직원 정보로 등록해야 합니다.")
       } else {
         alert(message || "가입 신청 중 오류가 발생했습니다.")
       }

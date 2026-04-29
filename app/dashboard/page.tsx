@@ -117,6 +117,12 @@ export default function DashboardPage() {
       ? `${window.location.origin}${url}` 
       : (url.startsWith('http') ? url : `https://${url}`);
 
+    if (item.chromeRecommended) {
+      navigator.clipboard?.writeText(finalUrl).catch(() => {});
+      alert("숨은 보험금 찾기 링크를 복사했습니다.\n크롬을 열고 주소창에 붙여넣어 접속해주세요.\n\n" + finalUrl);
+      return;
+    }
+
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
