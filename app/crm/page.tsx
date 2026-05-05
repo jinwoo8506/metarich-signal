@@ -229,6 +229,40 @@ export default function CrmDashboard() {
         </div>
       </div>
 
+      <div className="grid-3" style={{ marginBottom: 16 }}>
+        <div className="card card-p">
+          <div className="flex justify-between items-center mb-16">
+            <div className="card-title" style={{ marginBottom: 0 }}>업로드 분석 현황</div>
+            <Link href="/crm/upload" className="link">이동</Link>
+          </div>
+          <Link href="/crm/upload" className="upload-zone" style={{ display: 'block', padding: 18, textDecoration: 'none' }}>
+            <div className="upload-icon" style={{ fontSize: 24 }}>📁</div>
+            <div className="upload-text" style={{ fontSize: 12 }}>파일 업로드하기</div>
+            <div className="upload-sub">암, 뇌, 심장, 수술 등 항목별 자료 정리</div>
+          </Link>
+        </div>
+
+        <div className="card card-p">
+          <div className="flex justify-between items-center mb-16">
+            <div className="card-title" style={{ marginBottom: 0 }}>PDF 리포트</div>
+            <Link href="/crm/reports" className="link">생성</Link>
+          </div>
+          <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.8 }}>
+            고객별 상담 요약, 보장 태그, 월 보험료 정보를 PDF로 정리해 상담 전후 공유 자료로 활용합니다.
+          </div>
+        </div>
+
+        <div className="card card-p">
+          <div className="flex justify-between items-center mb-16">
+            <div className="card-title" style={{ marginBottom: 0 }}>운영 설정</div>
+            <Link href="/crm/settings" className="link">설정</Link>
+          </div>
+          <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.8 }}>
+            담당자 정보, 알림, 자료 보관 방식, 화면 표시 기준을 고객관리 흐름에 맞게 조정합니다.
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <div className="card-p flex justify-between items-center">
           <div className="card-title" style={{ marginBottom: 0 }}>최근 등록 고객</div>

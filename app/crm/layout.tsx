@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
+import { isApprovedUser, normalizeRole } from '../../lib/roles'
 
 const NAV = [
   {
@@ -20,6 +21,10 @@ const NAV = [
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197"/></svg>
   },
   {
+    href: '/crm/upload', label: '업로드 분석', exact: false,
+    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 16V4m0 0L7 9m5-5l5 5"/><path strokeWidth="2" d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+  },
+  {
     href: '/crm/analysis', label: '보장분석', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
   },
@@ -30,6 +35,14 @@ const NAV = [
   {
     href: '/crm/dm', label: 'DM 메시지', exact: false,
     icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+  },
+  {
+    href: '/crm/reports', label: 'PDF 리포트', exact: false,
+    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M7 3h7l5 5v13H7z"/><path strokeWidth="2" d="M14 3v6h5M9 14h6M9 18h4"/></svg>
+  },
+  {
+    href: '/crm/settings', label: '설정', exact: false,
+    icon: <svg className="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path strokeWidth="2" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1 .6 1.65 1.65 0 00-.4 1.08V21a2 2 0 01-4 0v-.09A1.65 1.65 0 008.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-.6-1 1.65 1.65 0 00-1.08-.4H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-.6A1.65 1.65 0 0010.4 2.9V3a2 2 0 014 0v-.09A1.65 1.65 0 0015 4.6a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.22.38.6.6 1 .6H21a2 2 0 010 4h-.09A1.65 1.65 0 0019.4 15z"/></svg>
   },
 ]
 
@@ -42,18 +55,22 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { router.replace('/login'); return }
+      const redirectTo = encodeURIComponent(pathname || '/crm')
+      if (!session) { router.replace(`/login?redirectTo=${redirectTo}`); return }
       const { data: userData } = await supabase
-        .from('users').select('name, role, crm_access, is_approved, phone').eq('id', session.user.id).single()
-      const role = userData?.role || ''
-      const isMaster = role === 'master'
-      const hasCrm = userData?.crm_access === true || userData?.crm_access === 'true'
-      const isApproved = userData?.is_approved === true || userData?.is_approved === 'true'
-      if (!isMaster && !hasCrm && !isApproved) { router.replace('/dashboard'); return }
-      setUser({ ...session.user, ...userData })
+        .from('users').select('*').eq('id', session.user.id).maybeSingle()
+      if (!userData) { router.replace(`/login?redirectTo=${redirectTo}`); return }
+
+      const mergedUser = { ...session.user, ...userData, email: session.user.email }
+      const effectiveRole = normalizeRole(mergedUser)
+      const hasCrm = mergedUser.crm_access === true || mergedUser.crm_access === 'true'
+      const canUseCrm = hasCrm || isApprovedUser(mergedUser)
+      if (!canUseCrm) { router.replace('/dashboard'); return }
+
+      setUser({ ...mergedUser, effectiveRole })
       setChecking(false)
     })
-  }, [router])
+  }, [pathname, router])
 
   if (checking) {
     return (
@@ -65,6 +82,13 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
   }
 
   const advisorName = user?.name || user?.email?.split('@')[0] || '담당자'
+  const closeCrmWindow = () => {
+    if (window.opener) {
+      window.close()
+      return
+    }
+    router.replace('/dashboard?mode=office')
+  }
 
   return (
     <div className="crm-app">
@@ -112,10 +136,10 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
           <button
-            onClick={() => router.push('/dashboard')}
+            onClick={closeCrmWindow}
             style={{ marginTop: 8, width: '100%', background: 'rgba(255,255,255,.06)', border: 'none', borderRadius: 8, color: '#94a3b8', fontSize: 11, padding: '7px 0', cursor: 'pointer' }}
           >
-            대시보드로 돌아가기
+            고객관리 창 닫기
           </button>
         </div>
       </aside>

@@ -84,6 +84,8 @@ export default function DashboardPage() {
 
     if (effectiveRole === 'guest') {
       setViewMode('consulting');
+    } else if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'office') {
+      setViewMode('office');
     }
 
     setLoading(false);

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../lib/supabase"
 
@@ -8,7 +8,18 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [redirectPath, setRedirectPath] = useState("/dashboard")
   const router = useRouter()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const value = params.get("redirectTo") || "/dashboard"
+    const nextRedirect = value.startsWith("/") && !value.startsWith("//") ? value : "/dashboard"
+    setRedirectPath(nextRedirect)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && params.get("redirectTo")) router.replace(nextRedirect)
+    })
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -17,7 +28,7 @@ export default function LoginPage() {
       const loginEmail = email.trim()
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
       if (error) alert("로그인에 실패했습니다: " + error.message)
-      else router.push("/dashboard")
+      else router.push(redirectPath)
     } finally {
       setLoading(false)
     }

@@ -224,7 +224,10 @@ export default function Sidebar({
                   icon="📋"
                   label="고객관리"
                   active={false}
-                  onClick={() => { router.push('/crm'); setIsOpen(false); }}
+                  onClick={() => {
+                    window.open(`${window.location.origin}/crm`, "_blank", "noopener,noreferrer");
+                    setIsOpen(false);
+                  }}
                 />
               )}
 
